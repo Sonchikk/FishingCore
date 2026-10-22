@@ -874,3 +874,382 @@ public final class ReferenceCatalogStore: Sendable {
         )
     }
 }
+
+// MARK: - Catalog Listing & Starter Seed Helpers for UI Integration
+
+public struct PondCatalogItem: Sendable, Equatable, Identifiable {
+    public let id: Int
+    public let uiDisplayIndex: Int
+    public let chatPondId: Int
+    public let nameRu: String
+    public let nameEn: String
+    public let requiredRank: Int
+    public let requiresCoupon: Bool
+    public let pondImageName: String
+
+    public init(
+        id: Int,
+        uiDisplayIndex: Int,
+        chatPondId: Int,
+        nameRu: String,
+        nameEn: String,
+        requiredRank: Int,
+        requiresCoupon: Bool,
+        pondImageName: String
+    ) {
+        self.id = id
+        self.uiDisplayIndex = uiDisplayIndex
+        self.chatPondId = chatPondId
+        self.nameRu = nameRu
+        self.nameEn = nameEn
+        self.requiredRank = requiredRank
+        self.requiresCoupon = requiresCoupon
+        self.pondImageName = pondImageName
+    }
+}
+
+public struct BaitShopCatalogItem: Sendable, Equatable, Identifiable {
+    public var id: Int { spec.id }
+    public let spec: BaitSpec
+    public let stockAmount: Int
+
+    public init(spec: BaitSpec, stockAmount: Int) {
+        self.spec = spec
+        self.stockAmount = stockAmount
+    }
+}
+
+public struct HookShopCatalogItem: Sendable, Equatable, Identifiable {
+    public var id: Int { spec.id }
+    public let spec: HookSpec
+    public let stockAmount: Int
+
+    public init(spec: HookSpec, stockAmount: Int) {
+        self.spec = spec
+        self.stockAmount = stockAmount
+    }
+}
+
+extension ReferenceCatalogStore {
+    public func listAllRodSpecs() throws -> [FishingRodSpec] {
+        let rows = try connection.query("SELECT id, name, weight, price FROM fishing_rods ORDER BY id ASC;")
+        return rows.map {
+            FishingRodSpec(
+                id: $0.int("id"),
+                name: $0.string("name"),
+                weight: $0.int("weight"),
+                price: $0.int("price")
+            )
+        }
+    }
+
+    public func listAllCoilSpecs() throws -> [CoilSpec] {
+        let rows = try connection.query("SELECT id, name, bearing_count, price FROM coils ORDER BY id ASC;")
+        return rows.map {
+            CoilSpec(
+                id: $0.int("id"),
+                name: $0.string("name"),
+                bearingCount: $0.int("bearing_count"),
+                price: $0.int("price")
+            )
+        }
+    }
+
+    public func listAllLineSpecs() throws -> [FishingLineSpec] {
+        let rows = try connection.query("SELECT id, name, weight, price, stock_length FROM fishing_lines ORDER BY id ASC;")
+        return rows.map {
+            FishingLineSpec(
+                id: $0.int("id"),
+                name: $0.string("name"),
+                weight: $0.int("weight"),
+                stockLength: $0.int("stock_length"),
+                price: $0.int("price")
+            )
+        }
+    }
+
+    public func listAllHookCatalogItems() throws -> [HookShopCatalogItem] {
+        let rows = try connection.query("SELECT id, name, stock_amount, price FROM hooks ORDER BY id ASC;")
+        return rows.map {
+            HookShopCatalogItem(
+                spec: HookSpec(id: $0.int("id"), name: $0.string("name"), price: $0.int("price")),
+                stockAmount: $0.int("stock_amount")
+            )
+        }
+    }
+
+    public func listAllBaitCatalogItems() throws -> [BaitShopCatalogItem] {
+        let rows = try connection.query("SELECT id, name, stock_amount, price FROM baits ORDER BY id ASC;")
+        return rows.map {
+            BaitShopCatalogItem(
+                spec: BaitSpec(id: $0.int("id"), name: $0.string("name"), rank: 0, price: $0.int("price")),
+                stockAmount: $0.int("stock_amount")
+            )
+        }
+    }
+
+    public func listAllPonds() throws -> [PondCatalogItem] {
+        let rows = try connection.query("""
+        SELECT pond_data_id, ui_display_index, chat_pond_id, name_ru, name_en, required_rank, requires_coupon, pond_image_name
+        FROM ref_ponds
+        ORDER BY ui_display_index ASC, pond_data_id ASC;
+        """)
+        return rows.map {
+            PondCatalogItem(
+                id: $0.int("pond_data_id"),
+                uiDisplayIndex: $0.int("ui_display_index"),
+                chatPondId: $0.int("chat_pond_id"),
+                nameRu: $0.string("name_ru"),
+                nameEn: $0.string("name_en"),
+                requiredRank: $0.int("required_rank"),
+                requiresCoupon: $0.int("requires_coupon") != 0,
+                pondImageName: $0.string("pond_image_name")
+            )
+        }
+    }
+
+    /// Seeds a built-in authentic starter subset of the v1.81 reference catalog if the database
+    /// has not yet imported the full `data/*.json` files (e.g. on a fresh Simulator launch).
+    /// Idempotent and non-destructive: does nothing if `fishes` already contains rows.
+    public func seedBuiltInStarterCatalogIfEmpty(nowMs: Int64 = 0) throws {
+        let fishCount = try connection.scalarInt("SELECT COUNT(*) FROM fishes;")
+        guard fishCount == 0 else { return }
+
+        try connection.transaction {
+            let starterFishes: [(Int, String, Int, Int, Int, Int, Int, Int, Int)] = [
+                (1, "Карась", 2131231046, 500, 55, 3, 6, 2, 4),
+                (2, "Карась золотой", 2131231099, 500, 77, 3, 7, 3, 4),
+                (3, "Плотва", 2131231157, 250, 35, 2, 5, 4, 3),
+                (4, "Окунь", 2131231135, 400, 62, 3, 5, 3, 4),
+                (5, "Щука", 2131231168, 2000, 306, 4, 5, 4, 5)
+            ]
+            for f in starterFishes {
+                let md5 = FishingChecksum.fishMd5(
+                    id: f.0,
+                    unitWeight: f.3,
+                    unitPrice: f.4,
+                    strength: f.5,
+                    stamina: f.6,
+                    intelligence: f.7,
+                    aggression: f.8,
+                    installationUuid: installationUuid
+                )
+                try connection.run("""
+                INSERT INTO fishes (id, name, image, unit_weight, unit_price, strength, stamina, intelligence, aggression, md5)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+                """, bindings: [
+                    .integer(Int64(f.0)),
+                    .text(f.1),
+                    .integer(Int64(f.2)),
+                    .integer(Int64(f.3)),
+                    .integer(Int64(f.4)),
+                    .integer(Int64(f.5)),
+                    .integer(Int64(f.6)),
+                    .integer(Int64(f.7)),
+                    .integer(Int64(f.8)),
+                    .text(md5)
+                ])
+                try connection.run("""
+                INSERT OR IGNORE INTO records (id, fish_name, weight, bait_id)
+                VALUES (?, ?, 0, 0);
+                """, bindings: [.integer(Int64(f.0)), .text(f.1)])
+            }
+
+            let starterBaits: [(Int, String, Int, Int, Int)] = [
+                (1, "червь", 2131230950, 30, 30),
+                (2, "хлеб", 2131230961, 40, 15),
+                (3, "опарыш", 2131230952, 35, 25)
+            ]
+            for b in starterBaits {
+                try connection.run("""
+                INSERT INTO baits (id, name, image, stock_amount, price)
+                VALUES (?, ?, ?, ?, ?);
+                """, bindings: [
+                    .integer(Int64(b.0)),
+                    .text(b.1),
+                    .integer(Int64(b.2)),
+                    .integer(Int64(b.3)),
+                    .integer(Int64(b.4))
+                ])
+            }
+
+            let starterRods: [(Int, String, Int, Int)] = [
+                (1, "fish small", 3, 100),
+                (2, "kosrep", 5, 250),
+                (3, "sokl", 9, 650),
+                (5, "rotyl", 33, 4500)
+            ]
+            for r in starterRods {
+                try connection.run("""
+                INSERT INTO fishing_rods (id, name, weight, price)
+                VALUES (?, ?, ?, ?);
+                """, bindings: [
+                    .integer(Int64(r.0)),
+                    .text(r.1),
+                    .integer(Int64(r.2)),
+                    .integer(Int64(r.3))
+                ])
+            }
+
+            let starterLines: [(Int, String, Int, Int, Int)] = [
+                (1, "small", 3, 100, 100),
+                (2, "kosp", 6, 220, 100),
+                (3, "master", 13, 550, 100),
+                (5, "somik", 45, 3200, 100)
+            ]
+            for l in starterLines {
+                try connection.run("""
+                INSERT INTO fishing_lines (id, name, weight, price, stock_length)
+                VALUES (?, ?, ?, ?, ?);
+                """, bindings: [
+                    .integer(Int64(l.0)),
+                    .text(l.1),
+                    .integer(Int64(l.2)),
+                    .integer(Int64(l.3)),
+                    .integer(Int64(l.4))
+                ])
+            }
+
+            let starterCoils: [(Int, String, Int, Int)] = [
+                (1, "gert", 1, 100),
+                (2, "terf", 2, 300),
+                (3, "rosl", 3, 850)
+            ]
+            for c in starterCoils {
+                try connection.run("""
+                INSERT INTO coils (id, name, bearing_count, price)
+                VALUES (?, ?, ?, ?);
+                """, bindings: [
+                    .integer(Int64(c.0)),
+                    .text(c.1),
+                    .integer(Int64(c.2)),
+                    .integer(Int64(c.3))
+                ])
+            }
+
+            let starterHooks: [(Int, String, Int, Int)] = [
+                (1, "fish 1", 5, 100),
+                (2, "fish 2", 5, 220)
+            ]
+            for h in starterHooks {
+                try connection.run("""
+                INSERT INTO hooks (id, name, stock_amount, price)
+                VALUES (?, ?, ?, ?);
+                """, bindings: [
+                    .integer(Int64(h.0)),
+                    .text(h.1),
+                    .integer(Int64(h.2)),
+                    .integer(Int64(h.3))
+                ])
+            }
+
+            try connection.run("""
+            INSERT INTO coupons (id, name, day_count, price, dn)
+            VALUES (1, 'Путевой купон (1 день)', 1, 150000, 288);
+            """)
+
+            // Starter Pond #0 ('Кедровый остров') & Pond #1 ('Лесное озеро')
+            try connection.run("""
+            INSERT INTO ref_ponds (
+                pond_data_id, ui_display_index, chat_pond_id,
+                name_ru, name_en, name_de, name_es, name_pt,
+                required_rank, requires_coupon,
+                pond_image_res_id, pond_image_name,
+                big_pond_image_res_id, big_pond_image_name
+            ) VALUES
+                (0, 0, 1, 'Кедровый остров', 'Cedar Island', 'Zederinsel', 'Isla de Cedro', 'Ilha do Cedro', 0, 0, 2131231519, 'pond_1', 2131231532, 'pond_1_big'),
+                (1, 1, 2, 'Лесное озеро', 'Forest Lake', 'Waldsee', 'Lago del Bosque', 'Lago da Floresta', 0, 0, 2131231520, 'pond_2', 2131231533, 'pond_2_big');
+            """)
+
+            // Active baits for Pond 0: slot 0 -> bait 1 (червь, index 0), slot 1 -> bait 2 (хлеб, index 1)
+            let pondCatches: [(Int, Int, Int, Int, Int, Int, Int)] = [
+                (0, 0, 0, 1, 0, 0, 1),
+                (0, 0, 0, 1, 1, 1, 2),
+                (0, 0, 0, 1, 2, 3, 4),
+                (0, 1, 1, 2, 0, 0, 1),
+                (0, 1, 1, 2, 1, 2, 3),
+                (1, 0, 0, 1, 0, 0, 1),
+                (1, 0, 0, 1, 1, 4, 5)
+            ]
+            for pc in pondCatches {
+                try connection.run("""
+                INSERT INTO ref_pond_bait_catches (
+                    pond_data_id, bait_slot_index, bait_index_0based, bait_db_id,
+                    catch_order_index, fish_index_0based, fish_db_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?);
+                """, bindings: [
+                    .integer(Int64(pc.0)),
+                    .integer(Int64(pc.1)),
+                    .integer(Int64(pc.2)),
+                    .integer(Int64(pc.3)),
+                    .integer(Int64(pc.4)),
+                    .integer(Int64(pc.5)),
+                    .integer(Int64(pc.6))
+                ])
+            }
+
+            let pondWeights: [(Int, Int, Int, Int, Int)] = [
+                (0, 0, 1, 50, 2450),
+                (0, 1, 2, 80, 2200),
+                (0, 2, 3, 40, 1200),
+                (0, 3, 4, 70, 1800),
+                (1, 0, 1, 60, 2500),
+                (1, 4, 5, 400, 4500)
+            ]
+            for pw in pondWeights {
+                try connection.run("""
+                INSERT INTO ref_pond_species_weights (
+                    pond_data_id, fish_index_0based, fish_db_id, min_weight_grams, max_weight_grams
+                ) VALUES (?, ?, ?, ?, ?);
+                """, bindings: [
+                    .integer(Int64(pw.0)),
+                    .integer(Int64(pw.1)),
+                    .integer(Int64(pw.2)),
+                    .integer(Int64(pw.3)),
+                    .integer(Int64(pw.4))
+                ])
+            }
+
+            for period in ["morning", "afternoon", "evening", "night"] {
+                let factors: [(Int, Int, Int, Int, Int, Int, Int)] = [
+                    (0, 0, 0, 0, 0, 1, 65),
+                    (0, 0, 0, 1, 1, 2, 45),
+                    (0, 0, 0, 2, 3, 4, 50),
+                    (0, 1, 1, 0, 0, 1, 70),
+                    (0, 1, 1, 1, 2, 3, 60),
+                    (1, 0, 0, 0, 0, 1, 60),
+                    (1, 0, 0, 1, 4, 5, 50)
+                ]
+                for tf in factors {
+                    try connection.run("""
+                    INSERT INTO ref_pond_time_factors (
+                        pond_data_id, day_period, bait_slot_index, bait_index_0based,
+                        entry_index, fish_index_0based, fish_db_id, probability_percent
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+                    """, bindings: [
+                        .integer(Int64(tf.0)),
+                        .text(period),
+                        .integer(Int64(tf.1)),
+                        .integer(Int64(tf.2)),
+                        .integer(Int64(tf.3)),
+                        .integer(Int64(tf.4)),
+                        .integer(Int64(tf.5)),
+                        .integer(Int64(tf.6))
+                    ])
+                }
+            }
+
+            for (idx, exp) in BalanceTables.playerRankExpThresholds.enumerated() {
+                try connection.run("""
+                INSERT INTO ref_rank_thresholds (rank_index_1based, required_experience)
+                VALUES (?, ?);
+                """, bindings: [
+                    .integer(Int64(idx + 1)),
+                    .integer(Int64(exp))
+                ])
+            }
+
+            try rebuildReferenceDataSigns(nowMs: nowMs)
+        }
+    }
+}

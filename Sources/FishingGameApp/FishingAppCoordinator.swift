@@ -1,0 +1,717 @@
+import Foundation
+import Combine
+import FishingCore
+import FishingDatabase
+
+/// Top-level navigation destinations for the iOS port of «Рыбалка для друзей» v1.81.
+public enum AppNavigationTab: String, CaseIterable, Sendable, Identifiable {
+    case fishingPond = "pond"
+    case baseHub = "base"
+    case shop = "shop"
+    case inventory = "inventory"
+    case fishnet = "fishnet"
+
+    public var id: String { rawValue }
+
+    public var titleRu: String {
+        switch self {
+        case .fishingPond: return "Водоём"
+        case .baseHub: return "База"
+        case .shop: return "Магазин"
+        case .inventory: return "Рюкзак"
+        case .fishnet: return "Садок"
+        }
+    }
+
+    public var systemIconName: String {
+        switch self {
+        case .fishingPond: return "water.waves"
+        case .baseHub: return "map.fill"
+        case .shop: return "cart.fill"
+        case .inventory: return "backpack.fill"
+        case .fishnet: return "basket.fill"
+        }
+    }
+}
+
+/// Modal alerts corresponding to `GameView$b` callbacks (`GameActivity` runnables) and shop/catch dialogs (`C0.d`).
+public enum FishingModalAlert: Equatable, Sendable, Identifiable {
+    case missingTackle(missingComponents: String)
+    case catchDialog(
+        fish: CaughtUserFish,
+        result: CatchTransactionResult,
+        isLucky25: Bool,
+        isRepdigit: Bool,
+        isCleanerTrash: Bool
+    )
+    case lineBroken
+    case rodBroken
+    case coilBroken
+    case fishEscaped
+    case missedBiteDuringSleep
+    case exactAlarmPermissionRequired
+    case fishSold(result: FishSaleTransactionResult)
+    case operationError(message: String)
+
+    public var id: String {
+        switch self {
+        case .missingTackle(let msg): return "missingTackle_\(msg)"
+        case .catchDialog(let f, _, _, _, _): return "catch_\(f.fish.id)_\(f.weightGrams)_\(f.catchTimeMs)"
+        case .lineBroken: return "lineBroken"
+        case .rodBroken: return "rodBroken"
+        case .coilBroken: return "coilBroken"
+        case .fishEscaped: return "fishEscaped"
+        case .missedBiteDuringSleep: return "missedBiteDuringSleep"
+        case .exactAlarmPermissionRequired: return "exactAlarmPermissionRequired"
+        case .fishSold(let res): return "fishSold_\(res.soldFishCount)_\(res.newBalance)"
+        case .operationError(let msg): return "error_\(msg)"
+        }
+    }
+
+    public var titleRu: String {
+        switch self {
+        case .missingTackle: return "Снасть не собрана!"
+        case .catchDialog(let fish, let result, _, _, _):
+            return result.isNewPersonalRecord ? "Новый рекорд! \(fish.fish.name)" : "Поймана рыба: \(fish.fish.name)"
+        case .lineBroken: return "Леска оборвалась"
+        case .rodBroken: return "Удочка сломалась"
+        case .coilBroken: return "Катушка сломалась"
+        case .fishEscaped: return "Рыба сорвалась"
+        case .missedBiteDuringSleep: return "Прозевали поклевку"
+        case .exactAlarmPermissionRequired: return "Требуется разрешение будильника"
+        case .fishSold: return "Улов продан"
+        case .operationError: return "Внимание"
+        }
+    }
+
+    public var messageRu: String {
+        switch self {
+        case .missingTackle(let missing):
+            return "Не хватает: \(missing)"
+        case .catchDialog(let fish, let result, let isLucky25, let isRepdigit, let isCleanerTrash):
+            var lines: [String] = [
+                "Вес: \(fish.weightGrams) г",
+                "Оценка: \(fish.sellingPriceCoins) монет",
+                "Опыт: +\(result.experienceAwarded) XP (всего \(result.totalExperienceAfter) XP, разряд \(result.categoryRankAfter))",
+                result.storedInFishnet
+                    ? "В садке: \(result.fishnetCountAfter) / \(PlayerStateRepository.maxFishnetCapacity)"
+                    : "Садок полон (50/50)! Рыба отпущена."
+            ]
+            if result.isNewPersonalRecord {
+                lines.append("🏆 Личный рекорд вида обновлён!")
+            }
+            if isLucky25 {
+                lines.append("🍀 Счастливый вес (сумма цифр = 25)!")
+            }
+            if isRepdigit {
+                lines.append("🎰 Редкий вес (одинаковые цифры)!")
+            }
+            if isCleanerTrash {
+                lines.append("🧹 Вклад в достижение «Чистильщик»!")
+            }
+            return lines.joined(separator: "\n")
+        case .lineBroken:
+            return "Рыба оборвала леску (-10 м лески, потеряны крючок и наживка)."
+        case .rodBroken:
+            return "Критический перегруз! Леска оказалась крепче удилища — удочка сломалась."
+        case .coilBroken:
+            return "Вес рыбы превысил предел прочности механизма — катушка сломалась."
+        case .fishEscaped:
+            return "Рыба сошла с крючка и съела наживку."
+        case .missedBiteDuringSleep:
+            return "Слишком позднее пробуждение — рыба уже ушла."
+        case .exactAlarmPermissionRequired:
+            return "Для режима фонового будильника требуется разрешение точных уведомлений."
+        case .fishSold(let res):
+            return "Продано рыб: \(res.soldFishCount) шт.\nВыручка: +\(res.coinsEarned) монет\nТекущий баланс: \(res.newBalance) монет"
+        case .operationError(let msg):
+            return msg
+        }
+    }
+}
+
+/// Main integration coordinator connecting SwiftUI screens with `FishingCore` (`FishingStateMachine`,
+/// `GameClockTimer`) and `FishingDatabase` (`SQLiteConnection`, `ReferenceCatalogStore`, `PlayerStateRepository`).
+@MainActor
+public final class FishingAppCoordinator: ObservableObject {
+    public let connection: SQLiteConnection
+    public let catalog: ReferenceCatalogStore
+    public let repository: PlayerStateRepository
+    public let balanceTables: BalanceTables
+
+    @Published public var selectedTab: AppNavigationTab = .fishingPond
+    @Published public var selectedPondIndex: Int = 0
+    @Published public private(set) var availablePonds: [PondCatalogItem] = []
+
+    @Published public private(set) var profile: PlayerProfileRecord = PlayerProfileRecord()
+    @Published public private(set) var tackleSlots: UserTackleSlotRecord = UserTackleSlotRecord()
+    @Published public private(set) var assembledTackle: AssembledTackle = AssembledTackle()
+
+    @Published public private(set) var ownedRods: [UserRodItem] = []
+    @Published public private(set) var ownedCoils: [UserCoilItem] = []
+    @Published public private(set) var ownedLines: [UserLineItem] = []
+    @Published public private(set) var ownedHooks: [UserHookItem] = []
+    @Published public private(set) var ownedBaits: [UserBaitItem] = []
+    @Published public private(set) var activeCoupon: UserCouponItem? = nil
+    @Published public private(set) var fishnetEntries: [FishnetEntryRecord] = []
+    @Published public private(set) var overflowFcount: Int = 0
+
+    @Published public private(set) var catalogRods: [FishingRodSpec] = []
+    @Published public private(set) var catalogCoils: [CoilSpec] = []
+    @Published public private(set) var catalogLines: [FishingLineSpec] = []
+    @Published public private(set) var catalogHooks: [HookShopCatalogItem] = []
+    @Published public private(set) var catalogBaits: [BaitShopCatalogItem] = []
+    @Published public private(set) var fishCatalogById: [Int: FishSpecies] = [:]
+
+    @Published public private(set) var gameClock: GameClockTimer
+    @Published public private(set) var dayNightLighting: DayNightLighting
+    @Published public private(set) var stateMachine: FishingStateMachine
+    @Published public private(set) var currentLineCurve: QuadraticBezierCurve? = nil
+    @Published public var activeAlert: FishingModalAlert? = nil
+
+    private var systemRng = SystemFishingRandom()
+    private var visualRng = SystemFishingRandom()
+
+    /// Creates and bootstraps the coordinator on a given SQLite file path (or `:memory:` for tests/previews).
+    /// Automatically runs schema migrations v21, imports `jsonDataDirectoryURL` if provided (or seeds the
+    /// built-in starter catalog if empty), initializes the new player state (`500` coins), and loads Pond #0.
+    public init(
+        databasePath: String? = nil,
+        jsonDataDirectoryURL: URL? = nil,
+        installationUuid: String = "00000000-0000-0000-0000-000000000000",
+        initialHour: Int = 6,
+        initialMinute: Int = 0,
+        viewWidth: Int = 1280,
+        viewHeight: Int = 800,
+        nowMs: Int64 = 1_700_000_000_000
+    ) throws {
+        let resolvedPath: String
+        if let databasePath {
+            resolvedPath = databasePath
+        } else {
+            let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+                ?? FileManager.default.temporaryDirectory
+            let dir = appSupport.appendingPathComponent("FishingForFriends", isDirectory: true)
+            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            resolvedPath = dir.appendingPathComponent("fishing2.db").path
+        }
+
+        let conn = try SQLiteConnection(path: resolvedPath)
+        try DatabaseSchemaAndMigrations.migrateIfNeeded(on: conn)
+
+        let cat = ReferenceCatalogStore(connection: conn, installationUuid: installationUuid)
+        let bt = BalanceTables()
+        let repo = PlayerStateRepository(
+            connection: conn,
+            catalog: cat,
+            installationUuid: installationUuid,
+            balanceTables: bt
+        )
+
+        if let jsonDir = jsonDataDirectoryURL,
+           FileManager.default.fileExists(atPath: jsonDir.appendingPathComponent("fishes.json").path) {
+            _ = try cat.importFromJSONDirectory(jsonDir, nowMs: nowMs)
+        } else {
+            try cat.seedBuiltInStarterCatalogIfEmpty(nowMs: nowMs)
+        }
+
+        try repo.initializeNewPlayerIfNeeded(nowMs: nowMs)
+
+        self.connection = conn
+        self.catalog = cat
+        self.repository = repo
+        self.balanceTables = bt
+
+        let clock = GameClockTimer(hour: initialHour, minute: initialMinute)
+        self.gameClock = clock
+        self.dayNightLighting = DayNightLighting.forHour(clock.hour)
+
+        let fishes = try cat.loadFishCatalogById()
+        self.fishCatalogById = fishes
+        let initialPondData = try cat.loadPondSimulationData(pondIndex: 0)
+        let initialTackle = try repo.loadAssembledTackle()
+
+        self.stateMachine = FishingStateMachine(
+            viewWidth: viewWidth,
+            viewHeight: viewHeight,
+            bobberBitmapWidth: 24,
+            bobberBitmapHeight: 40,
+            animationsEnabled: true,
+            balanceTables: bt,
+            pondData: initialPondData,
+            timeOfDay: BiteTimeOfDay.from(hour: clock.hour, minute: clock.minute),
+            fishCatalogById1Based: fishes,
+            tackle: initialTackle
+        )
+
+        try reloadAllStateFromDatabase()
+    }
+
+    // MARK: - State Synchronization with SQLite
+
+    public func reloadAllStateFromDatabase() throws {
+        profile = try repository.loadPlayerProfile()
+        tackleSlots = try repository.loadTackleSlots()
+        assembledTackle = try repository.loadAssembledTackle()
+
+        ownedRods = try repository.listUserRods()
+        ownedCoils = try repository.listUserCoils()
+        ownedLines = try repository.listUserLines()
+        ownedHooks = try repository.listUserHooks()
+        ownedBaits = try repository.listUserBaits()
+        activeCoupon = try repository.loadActiveCoupon()
+        fishnetEntries = try repository.listFishnetEntries()
+        overflowFcount = try repository.loadOverflowFcount()
+
+        catalogRods = try catalog.listAllRodSpecs().filter { $0.price > 0 && $0.weight <= 179 }
+        catalogCoils = try catalog.listAllCoilSpecs().filter { $0.price > 0 && $0.bearingCount <= 7 }
+        catalogLines = try catalog.listAllLineSpecs().filter { $0.price > 0 && $0.stockLength <= 100 && $0.weight <= 376 }
+        catalogHooks = try catalog.listAllHookCatalogItems().filter { $0.stockAmount <= 5 }
+        catalogBaits = try catalog.listAllBaitCatalogItems()
+        availablePonds = try catalog.listAllPonds()
+        fishCatalogById = try catalog.loadFishCatalogById()
+
+        stateMachine.tackle = assembledTackle
+        stateMachine.fishCatalogById1Based = fishCatalogById
+    }
+
+    public var currentPondItem: PondCatalogItem? {
+        availablePonds.first(where: { $0.id == selectedPondIndex }) ?? availablePonds.first
+    }
+
+    public func selectPond(pondIndex: Int) {
+        do {
+            let pond = try catalog.loadPondSimulationData(pondIndex: pondIndex)
+            if let meta = availablePonds.first(where: { $0.id == pondIndex }) {
+                if profile.category < meta.requiredRank {
+                    activeAlert = .operationError(
+                        message: "Для водоёма «\(meta.nameRu)» требуется разряд \(meta.requiredRank) (ваш: \(profile.category))."
+                    )
+                    return
+                }
+                if meta.requiresCoupon && activeCoupon == nil {
+                    activeAlert = .operationError(
+                        message: "Для водоёма «\(meta.nameRu)» необходим активный путевой купон."
+                    )
+                    return
+                }
+            }
+            selectedPondIndex = pondIndex
+            _ = stateMachine.resetToIdle()
+            stateMachine.pondData = pond
+            currentLineCurve = nil
+        } catch {
+            activeAlert = .operationError(message: "Не удалось загрузить водоём #\(pondIndex): \(error)")
+        }
+    }
+
+    // MARK: - Shop & Starter Kit Actions
+
+    /// Buys and equips a complete starter tackle kit (rod #1, line #1, coil #1, hook #1, bait #1)
+    /// inside a single atomic SQLite transaction so a new player can start fishing immediately.
+    public func buyAndEquipStarterKit(nowMs: Int64 = Int64(Date().timeIntervalSince1970 * 1000)) {
+        do {
+            try connection.transaction {
+                let rod: UserRodItem
+                if let existing = try repository.listUserRods().first {
+                    rod = existing
+                } else {
+                    rod = try repository.buyFishingRod(baseRodId: 1, nowMs: nowMs)
+                }
+
+                let line: UserLineItem
+                if let existing = try repository.listUserLines().first {
+                    line = existing
+                } else {
+                    line = try repository.buyFishingLine(baseLineId: 1, nowMs: nowMs)
+                }
+
+                let coil: UserCoilItem
+                if let existing = try repository.listUserCoils().first {
+                    coil = existing
+                } else {
+                    coil = try repository.buyCoil(baseCoilId: 1, nowMs: nowMs)
+                }
+
+                let hook: UserHookItem
+                if let existing = try repository.listUserHooks().first {
+                    hook = existing
+                } else {
+                    hook = try repository.buyHook(baseHookId: 1)
+                }
+
+                let bait: UserBaitItem
+                if let existing = try repository.listUserBaits().first {
+                    bait = existing
+                } else {
+                    bait = try repository.buyBait(baseBaitId: 1)
+                }
+
+                try repository.saveTackleSlots(
+                    UserTackleSlotRecord(
+                        id: 1,
+                        fishingRodId: rod.id,
+                        fishingLineId: line.id,
+                        coilId: coil.id,
+                        hookId: hook.id,
+                        baitId: bait.id
+                    )
+                )
+            }
+            try reloadAllStateFromDatabase()
+        } catch let error as PlayerPersistenceError {
+            activeAlert = .operationError(message: describePersistenceError(error))
+        } catch {
+            activeAlert = .operationError(message: "Ошибка покупки стартового набора: \(error)")
+        }
+    }
+
+    public func buyRod(baseRodId: Int, nowMs: Int64 = Int64(Date().timeIntervalSince1970 * 1000)) {
+        do {
+            let item = try repository.buyFishingRod(baseRodId: baseRodId, nowMs: nowMs)
+            var slots = try repository.loadTackleSlots()
+            if slots.fishingRodId <= 0 {
+                slots.fishingRodId = item.id
+                try repository.saveTackleSlots(slots)
+            }
+            try reloadAllStateFromDatabase()
+        } catch let err as PlayerPersistenceError {
+            activeAlert = .operationError(message: describePersistenceError(err))
+        } catch {
+            activeAlert = .operationError(message: "\(error)")
+        }
+    }
+
+    public func buyCoil(baseCoilId: Int, nowMs: Int64 = Int64(Date().timeIntervalSince1970 * 1000)) {
+        do {
+            let item = try repository.buyCoil(baseCoilId: baseCoilId, nowMs: nowMs)
+            var slots = try repository.loadTackleSlots()
+            if slots.coilId <= 0 {
+                slots.coilId = item.id
+                try repository.saveTackleSlots(slots)
+            }
+            try reloadAllStateFromDatabase()
+        } catch let err as PlayerPersistenceError {
+            activeAlert = .operationError(message: describePersistenceError(err))
+        } catch {
+            activeAlert = .operationError(message: "\(error)")
+        }
+    }
+
+    public func buyLine(baseLineId: Int, nowMs: Int64 = Int64(Date().timeIntervalSince1970 * 1000)) {
+        do {
+            let item = try repository.buyFishingLine(baseLineId: baseLineId, nowMs: nowMs)
+            var slots = try repository.loadTackleSlots()
+            if slots.fishingLineId <= 0 {
+                slots.fishingLineId = item.id
+                try repository.saveTackleSlots(slots)
+            }
+            try reloadAllStateFromDatabase()
+        } catch let err as PlayerPersistenceError {
+            activeAlert = .operationError(message: describePersistenceError(err))
+        } catch {
+            activeAlert = .operationError(message: "\(error)")
+        }
+    }
+
+    public func buyHook(baseHookId: Int) {
+        do {
+            let item = try repository.buyHook(baseHookId: baseHookId)
+            var slots = try repository.loadTackleSlots()
+            if slots.hookId <= 0 {
+                slots.hookId = item.id
+                try repository.saveTackleSlots(slots)
+            }
+            try reloadAllStateFromDatabase()
+        } catch let err as PlayerPersistenceError {
+            activeAlert = .operationError(message: describePersistenceError(err))
+        } catch {
+            activeAlert = .operationError(message: "\(error)")
+        }
+    }
+
+    public func buyBait(baseBaitId: Int) {
+        do {
+            let item = try repository.buyBait(baseBaitId: baseBaitId)
+            var slots = try repository.loadTackleSlots()
+            if slots.baitId <= 0 {
+                slots.baitId = item.id
+                try repository.saveTackleSlots(slots)
+            }
+            try reloadAllStateFromDatabase()
+        } catch let err as PlayerPersistenceError {
+            activeAlert = .operationError(message: describePersistenceError(err))
+        } catch {
+            activeAlert = .operationError(message: "\(error)")
+        }
+    }
+
+    // MARK: - Inventory Equipping Actions (`BackpackActivity`)
+
+    public func equipRod(rowId: Int?) {
+        updateSlots { $0.fishingRodId = rowId ?? UserTackleSlotRecord.unequippedSentinel }
+    }
+
+    public func equipCoil(rowId: Int?) {
+        updateSlots { $0.coilId = rowId ?? UserTackleSlotRecord.unequippedSentinel }
+    }
+
+    public func equipLine(rowId: Int?) {
+        updateSlots { $0.fishingLineId = rowId ?? UserTackleSlotRecord.unequippedSentinel }
+    }
+
+    public func equipHook(rowId: Int?) {
+        updateSlots { $0.hookId = rowId ?? UserTackleSlotRecord.unequippedSentinel }
+    }
+
+    public func equipBait(rowId: Int?) {
+        updateSlots { $0.baitId = rowId ?? UserTackleSlotRecord.unequippedSentinel }
+    }
+
+    private func updateSlots(_ transform: (inout UserTackleSlotRecord) -> Void) {
+        do {
+            var slots = try repository.loadTackleSlots()
+            transform(&slots)
+            try repository.saveTackleSlots(slots)
+            try reloadAllStateFromDatabase()
+        } catch {
+            activeAlert = .operationError(message: "Не удалось обновить слоты снасти: \(error)")
+        }
+    }
+
+    // MARK: - Fishnet Sale Action (`MainActivity$e`)
+
+    public func sellAllFishInFishnet(nowMs: Int64 = Int64(Date().timeIntervalSince1970 * 1000)) {
+        do {
+            let result = try repository.sellAllFish(nowMs: nowMs)
+            try reloadAllStateFromDatabase()
+            activeAlert = .fishSold(result: result)
+        } catch let err as PlayerPersistenceError {
+            activeAlert = .operationError(message: describePersistenceError(err))
+        } catch {
+            activeAlert = .operationError(message: "Ошибка продажи рыбы: \(error)")
+        }
+    }
+
+    // MARK: - Fishing Gameplay Loop (`GameView` + `GameView$c`)
+
+    public func updateViewportSize(width: Int, height: Int) {
+        guard width > 100, height > 100 else { return }
+        if stateMachine.viewWidth != width || stateMachine.viewHeight != height {
+            stateMachine.viewWidth = width
+            stateMachine.viewHeight = height
+            var rod = stateMachine.rodSprite
+            rod.updateLayout(
+                viewWidth: width,
+                viewHeight: height,
+                scaledRodWidth: max(120, width / 6),
+                scaledRodHeight: height / 2
+            )
+        }
+    }
+
+    /// Casts the bobber at screen coordinates `(x, y)` using `SystemFishingRandom`.
+    public func castAt(
+        x: Float,
+        y: Float,
+        nowMs: Int64 = Int64(Date().timeIntervalSince1970 * 1000)
+    ) {
+        castAt(x: x, y: y, nowMs: nowMs, rng: &systemRng)
+    }
+
+    /// Casts the bobber at screen coordinates `(x, y)` with a custom RNG (for deterministic unit testing).
+    public func castAt(
+        x: Float,
+        y: Float,
+        nowMs: Int64,
+        rng: inout some FishingRandomGenerator
+    ) {
+        try? reloadAllStateFromDatabase()
+        let events = stateMachine.cast(
+            x: x,
+            y: y,
+            nowMs: nowMs,
+            currentHour: gameClock.hour,
+            currentMinute: gameClock.minute,
+            rng: &rng
+        )
+        refreshLineGeometry()
+        handleFishingUIEvents(events, nowMs: nowMs)
+
+        // In `GameView$c.run()`, `.missingTackleHold` (state 4) with `holdStateFlag == false`
+        // immediately transitions back to `.idle` on the next loop iteration.
+        if stateMachine.state == .missingTackleHold || stateMachine.state == .alarmPermissionHold {
+            let followUp = stateMachine.stepTick(
+                nowMs: nowMs,
+                fishnetCount: fishnetEntries.count,
+                overflowFcount: overflowFcount,
+                rng: &rng
+            )
+            handleFishingUIEvents(followUp, nowMs: nowMs)
+        }
+    }
+
+    /// Resets the current cast/fight back to `.idle` (`GameView.r()` -> `GameView$c.o()`).
+    public func resetCastToIdle() {
+        let events = stateMachine.resetToIdle()
+        currentLineCurve = nil
+        handleFishingUIEvents(events, nowMs: Int64(Date().timeIntervalSince1970 * 1000))
+    }
+
+    /// Sets whether the player is actively pressing/pulling the reel button (`GameView.setPulled`).
+    public func setReelPulled(_ pulled: Bool) {
+        stateMachine.setPulled(pulled)
+        refreshLineGeometry()
+    }
+
+    /// Advances the fishing state machine by one tick using `SystemFishingRandom`.
+    public func stepSimulationTick(nowMs: Int64 = Int64(Date().timeIntervalSince1970 * 1000)) {
+        stepSimulationTick(nowMs: nowMs, rng: &systemRng)
+    }
+
+    /// Advances the fishing state machine by one tick with an explicit RNG (`200ms` during fight, `300ms` otherwise).
+    /// Automatically persists any tackle wear/breakage and caught fish to SQLite when a fight concludes.
+    public func stepSimulationTick(
+        nowMs: Int64,
+        rng: inout some FishingRandomGenerator
+    ) {
+        let events = stateMachine.stepTick(
+            nowMs: nowMs,
+            fishnetCount: fishnetEntries.count,
+            overflowFcount: overflowFcount,
+            rng: &rng
+        )
+        handleFishingUIEvents(events, nowMs: nowMs)
+
+        // If `stepFightPhysics` transitioned the state machine into a terminal outcome state
+        // (`.fishCaught`, `.lineBroken`, `.rodBroken`, `.coilBroken`, `.fishEscaped`),
+        // persist the mutated `stateMachine.tackle` to SQLite first, then flush the terminal state
+        // transition back to `.idle` (matching `GameView$c.run()` switch cases 3, 5, 6, 7, 8).
+        switch stateMachine.state {
+        case .fishCaught, .lineBroken, .rodBroken, .coilBroken, .fishEscaped:
+            try? repository.syncAssembledTackleAfterFight(stateMachine.tackle)
+            let terminalEvents = stateMachine.stepTick(
+                nowMs: nowMs,
+                fishnetCount: fishnetEntries.count,
+                overflowFcount: overflowFcount,
+                rng: &rng
+            )
+            handleFishingUIEvents(terminalEvents, nowMs: nowMs)
+            try? reloadAllStateFromDatabase()
+            currentLineCurve = nil
+        default:
+            refreshLineGeometry()
+        }
+    }
+
+    /// Fast-forwards the waiting-for-bite timer (`scheduledBiteTimeMs + 1`) so the player or tester
+    /// can trigger the bite check immediately without waiting 15..84 seconds.
+    public func fastForwardToScheduledBite() {
+        guard stateMachine.state == .waitingForBite else { return }
+        let targetMs = stateMachine.scheduledBiteTimeMs + 1
+        stepSimulationTick(nowMs: targetMs, rng: &systemRng)
+    }
+
+    /// Advances the game clock by 1 in-game minute (`FishingService$a.run()`, every 2,000 ms real time).
+    public func stepGameClockMinute() {
+        let isPaidPond = currentPondItem?.requiresCoupon ?? false
+        var couponTicks: Int? = activeCoupon.map { max(1, $0.remainingTimeUnits / 2000) }
+        gameClock.tickOneGameMinute(isPaidPond: isPaidPond, activeCouponRemainingTicks: &couponTicks)
+        dayNightLighting = DayNightLighting.forHour(gameClock.hour)
+        stateMachine.timeOfDay = BiteTimeOfDay.from(hour: gameClock.hour, minute: gameClock.minute)
+    }
+
+    // MARK: - Internal Helpers
+
+    private func refreshLineGeometry() {
+        guard var bobber = stateMachine.bobber else {
+            currentLineCurve = nil
+            return
+        }
+        bobber.clampAndStep(
+            canvasWidth: stateMachine.viewWidth,
+            canvasHeight: stateMachine.viewHeight,
+            rng: &visualRng
+        )
+        if var line = stateMachine.lineGeometry {
+            currentLineCurve = line.stepAndBuildCurve(
+                rod: stateMachine.rodSprite,
+                bobber: bobber,
+                jitterRandom: visualRng.nextFloat()
+            )
+        }
+    }
+
+    private func handleFishingUIEvents(_ events: [FishingUIEvent], nowMs: Int64) {
+        for event in events {
+            switch event {
+            case .missingTackle(let missing):
+                activeAlert = .missingTackle(missingComponents: missing)
+
+            case .tensionChanged:
+                break
+
+            case .biteTriggered:
+                break
+
+            case .fishCaught(let caughtFish):
+                do {
+                    let result = try repository.recordCaughtFish(caughtFish, nowMs: nowMs)
+                    try reloadAllStateFromDatabase()
+                    activeAlert = .catchDialog(
+                        fish: caughtFish,
+                        result: result,
+                        isLucky25: ProgressionCalculator.isLuckyWeight25(caughtFish.weightGrams),
+                        isRepdigit: ProgressionCalculator.isRepdigitWeight(caughtFish.weightGrams),
+                        isCleanerTrash: ProgressionCalculator.isCleanerTrashCatch(fishId1Based: caughtFish.fish.id)
+                    )
+                } catch {
+                    activeAlert = .operationError(message: "Ошибка сохранения улова: \(error)")
+                }
+
+            case .lineBroken:
+                try? reloadAllStateFromDatabase()
+                activeAlert = .lineBroken
+
+            case .rodBroken:
+                try? reloadAllStateFromDatabase()
+                activeAlert = .rodBroken
+
+            case .coilBroken:
+                try? reloadAllStateFromDatabase()
+                activeAlert = .coilBroken
+
+            case .fishEscaped:
+                try? reloadAllStateFromDatabase()
+                activeAlert = .fishEscaped
+
+            case .missedBiteDuringSleep:
+                activeAlert = .missedBiteDuringSleep
+
+            case .exactAlarmPermissionRequired:
+                activeAlert = .exactAlarmPermissionRequired
+            }
+        }
+    }
+
+    private func describePersistenceError(_ error: PlayerPersistenceError) -> String {
+        switch error {
+        case .itemNotFoundInCatalog(let table, let id):
+            return "Предмет #\(id) не найден в таблице \(table)."
+        case .inventorySlotLimitReached(let maxSlots):
+            return "Достигнут лимит слотов в рюкзаке (максимум \(maxSlots))."
+        case .insufficientBalance(let required, let available):
+            return "Недостаточно монет: требуется \(required), у вас \(available)."
+        case .insufficientCategoryRank(let required, let current):
+            return "Недостаточный разряд: требуется \(required), ваш разряд \(current)."
+        case .onlineShopItemOnly:
+            return "Этот предмет продаётся только в онлайн-магазине за жемчуг."
+        case .activeCouponAlreadyExists:
+            return "У вас уже есть активный путевой купон."
+        case .integrityCheckFailed(let detail):
+            return "Ошибка проверки целостности данных: \(detail)"
+        case .invalidInventoryItem(let detail):
+            return "Ошибка инвентаря: \(detail)"
+        }
+    }
+}

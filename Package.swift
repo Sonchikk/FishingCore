@@ -15,6 +15,10 @@ let package = Package(
         .library(
             name: "FishingDatabase",
             targets: ["FishingDatabase"]
+        ),
+        .library(
+            name: "FishingGameApp",
+            targets: ["FishingGameApp"]
         )
     ],
     targets: [
@@ -31,6 +35,11 @@ let package = Package(
                 .linkedLibrary("sqlite3")
             ]
         ),
+        .target(
+            name: "FishingGameApp",
+            dependencies: ["FishingCore", "FishingDatabase"],
+            path: "Sources/FishingGameApp"
+        ),
         .testTarget(
             name: "FishingCoreTests",
             dependencies: ["FishingCore"],
@@ -40,6 +49,11 @@ let package = Package(
             name: "FishingDatabaseTests",
             dependencies: ["FishingCore", "FishingDatabase"],
             path: "Tests/FishingDatabaseTests"
+        ),
+        .testTarget(
+            name: "FishingGameAppTests",
+            dependencies: ["FishingCore", "FishingDatabase", "FishingGameApp"],
+            path: "Tests/FishingGameAppTests"
         )
     ]
 )
