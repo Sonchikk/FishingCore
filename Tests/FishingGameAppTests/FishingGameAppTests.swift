@@ -235,7 +235,14 @@ final class FishingGameAppTests: XCTestCase {
         let coordinator = try FishingAppCoordinator(databasePath: ":memory:", nowMs: 1000)
 
         let karas = coordinator.fishCatalogById[1]!
-        let luckyCatch = CaughtUserFish(fish: karas, weightGrams: 898, baitIndex: 0, catchTimeMs: 2000)
+        let luckyCatch = CaughtUserFish(
+            fish: karas,
+            weightGrams: 898,
+            pondIndex: 0,
+            baitIndex: 0,
+            rodWeightKg: 3,
+            catchTimeMs: 2000
+        )
         try coordinator.repository.evaluateAchievementsOnCatch(luckyCatch, nowMs: 2000)
 
         let ach2 = try coordinator.repository.loadAchievement(id: 2)
@@ -246,7 +253,14 @@ final class FishingGameAppTests: XCTestCase {
         XCTAssertEqual(ach9?.score, 898)
 
         let tireFish = coordinator.fishCatalogById[71]!
-        let tireCatch = CaughtUserFish(fish: tireFish, weightGrams: 1111, baitIndex: 0, catchTimeMs: 3000)
+        let tireCatch = CaughtUserFish(
+            fish: tireFish,
+            weightGrams: 1111,
+            pondIndex: 8,
+            baitIndex: 0,
+            rodWeightKg: 3,
+            catchTimeMs: 3000
+        )
         try coordinator.repository.evaluateAchievementsOnCatch(tireCatch, nowMs: 3000)
 
         let ach8 = try coordinator.repository.loadAchievement(id: 8)
@@ -275,7 +289,14 @@ final class FishingGameAppTests: XCTestCase {
         let coordinator = try FishingAppCoordinator(databasePath: ":memory:", nowMs: 1000)
         let karas = coordinator.fishCatalogById[1]!
 
-        let catch1 = CaughtUserFish(fish: karas, weightGrams: 5000, baitIndex: 0, catchTimeMs: 2000)
+        let catch1 = CaughtUserFish(
+            fish: karas,
+            weightGrams: 5000,
+            pondIndex: 0,
+            baitIndex: 0,
+            rodWeightKg: 5,
+            catchTimeMs: 2000
+        )
         let skipped = try coordinator.repository.evaluateQuestsOnCatch(
             catch1,
             playerCategory: 0,
@@ -296,7 +317,14 @@ final class FishingGameAppTests: XCTestCase {
         XCTAssertEqual(q1Step1?.progressRes, "5000")
         XCTAssertEqual(q1Step1?.made, 0)
 
-        let catch2 = CaughtUserFish(fish: karas, weightGrams: 16000, baitIndex: 0, catchTimeMs: 2200)
+        let catch2 = CaughtUserFish(
+            fish: karas,
+            weightGrams: 16000,
+            pondIndex: 0,
+            baitIndex: 0,
+            rodWeightKg: 17,
+            catchTimeMs: 2200
+        )
         let q1Completed = try coordinator.repository.evaluateQuestsOnCatch(
             catch2,
             playerCategory: 0,
@@ -309,7 +337,14 @@ final class FishingGameAppTests: XCTestCase {
         XCTAssertEqual(q1Completed?.made, 1)
 
         let plotva = coordinator.fishCatalogById[3]!
-        let inRangeCatch = CaughtUserFish(fish: plotva, weightGrams: 750, baitIndex: 1, catchTimeMs: 3000)
+        let inRangeCatch = CaughtUserFish(
+            fish: plotva,
+            weightGrams: 750,
+            pondIndex: 0,
+            baitIndex: 1,
+            rodWeightKg: 3,
+            catchTimeMs: 3000
+        )
         let q2Step = try coordinator.repository.evaluateQuestsOnCatch(
             inRangeCatch,
             playerCategory: 0,
