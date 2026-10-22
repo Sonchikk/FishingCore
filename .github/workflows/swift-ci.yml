@@ -1,27 +1,29 @@
+
 name: iOS 18+ Swift 6 CI (FishingCore & FishingDatabase)
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
   workflow_dispatch:
 
 jobs:
   swift-test-macos:
-    name: Build & Test on macOS 15 (Xcode 16 / Swift 6)
+    name: Build & Test on macOS 15
     runs-on: macos-15
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Select Xcode 16.0+
+      - name: Show Swift and Xcode versions
         run: |
-          sudo xcode-select -s /Applications/Xcode_16.0.app/Contents/Developer || true
           swift --version
+          xcodebuild -version
 
       - name: Build FishingCore and FishingDatabase
         run: swift build -v
 
-      - name: Run Unit Tests (FishingCoreTests & FishingDatabaseTests)
+      - name: Run Unit Tests
         run: swift test --parallel -v
