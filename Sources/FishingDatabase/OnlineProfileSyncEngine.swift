@@ -314,7 +314,7 @@ extension PlayerStateRepository {
         }
 
         let passHash = FishingNetworkCrypto.doubleMd5Password(password)
-        let newRank = balanceTables.playerRank(forExperience: exp)
+        let newRank = ProgressionCalculator.categoryForExperience(exp, balanceTables: balanceTables)
 
         return try connection.transaction {
             // 1 & 2: Restore `user_data` (`experience`, `category`, `balance`, `login`, `password`)
