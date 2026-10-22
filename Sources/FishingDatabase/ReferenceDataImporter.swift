@@ -1,9 +1,17 @@
 import Foundation
 import FishingCore
 
-// MARK: - Codable DTOs for Phase 2 Extracted JSON Files (`data/*.json`)
+// MARK: - Codable DTOs for Phase 2 Extracted JSON Files (`data/*.json`) & Test Fixtures
 
 public struct FishesJSONFile: Decodable, Sendable {
+    public struct LocalizedNames: Decodable, Sendable {
+        public let ru: String?
+        public let en: String?
+        public let de: String?
+        public let es: String?
+        public let pt: String?
+    }
+
     public struct Item: Decodable, Sendable {
         public let id: Int
         public let name_ru: String
@@ -14,7 +22,59 @@ public struct FishesJSONFile: Decodable, Sendable {
         public let stamina: Int
         public let intelligence: Int
         public let aggression: Int
+
+        enum CodingKeys: String, CodingKey {
+            case id
+            case name_ru
+            case name
+            case names_i18n
+            case image_res_id
+            case image
+            case unit_weight_grams
+            case unitWeight
+            case unit_weight
+            case unit_price_coins
+            case unitPrice
+            case unit_price
+            case strength
+            case stamina
+            case intelligence
+            case aggression
+        }
+
+        public init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            self.id = try c.decode(Int.self, forKey: .id)
+            if let nameRu = try c.decodeIfPresent(String.self, forKey: .name_ru) {
+                self.name_ru = nameRu
+            } else if let i18n = try c.decodeIfPresent(LocalizedNames.self, forKey: .names_i18n), let ru = i18n.ru {
+                self.name_ru = ru
+            } else {
+                self.name_ru = try c.decode(String.self, forKey: .name)
+            }
+            self.image_res_id = try c.decodeIfPresent(Int.self, forKey: .image_res_id)
+                ?? c.decode(Int.self, forKey: .image)
+            if let uw = try c.decodeIfPresent(Int.self, forKey: .unit_weight_grams) {
+                self.unit_weight_grams = uw
+            } else if let uw = try c.decodeIfPresent(Int.self, forKey: .unitWeight) {
+                self.unit_weight_grams = uw
+            } else {
+                self.unit_weight_grams = try c.decode(Int.self, forKey: .unit_weight)
+            }
+            if let up = try c.decodeIfPresent(Int.self, forKey: .unit_price_coins) {
+                self.unit_price_coins = up
+            } else if let up = try c.decodeIfPresent(Int.self, forKey: .unitPrice) {
+                self.unit_price_coins = up
+            } else {
+                self.unit_price_coins = try c.decode(Int.self, forKey: .unit_price)
+            }
+            self.strength = try c.decode(Int.self, forKey: .strength)
+            self.stamina = try c.decode(Int.self, forKey: .stamina)
+            self.intelligence = try c.decode(Int.self, forKey: .intelligence)
+            self.aggression = try c.decode(Int.self, forKey: .aggression)
+        }
     }
+
     public let items: [Item]
 
     enum CodingKeys: String, CodingKey {
@@ -32,39 +92,6 @@ public struct FishesJSONFile: Decodable, Sendable {
     }
 }
 
-extension FishesJSONFile.Item {
-    enum CodingKeys: String, CodingKey {
-        case id
-        case name_ru
-        case image_res_id
-        case image
-        case unit_weight_grams
-        case unit_weight
-        case unit_price_coins
-        case unit_price
-        case strength
-        case stamina
-        case intelligence
-        case aggression
-    }
-
-    public init(from decoder: Decoder) throws {
-        let c = try decoder.container(keyedBy: CodingKeys.self)
-        self.id = try c.decode(Int.self, forKey: .id)
-        self.name_ru = try c.decode(String.self, forKey: .name_ru)
-        self.image_res_id = try c.decodeIfPresent(Int.self, forKey: .image_res_id)
-            ?? c.decode(Int.self, forKey: .image)
-        self.unit_weight_grams = try c.decodeIfPresent(Int.self, forKey: .unit_weight_grams)
-            ?? c.decode(Int.self, forKey: .unit_weight)
-        self.unit_price_coins = try c.decodeIfPresent(Int.self, forKey: .unit_price_coins)
-            ?? c.decode(Int.self, forKey: .unit_price)
-        self.strength = try c.decode(Int.self, forKey: .strength)
-        self.stamina = try c.decode(Int.self, forKey: .stamina)
-        self.intelligence = try c.decode(Int.self, forKey: .intelligence)
-        self.aggression = try c.decode(Int.self, forKey: .aggression)
-    }
-}
-
 public struct BaitsJSONFile: Decodable, Sendable {
     public struct Item: Decodable, Sendable {
         public let id: Int
@@ -74,16 +101,18 @@ public struct BaitsJSONFile: Decodable, Sendable {
         public let price_coins: Int
 
         enum CodingKeys: String, CodingKey {
-            case id, name_ru, image_res_id, image, stock_amount, price_coins, price
+            case id, name_ru, name, image_res_id, image, stock_amount, stockAmount, price_coins, price
         }
 
         public init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
             self.id = try c.decode(Int.self, forKey: .id)
-            self.name_ru = try c.decode(String.self, forKey: .name_ru)
+            self.name_ru = try c.decodeIfPresent(String.self, forKey: .name_ru)
+                ?? c.decode(String.self, forKey: .name)
             self.image_res_id = try c.decodeIfPresent(Int.self, forKey: .image_res_id)
                 ?? c.decode(Int.self, forKey: .image)
-            self.stock_amount = try c.decode(Int.self, forKey: .stock_amount)
+            self.stock_amount = try c.decodeIfPresent(Int.self, forKey: .stock_amount)
+                ?? c.decode(Int.self, forKey: .stockAmount)
             self.price_coins = try c.decodeIfPresent(Int.self, forKey: .price_coins)
                 ?? c.decode(Int.self, forKey: .price)
         }
@@ -105,15 +134,20 @@ public struct FishingRodsJSONFile: Decodable, Sendable {
         public let price_coins: Int
 
         enum CodingKeys: String, CodingKey {
-            case id, name, max_weight_kg, weight, price_coins, price
+            case id, name, max_weight_kg_db, max_weight_kg, weight, price_coins, price
         }
 
         public init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
             self.id = try c.decode(Int.self, forKey: .id)
             self.name = try c.decode(String.self, forKey: .name)
-            self.max_weight_kg = try c.decodeIfPresent(Int.self, forKey: .max_weight_kg)
-                ?? c.decode(Int.self, forKey: .weight)
+            if let w = try c.decodeIfPresent(Int.self, forKey: .max_weight_kg_db) {
+                self.max_weight_kg = w
+            } else if let w = try c.decodeIfPresent(Int.self, forKey: .max_weight_kg) {
+                self.max_weight_kg = w
+            } else {
+                self.max_weight_kg = try c.decode(Int.self, forKey: .weight)
+            }
             self.price_coins = try c.decodeIfPresent(Int.self, forKey: .price_coins)
                 ?? c.decode(Int.self, forKey: .price)
         }
@@ -136,19 +170,32 @@ public struct FishingLinesJSONFile: Decodable, Sendable {
         public let stock_length_m: Int
 
         enum CodingKeys: String, CodingKey {
-            case id, name, max_weight_kg, weight, price_coins, price, stock_length_m, stock_length
+            case id, name, max_weight_kg_db, max_weight_kg, weight, price_coins, price
+            case stock_length_meters, stock_length_m, stockLength, stock_length
         }
 
         public init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
             self.id = try c.decode(Int.self, forKey: .id)
             self.name = try c.decode(String.self, forKey: .name)
-            self.max_weight_kg = try c.decodeIfPresent(Int.self, forKey: .max_weight_kg)
-                ?? c.decode(Int.self, forKey: .weight)
+            if let w = try c.decodeIfPresent(Int.self, forKey: .max_weight_kg_db) {
+                self.max_weight_kg = w
+            } else if let w = try c.decodeIfPresent(Int.self, forKey: .max_weight_kg) {
+                self.max_weight_kg = w
+            } else {
+                self.max_weight_kg = try c.decode(Int.self, forKey: .weight)
+            }
             self.price_coins = try c.decodeIfPresent(Int.self, forKey: .price_coins)
                 ?? c.decode(Int.self, forKey: .price)
-            self.stock_length_m = try c.decodeIfPresent(Int.self, forKey: .stock_length_m)
-                ?? c.decode(Int.self, forKey: .stock_length)
+            if let len = try c.decodeIfPresent(Int.self, forKey: .stock_length_meters) {
+                self.stock_length_m = len
+            } else if let len = try c.decodeIfPresent(Int.self, forKey: .stock_length_m) {
+                self.stock_length_m = len
+            } else if let len = try c.decodeIfPresent(Int.self, forKey: .stockLength) {
+                self.stock_length_m = len
+            } else {
+                self.stock_length_m = try c.decode(Int.self, forKey: .stock_length)
+            }
         }
     }
     public let items: [Item]
@@ -168,14 +215,15 @@ public struct CoilsJSONFile: Decodable, Sendable {
         public let price_coins: Int
 
         enum CodingKeys: String, CodingKey {
-            case id, name, bearing_count, price_coins, price
+            case id, name, bearing_count, bearingCount, price_coins, price
         }
 
         public init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
             self.id = try c.decode(Int.self, forKey: .id)
             self.name = try c.decode(String.self, forKey: .name)
-            self.bearing_count = try c.decode(Int.self, forKey: .bearing_count)
+            self.bearing_count = try c.decodeIfPresent(Int.self, forKey: .bearing_count)
+                ?? c.decode(Int.self, forKey: .bearingCount)
             self.price_coins = try c.decodeIfPresent(Int.self, forKey: .price_coins)
                 ?? c.decode(Int.self, forKey: .price)
         }
@@ -197,14 +245,15 @@ public struct HooksJSONFile: Decodable, Sendable {
         public let price_coins: Int
 
         enum CodingKeys: String, CodingKey {
-            case id, name, stock_amount, price_coins, price
+            case id, name, stock_amount, stockAmount, price_coins, price
         }
 
         public init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
             self.id = try c.decode(Int.self, forKey: .id)
             self.name = try c.decode(String.self, forKey: .name)
-            self.stock_amount = try c.decode(Int.self, forKey: .stock_amount)
+            self.stock_amount = try c.decodeIfPresent(Int.self, forKey: .stock_amount)
+                ?? c.decode(Int.self, forKey: .stockAmount)
             self.price_coins = try c.decodeIfPresent(Int.self, forKey: .price_coins)
                 ?? c.decode(Int.self, forKey: .price)
         }
@@ -227,7 +276,7 @@ public struct CouponsJSONFile: Decodable, Sendable {
         public let dn_duration_units: Int
 
         enum CodingKeys: String, CodingKey {
-            case id, name_ru, name, day_count, price_coins, price, dn_duration_units, dn
+            case id, name_ru, name, day_count, dayCount, price_coins, price, dn_duration_units, dn
         }
 
         public init(from decoder: Decoder) throws {
@@ -235,7 +284,8 @@ public struct CouponsJSONFile: Decodable, Sendable {
             self.id = try c.decode(Int.self, forKey: .id)
             self.name_ru = try c.decodeIfPresent(String.self, forKey: .name_ru)
                 ?? c.decode(String.self, forKey: .name)
-            self.day_count = try c.decode(Int.self, forKey: .day_count)
+            self.day_count = try c.decodeIfPresent(Int.self, forKey: .day_count)
+                ?? c.decode(Int.self, forKey: .dayCount)
             self.price_coins = try c.decodeIfPresent(Int.self, forKey: .price_coins)
                 ?? c.decode(Int.self, forKey: .price)
             self.dn_duration_units = try c.decodeIfPresent(Int.self, forKey: .dn_duration_units)
@@ -342,12 +392,29 @@ public struct PondsJSONFile: Decodable, Sendable {
     public struct CatchableFishEntry: Decodable, Sendable {
         public let fish_index_0based: Int
         public let fish_db_id: Int
+
+        public init(fish_index_0based: Int, fish_db_id: Int) {
+            self.fish_index_0based = fish_index_0based
+            self.fish_db_id = fish_db_id
+        }
     }
     public struct BaitSlotCatchEntry: Decodable, Sendable {
         public let bait_slot_index: Int
         public let bait_index_0based: Int
         public let bait_db_id: Int
         public let catchable_fishes: [CatchableFishEntry]
+
+        public init(
+            bait_slot_index: Int,
+            bait_index_0based: Int,
+            bait_db_id: Int,
+            catchable_fishes: [CatchableFishEntry]
+        ) {
+            self.bait_slot_index = bait_slot_index
+            self.bait_index_0based = bait_index_0based
+            self.bait_db_id = bait_db_id
+            self.catchable_fishes = catchable_fishes
+        }
     }
     public struct SpeciesWeightEntry: Decodable, Sendable {
         public let fish_index_0based: Int
@@ -359,18 +426,70 @@ public struct PondsJSONFile: Decodable, Sendable {
         public let fish_index_0based: Int
         public let fish_db_id: Int
         public let bite_probability_percent: Int
+
+        enum CodingKeys: String, CodingKey {
+            case fish_index_0based
+            case fish_db_id
+            case bite_probability_percent
+            case probability_percent
+        }
+
+        public init(fish_index_0based: Int, fish_db_id: Int, bite_probability_percent: Int) {
+            self.fish_index_0based = fish_index_0based
+            self.fish_db_id = fish_db_id
+            self.bite_probability_percent = bite_probability_percent
+        }
+
+        public init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            let idx0 = try c.decode(Int.self, forKey: .fish_index_0based)
+            self.fish_index_0based = idx0
+            self.fish_db_id = try c.decodeIfPresent(Int.self, forKey: .fish_db_id) ?? (idx0 + 1)
+            self.bite_probability_percent = try c.decodeIfPresent(Int.self, forKey: .bite_probability_percent)
+                ?? c.decode(Int.self, forKey: .probability_percent)
+        }
     }
     public struct TimeSlotFactor: Decodable, Sendable {
         public let bait_slot_index: Int
         public let bait_index_0based: Int
         public let fish_probabilities: [TimeSlotFishProb]
+
+        public init(bait_slot_index: Int, bait_index_0based: Int, fish_probabilities: [TimeSlotFishProb]) {
+            self.bait_slot_index = bait_slot_index
+            self.bait_index_0based = bait_index_0based
+            self.fish_probabilities = fish_probabilities
+        }
     }
     public struct TimeOfDayFactors: Decodable, Sendable {
         public let morning: [TimeSlotFactor]
         public let afternoon: [TimeSlotFactor]
         public let evening: [TimeSlotFactor]
         public let night: [TimeSlotFactor]
+
+        public init(
+            morning: [TimeSlotFactor],
+            afternoon: [TimeSlotFactor],
+            evening: [TimeSlotFactor],
+            night: [TimeSlotFactor]
+        ) {
+            self.morning = morning
+            self.afternoon = afternoon
+            self.evening = evening
+            self.night = night
+        }
     }
+
+    public struct ResolvedBaitSlotDTO: Decodable, Sendable {
+        public let slot_index: Int
+        public let bait_index_0based: Int
+        public let bait_db_id: Int
+        public let catchable_fish_indices_0based: [Int]
+        public let morning_probabilities: [TimeSlotFishProb]
+        public let afternoon_probabilities: [TimeSlotFishProb]
+        public let evening_probabilities: [TimeSlotFishProb]
+        public let night_probabilities: [TimeSlotFishProb]
+    }
+
     public struct PondEntry: Decodable, Sendable {
         public let pond_data_id: Int
         public let ui_display_index: Int
@@ -392,12 +511,15 @@ public struct PondsJSONFile: Decodable, Sendable {
 
         enum CodingKeys: String, CodingKey {
             case pond_data_id, ui_display_index, chat_pond_id
-            case name_ru, name_en, name_de, name_es, name_pt
+            case name_ru, name_en, name_de, name_es, name_pt, names_i18n
             case required_rank, requires_coupon
-            case pond_image_res_id, pond_image_name
-            case big_pond_image_res_id, big_pond_image_name
+            case pond_image_res_id, pondImage, pond_image_name, pondImage_res_name
+            case big_pond_image_res_id, bigPondImage, big_pond_image_name, bigPondImage_res_name
+            case bait_Slots_and_catches
             case bait_slots_and_catches
+            case resolved_bait_slots
             case species_weights
+            case resolved_species
             case time_of_day_bite_factors
         }
 
@@ -407,28 +529,89 @@ public struct PondsJSONFile: Decodable, Sendable {
             self.ui_display_index = try c.decode(Int.self, forKey: .ui_display_index)
             self.chat_pond_id = try c.decode(Int.self, forKey: .chat_pond_id)
             self.name_ru = try c.decode(String.self, forKey: .name_ru)
-            self.name_en = try c.decode(String.self, forKey: .name_en)
-            self.name_de = try c.decode(String.self, forKey: .name_de)
-            self.name_es = try c.decode(String.self, forKey: .name_es)
-            self.name_pt = try c.decode(String.self, forKey: .name_pt)
+
+            let i18n = try c.decodeIfPresent(FishesJSONFile.LocalizedNames.self, forKey: .names_i18n)
+            self.name_en = try c.decodeIfPresent(String.self, forKey: .name_en) ?? i18n?.en ?? ""
+            self.name_de = try c.decodeIfPresent(String.self, forKey: .name_de) ?? i18n?.de ?? ""
+            self.name_es = try c.decodeIfPresent(String.self, forKey: .name_es) ?? i18n?.es ?? ""
+            self.name_pt = try c.decodeIfPresent(String.self, forKey: .name_pt) ?? i18n?.pt ?? ""
+
             self.required_rank = try c.decode(Int.self, forKey: .required_rank)
             self.requires_coupon = try c.decode(Bool.self, forKey: .requires_coupon)
-            self.pond_image_res_id = try c.decode(Int.self, forKey: .pond_image_res_id)
-            self.pond_image_name = try c.decode(String.self, forKey: .pond_image_name)
-            self.big_pond_image_res_id = try c.decode(Int.self, forKey: .big_pond_image_res_id)
-            self.big_pond_image_name = try c.decode(String.self, forKey: .big_pond_image_name)
-            self.bait_Slots_and_catches = try c.decode([BaitSlotCatchEntry].self, forKey: .bait_slots_and_catches)
-            self.species_weights = try c.decode([SpeciesWeightEntry].self, forKey: .species_weights)
-            self.time_of_day_bite_factors = try c.decode(TimeOfDayFactors.self, forKey: .time_of_day_bite_factors)
+
+            self.pond_image_res_id = try c.decodeIfPresent(Int.self, forKey: .pond_image_res_id)
+                ?? c.decode(Int.self, forKey: .pondImage)
+            self.pond_image_name = try c.decodeIfPresent(String.self, forKey: .pond_image_name)
+                ?? c.decode(String.self, forKey: .pondImage_res_name)
+            self.big_pond_image_res_id = try c.decodeIfPresent(Int.self, forKey: .big_pond_image_res_id)
+                ?? c.decode(Int.self, forKey: .bigPondImage)
+            self.big_pond_image_name = try c.decodeIfPresent(String.self, forKey: .big_pond_image_name)
+                ?? c.decode(String.self, forKey: .bigPondImage_res_name)
+
+            if let slotsUpper = try c.decodeIfPresent([BaitSlotCatchEntry].self, forKey: .bait_Slots_and_catches) {
+                self.bait_Slots_and_catches = slotsUpper
+                self.species_weights = try c.decode([SpeciesWeightEntry].self, forKey: .species_weights)
+                self.time_of_day_bite_factors = try c.decode(TimeOfDayFactors.self, forKey: .time_of_day_bite_factors)
+            } else if let slotsLower = try c.decodeIfPresent([BaitSlotCatchEntry].self, forKey: .bait_slots_and_catches) {
+                self.bait_Slots_and_catches = slotsLower
+                self.species_weights = try c.decode([SpeciesWeightEntry].self, forKey: .species_weights)
+                self.time_of_day_bite_factors = try c.decode(TimeOfDayFactors.self, forKey: .time_of_day_bite_factors)
+            } else {
+                let resolvedSlots = try c.decode([ResolvedBaitSlotDTO].self, forKey: .resolved_bait_slots)
+                self.bait_Slots_and_catches = resolvedSlots.map { rs in
+                    BaitSlotCatchEntry(
+                        bait_slot_index: rs.slot_index,
+                        bait_index_0based: rs.bait_index_0based,
+                        bait_db_id: rs.bait_db_id,
+                        catchable_fishes: rs.catchable_fish_indices_0based.map { idx0 in
+                            CatchableFishEntry(fish_index_0based: idx0, fish_db_id: idx0 + 1)
+                        }
+                    )
+                }
+                self.species_weights = try c.decode([SpeciesWeightEntry].self, forKey: .resolved_species)
+                self.time_of_day_bite_factors = TimeOfDayFactors(
+                    morning: resolvedSlots.map {
+                        TimeSlotFactor(bait_slot_index: $0.slot_index, bait_index_0based: $0.bait_index_0based, fish_probabilities: $0.morning_probabilities)
+                    },
+                    afternoon: resolvedSlots.map {
+                        TimeSlotFactor(bait_slot_index: $0.slot_index, bait_index_0based: $0.bait_index_0based, fish_probabilities: $0.afternoon_probabilities)
+                    },
+                    evening: resolvedSlots.map {
+                        TimeSlotFactor(bait_slot_index: $0.slot_index, bait_index_0based: $0.bait_index_0based, fish_probabilities: $0.evening_probabilities)
+                    },
+                    night: resolvedSlots.map {
+                        TimeSlotFactor(bait_slot_index: $0.slot_index, bait_index_0based: $0.bait_index_0based, fish_probabilities: $0.night_probabilities)
+                    }
+                )
+            }
         }
     }
     public let ponds: [PondEntry]
+
+    enum CodingKeys: String, CodingKey {
+        case ponds
+        case ponds_by_data_id
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        if let ponds = try c.decodeIfPresent([PondEntry].self, forKey: .ponds) {
+            self.ponds = ponds
+        } else {
+            self.ponds = try c.decode([PondEntry].self, forKey: .ponds_by_data_id)
+        }
+    }
 }
 
 public struct ProgressionAndBalanceJSONFile: Decodable, Sendable {
     public struct RankEntry: Decodable, Sendable {
         public let rank_index_1based: Int
         public let required_experience: Int
+
+        public init(rank_index_1based: Int, required_experience: Int) {
+            self.rank_index_1based = rank_index_1based
+            self.required_experience = required_experience
+        }
 
         enum CodingKeys: String, CodingKey {
             case rank_index_1based, rank, required_experience
@@ -441,7 +624,32 @@ public struct ProgressionAndBalanceJSONFile: Decodable, Sendable {
             self.required_experience = try c.decode(Int.self, forKey: .required_experience)
         }
     }
+
+    private struct D0DTablesContainer: Decodable {
+        struct IntArrayTable: Decodable {
+            let values: [Int]
+        }
+        let j_player_rank_exp_thresholds_45: IntArrayTable
+    }
+
     public let rank_progression: [RankEntry]
+
+    enum CodingKeys: String, CodingKey {
+        case rank_progression
+        case d0_d_tables
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        if let ranks = try c.decodeIfPresent([RankEntry].self, forKey: .rank_progression) {
+            self.rank_progression = ranks
+        } else {
+            let tables = try c.decode(D0DTablesContainer.self, forKey: .d0_d_tables)
+            self.rank_progression = tables.j_player_rank_exp_thresholds_45.values.enumerated().map { idx, exp in
+                RankEntry(rank_index_1based: idx + 1, required_experience: exp)
+            }
+        }
+    }
 }
 
 // MARK: - Reference Catalog Importer & Query Service
