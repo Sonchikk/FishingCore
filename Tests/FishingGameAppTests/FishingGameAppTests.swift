@@ -356,4 +356,205 @@ final class FishingGameAppTests: XCTestCase {
         XCTAssertEqual(q2Step?.progressRes, "1,0,0")
         XCTAssertEqual(q2Step?.made, 0)
     }
+
+
+    // MARK: - 10. Phase 8: Network Crypto — Double-MD5 (`F0.h`), 10-Column Permutation (`F0.t.a`), `X-Fish-*` Headers & Cooldown
+
+    func testNetworkCryptoDoubleMd5PermutationF0tAndXFishHeaders() throws {
+        XCTAssertEqual(FishingNetworkCrypto.appSignConstant, "baa4d19bbde3a629d99fcd7e7d89beae")
+        XCTAssertEqual(FishingHttpEndpoint.allCases.count, 17)
+
+        let singleMd5 = FishingChecksum.md5("secret123")
+        let expectedDoubleMd5 = FishingChecksum.md5(singleMd5)
+        XCTAssertEqual(FishingNetworkCrypto.doubleMd5Password("secret123"), expectedDoubleMd5)
+        XCTAssertEqual(expectedDoubleMd5.count, 32)
+
+        let sampleFolp = "0:0:0:1250:0"
+        let encodedPi0 = FishingNetworkCrypto.encodeF0t(sampleFolp, simpleBase64: false, permVariant: 0)
+        XCTAssertEqual(encodedPi0.count % 10, 0)
+        XCTAssertEqual(FishingNetworkCrypto.decodeF0t(encodedPi0, simpleBase64: false, permVariant: 0), sampleFolp)
+
+        let encodedPi1 = FishingNetworkCrypto.encodeF0t("fisherman:ZWY=:0:baa4d19bbde3a629d99fcd7e7d89beae", simpleBase64: false, permVariant: 1)
+        XCTAssertEqual(encodedPi1.count % 10, 0)
+        XCTAssertEqual(
+            FishingNetworkCrypto.decodeF0t(encodedPi1, simpleBase64: false, permVariant: 1),
+            "fisherman:ZWY=:0:baa4d19bbde3a629d99fcd7e7d89beae"
+        )
+
+        let folpHeader = FishingNetworkCrypto.makeFishCatchFolpHeader(
+            pondId0Based: 2,
+            baitId0Based: 5,
+            fishId0Based: 70,
+            weightGrams: 4800,
+            tourType: 1
+        )
+        XCTAssertEqual(FishingNetworkCrypto.decodeF0t(folpHeader, simpleBase64: false, permVariant: 0), "2:5:70:4800:1")
+
+        XCTAssertEqual(FishingNetworkCrypto.truncateTournamentHeaderString("Турнир дня\r\n"), "Турнир дн")
+        XCTAssertEqual(FishingNetworkCrypto.truncateTournamentHeaderString("Без переноса"), "Без переноса")
+
+        var limiter = AuthAttemptLimiter()
+        XCTAssertNil(limiter.registerAttempt(nowSeconds: 1000))
+        XCTAssertNil(limiter.registerAttempt(nowSeconds: 1010))
+        XCTAssertNil(limiter.registerAttempt(nowSeconds: 1020))
+        let cooldown = limiter.registerAttempt(nowSeconds: 1050)
+        XCTAssertEqual(cooldown, 150)
+    }
+
+    // MARK: - 11. Phase 8: 7-Section `auth.php` Profile & Inventory Restore (`C0.a.l`) + `X-Fish-Fach` / `X-Fish-Fqst`
+
+    func testAuthProfile7SectionRestoreAndFachFqstHeaders() throws {
+        let coordinator = try FishingAppCoordinator(databasePath: ":memory:", nowMs: 1000)
+
+        let authPayload = "4500;125000;kosrep:5:92|dasf:1900:100|not|not|not;terf:2:88|wectern:10:95|not|not|not;kosp:6:90|big fish:2150:100|not|not|not;2:1500:1|9:250000:1;1|1|0|0|1"
+
+        let summary = try coordinator.restoreFromOnlineAuthResponse(
+            authPayload,
+            login: "angler_pro",
+            password: "myPassword",
+            nowMs: 5000
+        )
+
+        XCTAssertEqual(summary.experience, 4500)
+        XCTAssertEqual(summary.categoryRank, 3)
+        XCTAssertEqual(summary.balanceCoins, 125000)
+        XCTAssertEqual(summary.restoredRodsCount, 2)
+        XCTAssertEqual(summary.restoredCoilsCount, 2)
+        XCTAssertEqual(summary.restoredLinesCount, 2)
+        XCTAssertEqual(summary.restoredAchievementsCount, 2)
+        XCTAssertEqual(summary.restoredQuestsCount, 5)
+
+        XCTAssertEqual(coordinator.profile.login, "angler_pro")
+        XCTAssertEqual(coordinator.profile.balance, 125000)
+        XCTAssertEqual(coordinator.profile.category, 3)
+        XCTAssertTrue(try coordinator.repository.verifyPlayerProfileIntegrity())
+
+        let dasfSpec = try coordinator.catalog.loadFishingRodSpec(id: 13)
+        XCTAssertEqual(dasfSpec?.weight, 1900)
+        XCTAssertTrue(try coordinator.catalog.verifyDataSign(.fishingRods))
+        XCTAssertTrue(try coordinator.catalog.verifyDataSign(.coils))
+        XCTAssertTrue(try coordinator.catalog.verifyDataSign(.fishingLines))
+
+        let fach = try coordinator.repository.buildFachHeader()
+        XCTAssertTrue(fach.contains("2:1500:1|"))
+        XCTAssertTrue(fach.contains("9:250000:1|"))
+
+        let fqst = try coordinator.repository.buildFqstHeader()
+        XCTAssertTrue(fqst.hasPrefix("1|1|0|0|1|"))
+    }
+
+    // MARK: - 12. Phase 8: 37-Field `online.php` CSV Parser (`MainActivity$d.c`)
+
+    func testOnlineShop37FieldCsvUpdatesOnlineTackleAndDataSigns() throws {
+        let coordinator = try FishingAppCoordinator(databasePath: ":memory:", nowMs: 1000)
+
+        let csv = "350,525,680,1900,100,150,250,8,9,10,80,120,200,600,810,2150,150,200,300,50,90,160,0,0,0,0,0,0,0,0,10,25,45,70,100,150,200,note=4"
+
+        let snapshot = try coordinator.syncOnlineShopFromCSV(csv, nowMs: 2000)
+        XCTAssertEqual(snapshot.pearlsBalance, 350)
+        XCTAssertEqual(snapshot.onlineRodWeightsKg, [525, 680, 1900])
+        XCTAssertEqual(snapshot.onlineCoilBearings, [8, 9, 10])
+        XCTAssertEqual(snapshot.onlineLineWeightsKg, [600, 810, 2150])
+        XCTAssertEqual(snapshot.onlineLineStockLengthsM, [150, 200, 300])
+        XCTAssertEqual(snapshot.couponPearlPrices, [10, 25, 45, 70, 100, 150, 200])
+        XCTAssertEqual(snapshot.unreadNotesCount, 4)
+
+        XCTAssertEqual(try coordinator.catalog.loadFishingRodSpec(id: 11)?.weight, 525)
+        XCTAssertEqual(try coordinator.catalog.loadFishingRodSpec(id: 13)?.weight, 1900)
+        XCTAssertEqual(try coordinator.catalog.loadCoilSpec(id: 10)?.bearingCount, 10)
+        XCTAssertEqual(try coordinator.catalog.loadFishingLineSpec(id: 16)?.weight, 2150)
+        XCTAssertEqual(try coordinator.catalog.loadFishingLineSpec(id: 16)?.stockLength, 300)
+        XCTAssertTrue(try coordinator.catalog.verifyDataSign(.fishingRods))
+        XCTAssertTrue(try coordinator.catalog.verifyDataSign(.coils))
+        XCTAssertTrue(try coordinator.catalog.verifyDataSign(.fishingLines))
+    }
+
+    // MARK: - 13. Phase 8: Java Object Stream (`0xACED0005`) Binary Serialization & `Handler.selector`
+
+    func testJavaObjectStreamBinaryCodecAndChatProtocolSelector() throws {
+        let coordinator = try FishingAppCoordinator(databasePath: ":memory:", nowMs: 1000)
+
+        let openMess = ChatProtocolSelector.makeOpenHandshakeMess(
+            userId: 42,
+            login: "fisher42",
+            pondRoom: 0,
+            installationUuid: "00000000-0000-0000-0000-000000000000"
+        )
+        let openData = JavaObjectStreamCodec.encodeMess(openMess)
+        let bytes = [UInt8](openData)
+        XCTAssertEqual(bytes[0], 0xAC)
+        XCTAssertEqual(bytes[1], 0xED)
+        XCTAssertEqual(bytes[2], 0x00)
+        XCTAssertEqual(bytes[3], 0x05)
+
+        let decodedOpen = try JavaObjectStreamCodec.decodeMess(from: openData)
+        XCTAssertEqual(decodedOpen, openMess)
+
+        let sampleTour = ChatTourModel(
+            active: 1,
+            bait: 1,
+            cond: 1500.0,
+            fee: 500,
+            feed: false,
+            finish: 1_700_010_000_000,
+            fish: 1,
+            id: 77,
+            leftToFinish: 1800,
+            leftToStart: 0,
+            pond: 0,
+            reg: true,
+            start: 1_700_000_000_000,
+            vip: false,
+            desc: "Поймать максимального карася",
+            fond: "50 000 монет",
+            title: "Кубок Кедрового острова",
+            type: "max",
+            users: ["fisher42", "champion"]
+        )
+        let serverUD = ChatServerUserData(lv: 12, money: 95000, prem: 1, rmoney: 250, xp: 45000)
+        let initMess = ChatMess(
+            fromID: -1,
+            prem: 0,
+            room: 0,
+            from: "-1",
+            object: .initObject(ChatInitObject(tours: [sampleTour], userData: serverUD)),
+            text: "initialize",
+            timeEpochMs: 1_700_000_005_000,
+            to: "fisher42"
+        )
+        let initPacket = JavaObjectStreamCodec.encodeMess(initMess)
+        let initOutcome = try coordinator.receiveChatStreamPacket(initPacket, currentUserId: 42)
+        XCTAssertEqual(initOutcome, .initialized(ChatInitObject(tours: [sampleTour], userData: serverUD)))
+        XCTAssertEqual(coordinator.onlineTours.count, 1)
+        XCTAssertEqual(coordinator.onlineTours.first?.title, "Кубок Кедрового острова")
+
+        let users: [ChatUserOnline] = [
+            ChatUserOnline(frig: 0, id: 10, lv: 5, online: true, pond: 0, login: "pondPeer"),
+            ChatUserOnline(frig: 1, id: 11, lv: 15, online: true, pond: 3, login: "bestFriend"),
+            ChatUserOnline(frig: 2, id: 12, lv: 2, online: true, pond: 0, login: "spammer")
+        ]
+        let listMess = ChatMess(fromID: -1, room: 0, from: "-1", object: .userOnlineList(users), text: "getUserList3", to: "fisher42")
+        let listPacket = JavaObjectStreamCodec.encodeMess(listMess)
+        let listOutcome = try coordinator.receiveChatStreamPacket(listPacket, currentUserId: 42)
+        if case .userListReceived(_, let partitioned) = listOutcome {
+            XCTAssertEqual(partitioned.userPond.count, 2)
+            XCTAssertEqual(partitioned.userFriends.map(\.login), ["bestFriend"])
+            XCTAssertEqual(partitioned.userIgnore.map(\.login), ["spammer"])
+        } else {
+            XCTFail("Expected .userListReceived")
+        }
+
+        let bitMess = ChatMess(fromID: -1, room: 0, from: "-1", text: "bit", to: "fisher42")
+        let bitOutcome = try coordinator.receiveChatStreamPacket(JavaObjectStreamCodec.encodeMess(bitMess), currentUserId: 42)
+        if case .sendHeartbeatReply(let reply) = bitOutcome {
+            XCTAssertEqual(reply.text, "bit")
+            XCTAssertEqual(reply.to, "-1")
+        } else {
+            XCTFail("Expected .sendHeartbeatReply")
+        }
+
+        let sellFishMess = ChatMess(fromID: -1, room: 0, from: "-1", text: "sellFish", to: "fisher42")
+        let sellOutcome = try coordinator.receiveChatStreamPacket(JavaObjectStreamCodec.encodeMess(sellFishMess), currentUserId: 42)
+        XCTAssertEqual(sellOutcome, .unhandledSystemCommand("sellFish"))
+    }
 }

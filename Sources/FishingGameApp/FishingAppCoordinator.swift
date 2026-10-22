@@ -11,6 +11,7 @@ public enum AppNavigationTab: String, CaseIterable, Sendable, Identifiable {
     case inventory = "inventory"
     case fishnet = "fishnet"
     case progress = "progress"
+    case online = "online"
 
     public var id: String { rawValue }
 
@@ -22,6 +23,7 @@ public enum AppNavigationTab: String, CaseIterable, Sendable, Identifiable {
         case .inventory: return "Рюкзак"
         case .fishnet: return "Садок"
         case .progress: return "Прогресс"
+        case .online: return "Онлайн"
         }
     }
 
@@ -33,6 +35,7 @@ public enum AppNavigationTab: String, CaseIterable, Sendable, Identifiable {
         case .inventory: return "backpack.fill"
         case .fishnet: return "basket.fill"
         case .progress: return "trophy.fill"
+        case .online: return "globe"
         }
     }
 }
@@ -181,6 +184,12 @@ public final class FishingAppCoordinator: ObservableObject {
     @Published public private(set) var achievements: [AchievementRecord] = []
     @Published public private(set) var quests: [QuestRecord] = []
     @Published public private(set) var personalRecords: [PersonalSpeciesRecord] = []
+
+    @Published public private(set) var onlineShopSnapshot: OnlineShopSnapshot? = nil
+    @Published public private(set) var chatMessages: [ChatMess] = []
+    @Published public private(set) var onlineTours: [ChatTourModel] = []
+    @Published public private(set) var onlineUsers: [ChatUserOnline] = []
+    public var authLimiter = AuthAttemptLimiter()
 
     @Published public private(set) var catalogRods: [FishingRodSpec] = []
     @Published public private(set) var catalogCoils: [CoilSpec] = []
@@ -732,5 +741,68 @@ public final class FishingAppCoordinator: ObservableObject {
         case .invalidInventoryItem(let detail):
             return "Ошибка инвентаря: \(detail)"
         }
+    }
+
+
+    // MARK: - Online Profile Restore (`C0.a.l`), Online Shop (`MainActivity$d.c`) & TCP Chat (`0xACED0005`)
+
+    @discardableResult
+    public func restoreFromOnlineAuthResponse(
+        _ response: String,
+        login: String,
+        password: String,
+        nowMs: Int64 = Int64(Date().timeIntervalSince1970 * 1000)
+    ) throws -> AuthRestoreSummary {
+        let nowSec = nowMs / 1000
+        if let waitSec = authLimiter.registerAttempt(nowSeconds: nowSec) {
+            throw PlayerPersistenceError.invalidInventoryItem("Подождите \(waitSec) сек. перед следующей попыткой входа.")
+        }
+        let summary = try repository.restoreProfileFromAuthResponse(
+            response,
+            login: login,
+            password: password,
+            nowMs: nowMs
+        )
+        authLimiter.resetOnSuccess()
+        try reloadAllStateFromDatabase()
+        return summary
+    }
+
+    @discardableResult
+    public func syncOnlineShopFromCSV(
+        _ csv: String,
+        nowMs: Int64 = Int64(Date().timeIntervalSince1970 * 1000)
+    ) throws -> OnlineShopSnapshot {
+        let snapshot = try repository.applyOnlineShopCSV(csv, nowMs: nowMs)
+        self.onlineShopSnapshot = snapshot
+        try reloadAllStateFromDatabase()
+        return snapshot
+    }
+
+    @discardableResult
+    public func receiveChatStreamPacket(
+        _ packetData: Data,
+        currentUserId: Int32 = 1
+    ) throws -> ChatSelectorOutcome {
+        let mess = try JavaObjectStreamCodec.decodeMess(from: packetData)
+        let outcome = ChatProtocolSelector.handleIncomingMess(
+            mess,
+            currentUserId: currentUserId,
+            currentLogin: profile.login.isEmpty ? "Player" : profile.login,
+            currentPond: Int32(selectedPondIndex)
+        )
+        switch outcome {
+        case .initialized(let initObj):
+            self.onlineTours = initObj.tours
+        case .userListReceived(let all, _):
+            self.onlineUsers = all
+        case .toursUpdated(let tours):
+            self.onlineTours = tours
+        case .chatMessageReceived(let msg):
+            self.chatMessages.append(msg)
+        default:
+            break
+        }
+        return outcome
     }
 }

@@ -64,6 +64,14 @@ public struct FishingRootView: View {
                 Label(AppNavigationTab.progress.titleRu, systemImage: AppNavigationTab.progress.systemIconName)
             }
             .tag(AppNavigationTab.progress)
+
+            NavigationStack {
+                OnlineAndChatView(coordinator: coordinator)
+            }
+            .tabItem {
+                Label(AppNavigationTab.online.titleRu, systemImage: AppNavigationTab.online.systemIconName)
+            }
+            .tag(AppNavigationTab.online)
         }
         .alert(item: $coordinator.activeAlert) { alert in
             Alert(
@@ -548,6 +556,80 @@ public struct ProgressAndRecordsView: View {
             }
         }
         .navigationTitle("Рекорды и Квесты")
+    }
+}
+
+
+// MARK: - 6. Online Profile, Pearl Shop, Tournaments & TCP Chat Screen (`OnlineGameActivity` + `Chat`)
+
+public struct OnlineAndChatView: View {
+    @ObservedObject public var coordinator: FishingAppCoordinator
+
+    public init(coordinator: FishingAppCoordinator) {
+        self.coordinator = coordinator
+    }
+
+    public var body: some View {
+        List {
+            Section("Сетевой статус (fish-mob.ru / chat.fish-mob.ru:15701)") {
+                LabeledContent("Логин", value: coordinator.profile.login.isEmpty ? "Офлайн-профиль" : coordinator.profile.login)
+                LabeledContent("X-Fish-AppSign", value: String(FishingNetworkCrypto.appSignConstant.prefix(12)) + "…")
+                LabeledContent("Жемчуг (POINTS)", value: "\(coordinator.onlineShopSnapshot?.pearlsBalance ?? 0)")
+                LabeledContent("Уведомления (NOTES)", value: "\(coordinator.onlineShopSnapshot?.unreadNotesCount ?? 0)")
+            }
+
+            Section("Онлайн-турниры (Tours: \(coordinator.onlineTours.count))") {
+                if coordinator.onlineTours.isEmpty {
+                    Text("Нет активных онлайн-турниров в кэше.")
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(coordinator.onlineTours) { tour in
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("\(tour.title) (ID #\(tour.id))")
+                                .font(.headline)
+                            Text("\(tour.desc) • Фонд: \(tour.fond)")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            }
+
+            Section("Игроки онлайн (\(coordinator.onlineUsers.count))") {
+                if coordinator.onlineUsers.isEmpty {
+                    Text("Список игроков пуст.")
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(coordinator.onlineUsers) { user in
+                        HStack {
+                            Text("\(user.login) (разряд \(user.lv))")
+                            Spacer()
+                            Text("Водоём #\(user.pond + 1)")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            }
+
+            Section("Сообщения чата (\(coordinator.chatMessages.count))") {
+                if coordinator.chatMessages.isEmpty {
+                    Text("Сообщений пока нет.")
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(coordinator.chatMessages) { msg in
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(msg.from ?? "Игрок")
+                                .font(.caption.bold())
+                                .foregroundStyle(.blue)
+                            Text(msg.text ?? "")
+                                .font(.subheadline)
+                        }
+                    }
+                }
+            }
+        }
+        .navigationTitle("Онлайн и Чат")
     }
 }
 

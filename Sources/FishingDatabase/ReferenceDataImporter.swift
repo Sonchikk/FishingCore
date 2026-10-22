@@ -1571,7 +1571,10 @@ extension ReferenceCatalogStore {
                 (1, "fish small", 3, 100),
                 (2, "kosrep", 5, 250),
                 (3, "sokl", 9, 650),
-                (5, "rotyl", 33, 4500)
+                (5, "rotyl", 33, 4500),
+                (11, "venol", 0, 0),
+                (12, "master fish", 0, 0),
+                (13, "dasf", 0, 0)
             ]
             for r in starterRods {
                 try connection.run("""
@@ -1589,7 +1592,10 @@ extension ReferenceCatalogStore {
                 (1, "small", 3, 100, 100),
                 (2, "kosp", 6, 220, 100),
                 (3, "master", 13, 550, 100),
-                (5, "somik", 45, 3200, 100)
+                (5, "somik", 45, 3200, 100),
+                (14, "venol", 0, 0, 0),
+                (15, "master line", 0, 0, 0),
+                (16, "big fish", 0, 0, 0)
             ]
             for l in starterLines {
                 try connection.run("""
@@ -1607,7 +1613,10 @@ extension ReferenceCatalogStore {
             let starterCoils: [(Int, String, Int, Int)] = [
                 (1, "gert", 1, 100),
                 (2, "terf", 2, 300),
-                (3, "rosl", 3, 850)
+                (3, "rosl", 3, 850),
+                (8, "super", 0, 0),
+                (9, "master coil", 0, 0),
+                (10, "wectern", 0, 0)
             ]
             for c in starterCoils {
                 try connection.run("""
