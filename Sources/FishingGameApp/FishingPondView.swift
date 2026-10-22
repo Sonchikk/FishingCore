@@ -2,10 +2,12 @@ import SwiftUI
 import FishingCore
 import FishingDatabase
 
-/// Minimal working fishing screen (`GameActivity` + `GameView`) rendered with SwiftUI `Canvas`
-/// (classic 2D mode without Metal shaders), displaying game state, horizon, water ripples,
-/// bobber (`D0.a`), Bezier line (`D0.b`), 16-frame rod bend (`D0.c`), tension bar (`0..250`),
-/// and player actions (tap to cast, hold to pull reel, fast-forward bite, reset cast).
+/// Working fishing screen (`GameActivity` + `GameView` + `F0.n` `WaterMetalRenderer`), combining:
+/// 1. Lower layer (`MetalWaterSurfaceView`, `MTKView`): 3-pass animated water shader when `isWaterShaderActive == true`;
+/// 2. Middle layer (SwiftUI `Canvas`): transparent 2D canvas drawing expanding ripples, bobber (`D0.a`),
+///    Quadratic Bezier line (`D0.b`), and 16-frame flexible rod (`D0.c`) — or the full static 2D background
+///    + `#7800001E` night overlay when the Metal water shader is disabled;
+/// 3. Upper layer: HUD status bar, tension load bar (`0..250`), and player controls.
 public struct FishingPondView: View {
     @ObservedObject public var coordinator: FishingAppCoordinator
 
@@ -34,8 +36,6 @@ public struct FishingPondView: View {
         }
     }
 
-    // MARK: - 1. Top HUD Bar (`GameActivity` header)
-
     private var topStatusBar: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
@@ -51,6 +51,20 @@ public struct FishingPondView: View {
                     Text("(\(timeOfDayLabel(coordinator.stateMachine.timeOfDay)))")
                         .font(.caption)
                         .foregroundStyle(.white.opacity(0.8))
+                    Button {
+                        coordinator.isWaterShaderEnabled.toggle()
+                    } label: {
+                        Text(coordinator.isWaterShaderActive ? "Metal Вода: ВКЛ" : "2D Вода")
+                            .font(.caption2.bold())
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(
+                                coordinator.isWaterShaderActive ? Color.teal.opacity(0.8) : Color.gray.opacity(0.5),
+                                in: Capsule()
+                            )
+                            .foregroundStyle(.white)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
 
@@ -79,8 +93,6 @@ public struct FishingPondView: View {
         .padding(.vertical, 8)
         .background(Color(red: 0.08, green: 0.14, blue: 0.22))
     }
-
-    // MARK: - 2. Tension Load Progress Bar (`0x7f0a018d`, range `0..250`, critical `>= 225`)
 
     private var tensionLoadBar: some View {
         let tension = coordinator.stateMachine.tension
@@ -117,47 +129,48 @@ public struct FishingPondView: View {
         .background(Color(red: 0.05, green: 0.09, blue: 0.15))
     }
 
-    // MARK: - 3. Interactive 2D Pond Canvas (`GameView` without Metal shader)
-
     private var pondInteractiveCanvas: some View {
         GeometryReader { proxy in
             let canvasSize = proxy.size
             ZStack {
+                if coordinator.isWaterShaderActive {
+                    MetalWaterSurfaceView(isDayLight: coordinator.dayNightLighting.isDayLight)
+                }
+
                 Canvas { context, size in
                     let w = size.width
                     let h = size.height
                     let horizonY = CGFloat(coordinator.stateMachine.horizonMinY)
                         * (h / CGFloat(max(1, coordinator.stateMachine.viewHeight)))
 
-                    // 1. Sky / Distant Shore (Top ~20%..25%)
-                    let skyRect = CGRect(x: 0, y: 0, width: w, height: horizonY)
-                    context.fill(
-                        Path(skyRect),
-                        with: .linearGradient(
-                            Gradient(colors: coordinator.dayNightLighting.isDayLight
-                                ? [Color(red: 0.42, green: 0.68, blue: 0.92), Color(red: 0.22, green: 0.45, blue: 0.30)]
-                                : [Color(red: 0.05, green: 0.07, blue: 0.18), Color(red: 0.08, green: 0.14, blue: 0.20)]
-                            ),
-                            startPoint: .zero,
-                            endPoint: CGPoint(x: 0, y: horizonY)
+                    if !coordinator.isWaterShaderActive {
+                        let skyRect = CGRect(x: 0, y: 0, width: w, height: horizonY)
+                        context.fill(
+                            Path(skyRect),
+                            with: .linearGradient(
+                                Gradient(colors: coordinator.dayNightLighting.isDayLight
+                                    ? [Color(red: 0.42, green: 0.68, blue: 0.92), Color(red: 0.22, green: 0.45, blue: 0.30)]
+                                    : [Color(red: 0.05, green: 0.07, blue: 0.18), Color(red: 0.08, green: 0.14, blue: 0.20)]
+                                ),
+                                startPoint: .zero,
+                                endPoint: CGPoint(x: 0, y: horizonY)
+                            )
                         )
-                    )
 
-                    // 2. Water Surface (`horizonY .. h`)
-                    let waterRect = CGRect(x: 0, y: horizonY, width: w, height: h - horizonY)
-                    context.fill(
-                        Path(waterRect),
-                        with: .linearGradient(
-                            Gradient(colors: coordinator.dayNightLighting.isDayLight
-                                ? [Color(red: 0.10, green: 0.36, blue: 0.58), Color(red: 0.04, green: 0.18, blue: 0.34)]
-                                : [Color(red: 0.03, green: 0.08, blue: 0.18), Color(red: 0.01, green: 0.04, blue: 0.11)]
-                            ),
-                            startPoint: CGPoint(x: 0, y: horizonY),
-                            endPoint: CGPoint(x: 0, y: h)
+                        let waterRect = CGRect(x: 0, y: horizonY, width: w, height: h - horizonY)
+                        context.fill(
+                            Path(waterRect),
+                            with: .linearGradient(
+                                Gradient(colors: coordinator.dayNightLighting.isDayLight
+                                    ? [Color(red: 0.10, green: 0.36, blue: 0.58), Color(red: 0.04, green: 0.18, blue: 0.34)]
+                                    : [Color(red: 0.03, green: 0.08, blue: 0.18), Color(red: 0.01, green: 0.04, blue: 0.11)]
+                                ),
+                                startPoint: CGPoint(x: 0, y: horizonY),
+                                endPoint: CGPoint(x: 0, y: h)
+                            )
                         )
-                    )
+                    }
 
-                    // Horizon boundary line (`Y_cast > floor(H/5) + H_bobber`)
                     var horizonPath = Path()
                     horizonPath.move(to: CGPoint(x: 0, y: horizonY))
                     horizonPath.addLine(to: CGPoint(x: w, y: horizonY))
@@ -170,7 +183,6 @@ public struct FishingPondView: View {
                     let scaleX = w / CGFloat(max(1, coordinator.stateMachine.viewWidth))
                     let scaleY = h / CGFloat(max(1, coordinator.stateMachine.viewHeight))
 
-                    // 3. Expanding Water Ripples (`D0.a.d(Canvas)`)
                     if let bobber = coordinator.stateMachine.bobber {
                         for ripple in bobber.ripples {
                             let alphaInt = BobberState.rippleAlpha(
@@ -191,7 +203,6 @@ public struct FishingPondView: View {
                             )
                         }
 
-                        // 4. Bobber Sprite (`D0.a.c(Canvas)`)
                         let bobX = CGFloat(bobber.x) * scaleX
                         let bobY = CGFloat(bobber.y) * scaleY
                         let bodyRect = CGRect(x: bobX - 7, y: bobY - 12, width: 14, height: 24)
@@ -206,7 +217,6 @@ public struct FishingPondView: View {
                         )
                     }
 
-                    // 5. Quadratic Bezier Fishing Line (`D0.b.b(Canvas)`)
                     if let curve = coordinator.currentLineCurve {
                         var linePath = Path()
                         linePath.move(to: CGPoint(x: CGFloat(curve.start.x) * scaleX, y: CGFloat(curve.start.y) * scaleY))
@@ -221,7 +231,6 @@ public struct FishingPondView: View {
                         )
                     }
 
-                    // 6. Flexible Fishing Rod (`D0.c.a(Canvas)`, 16 bend frames `fishing_rod_0..15`)
                     let rod = coordinator.stateMachine.rodSprite
                     let buttPoint = CGPoint(
                         x: CGFloat(rod.originX + Float(rod.width)) * scaleX,
@@ -245,8 +254,7 @@ public struct FishingPondView: View {
                         style: StrokeStyle(lineWidth: 5.0, lineCap: .round)
                     )
 
-                    // 7. Classic 2D Night Overlay (`#7800001E` when shader is off and `isDayLight == false`)
-                    if !coordinator.dayNightLighting.isDayLight {
+                    if !coordinator.isWaterShaderActive && !coordinator.dayNightLighting.isDayLight {
                         context.fill(
                             Path(CGRect(origin: .zero, size: size)),
                             with: .color(Color(red: 0.0, green: 0.0, blue: 0.12, opacity: 0.35))
@@ -266,7 +274,6 @@ public struct FishingPondView: View {
                         }
                 )
 
-                // Overlay helper banner when tackle is incomplete or waiting for cast
                 VStack {
                     tackleSummaryBanner
                     Spacer()
@@ -308,8 +315,6 @@ public struct FishingPondView: View {
         .background(.black.opacity(0.65), in: RoundedRectangle(cornerRadius: 8))
     }
 
-    // MARK: - 4. Bottom Player Action Controls
-
     private var bottomControlPanel: some View {
         HStack(spacing: 12) {
             switch coordinator.stateMachine.state {
@@ -348,7 +353,6 @@ public struct FishingPondView: View {
                 .buttonStyle(.bordered)
 
             case .fishFight:
-                // Hold-to-pull reel control (`GameActivity$s.onTouch` -> `GameView.setPulled`)
                 Text(coordinator.stateMachine.isPulled ? "КАТУШКА: ТЯНЕМ!" : "УДЕРЖИВАЙТЕ КАТУШКУ")
                     .font(.subheadline.bold())
                     .foregroundStyle(.white)

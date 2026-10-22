@@ -1,176 +1,450 @@
 import Foundation
 import FishingCore
 
-// MARK: - Decodable DTOs for Extracted JSON Reference Files (data/*.json)
+// MARK: - Codable DTOs for Phase 2 Extracted JSON Files (`data/*.json`)
 
-private struct FishesJSONFile: Decodable {
-    struct Item: Decodable {
-        let id: Int
-        let name_ru: String
-        let image_res_id: Int
-        let unit_weight_grams: Int
-        let unit_price_coins: Int
-        let strength: Int
-        let stamina: Int
-        let intelligence: Int
-        let aggression: Int
+public struct FishesJSONFile: Decodable, Sendable {
+    public struct Item: Decodable, Sendable {
+        public let id: Int
+        public let name_ru: String
+        public let image_res_id: Int
+        public let unit_weight_grams: Int
+        public let unit_price_coins: Int
+        public let strength: Int
+        public let stamina: Int
+        public let intelligence: Int
+        public let aggression: Int
     }
-    let items: [Item]
+    public let items: [Item]
+
+    enum CodingKeys: String, CodingKey {
+        case items
+        case records
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        if let items = try container.decodeIfPresent([Item].self, forKey: .items) {
+            self.items = items
+        } else {
+            self.items = try container.decode([Item].self, forKey: .records)
+        }
+    }
 }
 
-private struct BaitsJSONFile: Decodable {
-    struct Item: Decodable {
-        let id: Int
-        let name_ru: String
-        let image_res_id: Int
-        let stock_amount: Int
-        let price_coins: Int
+extension FishesJSONFile.Item {
+    enum CodingKeys: String, CodingKey {
+        case id
+        case name_ru
+        case image_res_id
+        case image
+        case unit_weight_grams
+        case unit_weight
+        case unit_price_coins
+        case unit_price
+        case strength
+        case stamina
+        case intelligence
+        case aggression
     }
-    let items: [Item]
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = try c.decode(Int.self, forKey: .id)
+        self.name_ru = try c.decode(String.self, forKey: .name_ru)
+        self.image_res_id = try c.decodeIfPresent(Int.self, forKey: .image_res_id)
+            ?? c.decode(Int.self, forKey: .image)
+        self.unit_weight_grams = try c.decodeIfPresent(Int.self, forKey: .unit_weight_grams)
+            ?? c.decode(Int.self, forKey: .unit_weight)
+        self.unit_price_coins = try c.decodeIfPresent(Int.self, forKey: .unit_price_coins)
+            ?? c.decode(Int.self, forKey: .unit_price)
+        self.strength = try c.decode(Int.self, forKey: .strength)
+        self.stamina = try c.decode(Int.self, forKey: .stamina)
+        self.intelligence = try c.decode(Int.self, forKey: .intelligence)
+        self.aggression = try c.decode(Int.self, forKey: .aggression)
+    }
 }
 
-private struct FishingRodsJSONFile: Decodable {
-    struct Item: Decodable {
-        let id: Int
-        let name: String
-        let max_weight_kg_db: Int
-        let price_coins: Int
+public struct BaitsJSONFile: Decodable, Sendable {
+    public struct Item: Decodable, Sendable {
+        public let id: Int
+        public let name_ru: String
+        public let image_res_id: Int
+        public let stock_amount: Int
+        public let price_coins: Int
+
+        enum CodingKeys: String, CodingKey {
+            case id, name_ru, image_res_id, image, stock_amount, price_coins, price
+        }
+
+        public init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            self.id = try c.decode(Int.self, forKey: .id)
+            self.name_ru = try c.decode(String.self, forKey: .name_ru)
+            self.image_res_id = try c.decodeIfPresent(Int.self, forKey: .image_res_id)
+                ?? c.decode(Int.self, forKey: .image)
+            self.stock_amount = try c.decode(Int.self, forKey: .stock_amount)
+            self.price_coins = try c.decodeIfPresent(Int.self, forKey: .price_coins)
+                ?? c.decode(Int.self, forKey: .price)
+        }
     }
-    let items: [Item]
+    public let items: [Item]
+
+    enum CodingKeys: String, CodingKey { case items, records }
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.items = try c.decodeIfPresent([Item].self, forKey: .items) ?? c.decode([Item].self, forKey: .records)
+    }
 }
 
-private struct FishingLinesJSONFile: Decodable {
-    struct Item: Decodable {
-        let id: Int
-        let name: String
-        let max_weight_kg_db: Int
-        let price_coins: Int
-        let stock_length_meters: Int
+public struct FishingRodsJSONFile: Decodable, Sendable {
+    public struct Item: Decodable, Sendable {
+        public let id: Int
+        public let name: String
+        public let max_weight_kg: Int
+        public let price_coins: Int
+
+        enum CodingKeys: String, CodingKey {
+            case id, name, max_weight_kg, weight, price_coins, price
+        }
+
+        public init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            self.id = try c.decode(Int.self, forKey: .id)
+            self.name = try c.decode(String.self, forKey: .name)
+            self.max_weight_kg = try c.decodeIfPresent(Int.self, forKey: .max_weight_kg)
+                ?? c.decode(Int.self, forKey: .weight)
+            self.price_coins = try c.decodeIfPresent(Int.self, forKey: .price_coins)
+                ?? c.decode(Int.self, forKey: .price)
+        }
     }
-    let items: [Item]
+    public let items: [Item]
+
+    enum CodingKeys: String, CodingKey { case items, records }
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.items = try c.decodeIfPresent([Item].self, forKey: .items) ?? c.decode([Item].self, forKey: .records)
+    }
 }
 
-private struct CoilsJSONFile: Decodable {
-    struct Item: Decodable {
-        let id: Int
-        let name: String
-        let bearing_count: Int
-        let price_coins: Int
+public struct FishingLinesJSONFile: Decodable, Sendable {
+    public struct Item: Decodable, Sendable {
+        public let id: Int
+        public let name: String
+        public let max_weight_kg: Int
+        public let price_coins: Int
+        public let stock_length_m: Int
+
+        enum CodingKeys: String, CodingKey {
+            case id, name, max_weight_kg, weight, price_coins, price, stock_length_m, stock_length
+        }
+
+        public init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            self.id = try c.decode(Int.self, forKey: .id)
+            self.name = try c.decode(String.self, forKey: .name)
+            self.max_weight_kg = try c.decodeIfPresent(Int.self, forKey: .max_weight_kg)
+                ?? c.decode(Int.self, forKey: .weight)
+            self.price_coins = try c.decodeIfPresent(Int.self, forKey: .price_coins)
+                ?? c.decode(Int.self, forKey: .price)
+            self.stock_length_m = try c.decodeIfPresent(Int.self, forKey: .stock_length_m)
+                ?? c.decode(Int.self, forKey: .stock_length)
+        }
     }
-    let items: [Item]
+    public let items: [Item]
+
+    enum CodingKeys: String, CodingKey { case items, records }
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.items = try c.decodeIfPresent([Item].self, forKey: .items) ?? c.decode([Item].self, forKey: .records)
+    }
 }
 
-private struct HooksJSONFile: Decodable {
-    struct Item: Decodable {
-        let id: Int
-        let name: String
-        let stock_amount: Int
-        let price_coins: Int
+public struct CoilsJSONFile: Decodable, Sendable {
+    public struct Item: Decodable, Sendable {
+        public let id: Int
+        public let name: String
+        public let bearing_count: Int
+        public let price_coins: Int
+
+        enum CodingKeys: String, CodingKey {
+            case id, name, bearing_count, price_coins, price
+        }
+
+        public init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            self.id = try c.decode(Int.self, forKey: .id)
+            self.name = try c.decode(String.self, forKey: .name)
+            self.bearing_count = try c.decode(Int.self, forKey: .bearing_count)
+            self.price_coins = try c.decodeIfPresent(Int.self, forKey: .price_coins)
+                ?? c.decode(Int.self, forKey: .price)
+        }
     }
-    let items: [Item]
+    public let items: [Item]
+
+    enum CodingKeys: String, CodingKey { case items, records }
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.items = try c.decodeIfPresent([Item].self, forKey: .items) ?? c.decode([Item].self, forKey: .records)
+    }
 }
 
-private struct CouponsJSONFile: Decodable {
-    struct Item: Decodable {
-        let id: Int
-        let name_ru: String
-        let day_count: Int
-        let price_coins: Int
-        let dn_duration_units: Int
+public struct HooksJSONFile: Decodable, Sendable {
+    public struct Item: Decodable, Sendable {
+        public let id: Int
+        public let name: String
+        public let stock_amount: Int
+        public let price_coins: Int
+
+        enum CodingKeys: String, CodingKey {
+            case id, name, stock_amount, price_coins, price
+        }
+
+        public init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            self.id = try c.decode(Int.self, forKey: .id)
+            self.name = try c.decode(String.self, forKey: .name)
+            self.stock_amount = try c.decode(Int.self, forKey: .stock_amount)
+            self.price_coins = try c.decodeIfPresent(Int.self, forKey: .price_coins)
+                ?? c.decode(Int.self, forKey: .price)
+        }
     }
-    let items: [Item]
+    public let items: [Item]
+
+    enum CodingKeys: String, CodingKey { case items, records }
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.items = try c.decodeIfPresent([Item].self, forKey: .items) ?? c.decode([Item].self, forKey: .records)
+    }
 }
 
-private struct AchievementsJSONFile: Decodable {
-    struct Item: Decodable {
-        let id: Int
-        let image_res_id: Int
-        let initial_score: Int
-        let initial_level: Int
-        let initial_nag: Int
-        let nagsize_reward_param: Int
+public struct CouponsJSONFile: Decodable, Sendable {
+    public struct Item: Decodable, Sendable {
+        public let id: Int
+        public let name_ru: String
+        public let day_count: Int
+        public let price_coins: Int
+        public let dn_duration_units: Int
+
+        enum CodingKeys: String, CodingKey {
+            case id, name_ru, name, day_count, price_coins, price, dn_duration_units, dn
+        }
+
+        public init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            self.id = try c.decode(Int.self, forKey: .id)
+            self.name_ru = try c.decodeIfPresent(String.self, forKey: .name_ru)
+                ?? c.decode(String.self, forKey: .name)
+            self.day_count = try c.decode(Int.self, forKey: .day_count)
+            self.price_coins = try c.decodeIfPresent(Int.self, forKey: .price_coins)
+                ?? c.decode(Int.self, forKey: .price)
+            self.dn_duration_units = try c.decodeIfPresent(Int.self, forKey: .dn_duration_units)
+                ?? c.decode(Int.self, forKey: .dn)
+        }
     }
-    let items: [Item]
+    public let items: [Item]
+
+    enum CodingKeys: String, CodingKey { case items, records }
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.items = try c.decodeIfPresent([Item].self, forKey: .items) ?? c.decode([Item].self, forKey: .records)
+    }
 }
 
-private struct QuestsJSONFile: Decodable {
-    struct Item: Decodable {
-        let id: Int
-        let type: Int
-        let fish_ids_raw: String
-        let bait_ids_raw: String
-        let target_counts_raw: String
-        let target_weights_raw: String
-        let required_category_rank: Int
-        let rewards_raw: String
-        let initial_res: String
-        let initial_made: Int
+public struct AchievementsJSONFile: Decodable, Sendable {
+    public struct Item: Decodable, Sendable {
+        public let id: Int
+        public let image_res_id: Int
+        public let initial_score: Int
+        public let initial_level: Int
+        public let initial_nag: Int
+        public let nagsize_reward_param: Int
+
+        enum CodingKeys: String, CodingKey {
+            case id, image_res_id, image, initial_score, score, initial_level, level, initial_nag, nag, nagsize_reward_param, nagsize
+        }
+
+        public init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            self.id = try c.decode(Int.self, forKey: .id)
+            self.image_res_id = try c.decodeIfPresent(Int.self, forKey: .image_res_id)
+                ?? c.decode(Int.self, forKey: .image)
+            self.initial_score = try c.decodeIfPresent(Int.self, forKey: .initial_score)
+                ?? c.decode(Int.self, forKey: .score)
+            self.initial_level = try c.decodeIfPresent(Int.self, forKey: .initial_level)
+                ?? c.decode(Int.self, forKey: .level)
+            self.initial_nag = try c.decodeIfPresent(Int.self, forKey: .initial_nag)
+                ?? c.decode(Int.self, forKey: .nag)
+            self.nagsize_reward_param = try c.decodeIfPresent(Int.self, forKey: .nagsize_reward_param)
+                ?? c.decode(Int.self, forKey: .nagsize)
+        }
     }
-    let items: [Item]
+    public let items: [Item]
+
+    enum CodingKeys: String, CodingKey { case items, records }
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.items = try c.decodeIfPresent([Item].self, forKey: .items) ?? c.decode([Item].self, forKey: .records)
+    }
 }
 
-private struct PondsJSONFile: Decodable {
-    struct BaitSlotCatch: Decodable {
-        let bait_slot_index: Int
-        let bait_index_0based: Int
-        let bait_db_id: Int
-        let catchable_fishes: [CatchableFish]
+public struct QuestsJSONFile: Decodable, Sendable {
+    public struct Item: Decodable, Sendable {
+        public let id: Int
+        public let type: Int
+        public let fish_ids_raw: String
+        public let bait_ids_raw: String
+        public let target_counts_raw: String
+        public let target_weights_raw: String
+        public let required_category_rank: Int
+        public let rewards_raw: String
+        public let initial_res: String
+        public let initial_made: Int
+
+        enum CodingKeys: String, CodingKey {
+            case id, type, fish_ids_raw, fish, bait_ids_raw, bait, target_counts_raw, num
+            case target_weights_raw, weight, required_category_rank, cat, rewards_raw, nag
+            case initial_res, res, initial_made, made
+        }
+
+        public init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            self.id = try c.decode(Int.self, forKey: .id)
+            self.type = try c.decode(Int.self, forKey: .type)
+            self.fish_ids_raw = try c.decodeIfPresent(String.self, forKey: .fish_ids_raw)
+                ?? c.decode(String.self, forKey: .fish)
+            self.bait_ids_raw = try c.decodeIfPresent(String.self, forKey: .bait_ids_raw)
+                ?? c.decode(String.self, forKey: .bait)
+            self.target_counts_raw = try c.decodeIfPresent(String.self, forKey: .target_counts_raw)
+                ?? c.decode(String.self, forKey: .num)
+            self.target_weights_raw = try c.decodeIfPresent(String.self, forKey: .target_weights_raw)
+                ?? c.decode(String.self, forKey: .weight)
+            self.required_category_rank = try c.decodeIfPresent(Int.self, forKey: .required_category_rank)
+                ?? c.decode(Int.self, forKey: .cat)
+            self.rewards_raw = try c.decodeIfPresent(String.self, forKey: .rewards_raw)
+                ?? c.decode(String.self, forKey: .nag)
+            self.initial_res = try c.decodeIfPresent(String.self, forKey: .initial_res)
+                ?? c.decode(String.self, forKey: .res)
+            self.initial_made = try c.decodeIfPresent(Int.self, forKey: .initial_made)
+                ?? c.decode(Int.self, forKey: .made)
+        }
     }
-    struct CatchableFish: Decodable {
-        let fish_index_0based: Int
-        let fish_db_id: Int
+    public let items: [Item]
+
+    enum CodingKeys: String, CodingKey { case items, records }
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.items = try c.decodeIfPresent([Item].self, forKey: .items) ?? c.decode([Item].self, forKey: .records)
     }
-    struct SpeciesWeight: Decodable {
-        let fish_index_0based: Int
-        let fish_db_id: Int
-        let min_weight_grams: Int
-        let max_weight_grams: Int
-    }
-    struct TimeSlotFactor: Decodable {
-        let bait_slot_index: Int
-        let bait_index_0based: Int
-        let fish_probabilities: [FishProb]
-    }
-    struct FishProb: Decodable {
-        let fish_index_0based: Int
-        let fish_db_id: Int
-        let bite_probability_percent: Int
-    }
-    struct TimeFactors: Decodable {
-        let morning: [TimeSlotFactor]
-        let afternoon: [TimeSlotFactor]
-        let evening: [TimeSlotFactor]
-        let night: [TimeSlotFactor]
-    }
-    struct PondItem: Decodable {
-        let pond_data_id: Int
-        let ui_display_index: Int
-        let chat_pond_id: Int
-        let name_ru: String
-        let name_en: String
-        let name_de: String
-        let name_es: String
-        let name_pt: String
-        let required_rank: Int
-        let requires_coupon: Bool
-        let pond_image_res_id: Int
-        let pond_image_name: String
-        let big_pond_image_res_id: Int
-        let big_pond_image_name: String
-        let bait_Slots_and_catches: [BaitSlotCatch]
-        let species_weights: [SpeciesWeight]
-        let time_of_day_bite_factors: TimeFactors
-    }
-    let ponds: [PondItem]
 }
 
-private struct ProgressionJSONFile: Decodable {
-    struct RankEntry: Decodable {
-        let rank_index_1based: Int
-        let required_experience: Int
+public struct PondsJSONFile: Decodable, Sendable {
+    public struct CatchableFishEntry: Decodable, Sendable {
+        public let fish_index_0based: Int
+        public let fish_db_id: Int
     }
-    let rank_progression: [RankEntry]
+    public struct BaitSlotCatchEntry: Decodable, Sendable {
+        public let bait_slot_index: Int
+        public let bait_index_0based: Int
+        public let bait_db_id: Int
+        public let catchable_fishes: [CatchableFishEntry]
+    }
+    public struct SpeciesWeightEntry: Decodable, Sendable {
+        public let fish_index_0based: Int
+        public let fish_db_id: Int
+        public let min_weight_grams: Int
+        public let max_weight_grams: Int
+    }
+    public struct TimeSlotFishProb: Decodable, Sendable {
+        public let fish_index_0based: Int
+        public let fish_db_id: Int
+        public let bite_probability_percent: Int
+    }
+    public struct TimeSlotFactor: Decodable, Sendable {
+        public let bait_slot_index: Int
+        public let bait_index_0based: Int
+        public let fish_probabilities: [TimeSlotFishProb]
+    }
+    public struct TimeOfDayFactors: Decodable, Sendable {
+        public let morning: [TimeSlotFactor]
+        public let afternoon: [TimeSlotFactor]
+        public let evening: [TimeSlotFactor]
+        public let night: [TimeSlotFactor]
+    }
+    public struct PondEntry: Decodable, Sendable {
+        public let pond_data_id: Int
+        public let ui_display_index: Int
+        public let chat_pond_id: Int
+        public let name_ru: String
+        public let name_en: String
+        public let name_de: String
+        public let name_es: String
+        public let name_pt: String
+        public let required_rank: Int
+        public let requires_coupon: Bool
+        public let pond_image_res_id: Int
+        public let pond_image_name: String
+        public let big_pond_image_res_id: Int
+        public let big_pond_image_name: String
+        public let bait_Slots_and_catches: [BaitSlotCatchEntry]
+        public let species_weights: [SpeciesWeightEntry]
+        public let time_of_day_bite_factors: TimeOfDayFactors
+
+        enum CodingKeys: String, CodingKey {
+            case pond_data_id, ui_display_index, chat_pond_id
+            case name_ru, name_en, name_de, name_es, name_pt
+            case required_rank, requires_coupon
+            case pond_image_res_id, pond_image_name
+            case big_pond_image_res_id, big_pond_image_name
+            case bait_slots_and_catches
+            case species_weights
+            case time_of_day_bite_factors
+        }
+
+        public init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            self.pond_data_id = try c.decode(Int.self, forKey: .pond_data_id)
+            self.ui_display_index = try c.decode(Int.self, forKey: .ui_display_index)
+            self.chat_pond_id = try c.decode(Int.self, forKey: .chat_pond_id)
+            self.name_ru = try c.decode(String.self, forKey: .name_ru)
+            self.name_en = try c.decode(String.self, forKey: .name_en)
+            self.name_de = try c.decode(String.self, forKey: .name_de)
+            self.name_es = try c.decode(String.self, forKey: .name_es)
+            self.name_pt = try c.decode(String.self, forKey: .name_pt)
+            self.required_rank = try c.decode(Int.self, forKey: .required_rank)
+            self.requires_coupon = try c.decode(Bool.self, forKey: .requires_coupon)
+            self.pond_image_res_id = try c.decode(Int.self, forKey: .pond_image_res_id)
+            self.pond_image_name = try c.decode(String.self, forKey: .pond_image_name)
+            self.big_pond_image_res_id = try c.decode(Int.self, forKey: .big_pond_image_res_id)
+            self.big_pond_image_name = try c.decode(String.self, forKey: .big_pond_image_name)
+            self.bait_Slots_and_catches = try c.decode([BaitSlotCatchEntry].self, forKey: .bait_slots_and_catches)
+            self.species_weights = try c.decode([SpeciesWeightEntry].self, forKey: .species_weights)
+            self.time_of_day_bite_factors = try c.decode(TimeOfDayFactors.self, forKey: .time_of_day_bite_factors)
+        }
+    }
+    public let ponds: [PondEntry]
 }
+
+public struct ProgressionAndBalanceJSONFile: Decodable, Sendable {
+    public struct RankEntry: Decodable, Sendable {
+        public let rank_index_1based: Int
+        public let required_experience: Int
+
+        enum CodingKeys: String, CodingKey {
+            case rank_index_1based, rank, required_experience
+        }
+
+        public init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            self.rank_index_1based = try c.decodeIfPresent(Int.self, forKey: .rank_index_1based)
+                ?? c.decode(Int.self, forKey: .rank)
+            self.required_experience = try c.decode(Int.self, forKey: .required_experience)
+        }
+    }
+    public let rank_progression: [RankEntry]
+}
+
+// MARK: - Reference Catalog Importer & Query Service
 
 public struct ReferenceImportSummary: Sendable, Equatable {
     public let fishesCount: Int
@@ -187,45 +461,54 @@ public struct ReferenceImportSummary: Sendable, Equatable {
     public let rankRowsCount: Int
 }
 
-/// Read-only store and idempotent JSON importer for all static game reference catalogs.
-public final class ReferenceCatalogStore: Sendable {
+public final class ReferenceCatalogStore: @unchecked Sendable {
     public let connection: SQLiteConnection
     public let installationUuid: String
 
-    public init(connection: SQLiteConnection, installationUuid: String = "00000000-0000-0000-0000-000000000000") {
+    public init(
+        connection: SQLiteConnection,
+        installationUuid: String = "00000000-0000-0000-0000-000000000000"
+    ) {
         self.connection = connection
         self.installationUuid = installationUuid
     }
 
-    // MARK: - Idempotent JSON Import into Reference Tables (and non-destructive seed of records/achievements/quests)
+    // MARK: - Full Import from `data/*.json` (Idempotent & Non-Destructive to Player State)
 
+    /// Populates or updates all reference catalog tables (`fishes`, `baits`, `fishing_rods`,
+    /// `fishing_lines`, `coils`, `hooks`, `coupons`, `records`, `achievements`, `quests`,
+    /// `ref_ponds`, `ref_pond_bait_catches`, `ref_pond_species_weights`, `ref_pond_time_factors`,
+    /// `ref_rank_thresholds`, and `data_signs` 1..7) from a directory containing the Phase 2 JSON files.
+    ///
+    /// - Important: Replicates `DatabaseHelper.fill*` semantics:
+    ///   - Preserves online-synced weights/lengths/bearings on `fishing_rods` (`price == 0`),
+    ///     `fishing_lines` (`price == 0`), and `coils` (`price == 0`) if already > 0.
+    ///   - Preserves existing player `records.weight` / `records.bait_id`, `achievements.score` / `level`,
+    ///     and `quests.made` / `res`.
     @discardableResult
-    public func importFromJSONDirectory(
-        _ directoryURL: URL,
-        nowMs: Int64 = 0
-    ) throws -> ReferenceImportSummary {
+    public func importFromJSONDirectory(_ directoryURL: URL, nowMs: Int64 = 0) throws -> ReferenceImportSummary {
         let decoder = JSONDecoder()
 
-        func loadJSON<T: Decodable>(_ filename: String, as type: T.Type) throws -> T {
+        func loadJSON<T: Decodable>(_ filename: String) throws -> T {
             let fileURL = directoryURL.appendingPathComponent(filename)
             let data = try Data(contentsOf: fileURL)
             return try decoder.decode(T.self, from: data)
         }
 
-        let fishesFile = try loadJSON("fishes.json", as: FishesJSONFile.self)
-        let baitsFile = try loadJSON("baits.json", as: BaitsJSONFile.self)
-        let rodsFile = try loadJSON("fishing_rods.json", as: FishingRodsJSONFile.self)
-        let linesFile = try loadJSON("fishing_lines.json", as: FishingLinesJSONFile.self)
-        let coilsFile = try loadJSON("coils.json", as: CoilsJSONFile.self)
-        let hooksFile = try loadJSON("hooks.json", as: HooksJSONFile.self)
-        let couponsFile = try loadJSON("coupons.json", as: CouponsJSONFile.self)
-        let achievementsFile = try loadJSON("achievements.json", as: AchievementsJSONFile.self)
-        let questsFile = try loadJSON("quests.json", as: QuestsJSONFile.self)
-        let pondsFile = try loadJSON("ponds.json", as: PondsJSONFile.self)
-        let progressionFile = try loadJSON("progression_and_balance.json", as: ProgressionJSONFile.self)
+        let fishesFile: FishesJSONFile = try loadJSON("fishes.json")
+        let baitsFile: BaitsJSONFile = try loadJSON("baits.json")
+        let rodsFile: FishingRodsJSONFile = try loadJSON("fishing_rods.json")
+        let linesFile: FishingLinesJSONFile = try loadJSON("fishing_lines.json")
+        let coilsFile: CoilsJSONFile = try loadJSON("coils.json")
+        let hooksFile: HooksJSONFile = try loadJSON("hooks.json")
+        let couponsFile: CouponsJSONFile = try loadJSON("coupons.json")
+        let achievementsFile: AchievementsJSONFile = try loadJSON("achievements.json")
+        let questsFile: QuestsJSONFile = try loadJSON("quests.json")
+        let pondsFile: PondsJSONFile = try loadJSON("ponds.json")
+        let progressionFile: ProgressionAndBalanceJSONFile = try loadJSON("progression_and_balance.json")
 
         return try connection.transaction {
-            // 1. Fishes catalog (upsert static attributes & fishMd5)
+            // 1. Fishes & Records (`DatabaseHelper.fillFishesTable` + `fillRecordsTable`)
             for item in fishesFile.items {
                 let md5 = FishingChecksum.fishMd5(
                     id: item.id,
@@ -263,10 +546,12 @@ public final class ReferenceCatalogStore: Sendable {
                     .text(md5)
                 ])
 
-                // Also seed `records` row ONLY if missing (DatabaseHelper.fillUpdateRecordsTable — preserves player's personal records!)
+                // Seed `records` row if missing, or update localized `fish_name` without resetting player's record weight!
                 try connection.run("""
-                INSERT OR IGNORE INTO records (id, fish_name, weight, bait_id)
-                VALUES (?, ?, 0, 0);
+                INSERT INTO records (id, fish_name, weight, bait_id)
+                VALUES (?, ?, 0, 0)
+                ON CONFLICT(id) DO UPDATE SET
+                    fish_name = excluded.fish_name;
                 """, bindings: [
                     .integer(Int64(item.id)),
                     .text(item.name_ru)
@@ -292,50 +577,50 @@ public final class ReferenceCatalogStore: Sendable {
                 ])
             }
 
-            // 3. Fishing rods catalog
+            // 3. Fishing Rods catalog (preserving online rod weight if already set > 0 for `price == 0`)
             for item in rodsFile.items {
                 try connection.run("""
                 INSERT INTO fishing_rods (id, name, weight, price)
                 VALUES (?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                     name = excluded.name,
-                    weight = excluded.weight,
+                    weight = CASE WHEN excluded.price = 0 AND fishing_rods.weight > 0 THEN fishing_rods.weight ELSE excluded.weight END,
                     price = excluded.price;
                 """, bindings: [
                     .integer(Int64(item.id)),
                     .text(item.name),
-                    .integer(Int64(item.max_weight_kg_db)),
+                    .integer(Int64(item.max_weight_kg)),
                     .integer(Int64(item.price_coins))
                 ])
             }
 
-            // 4. Fishing lines catalog
+            // 4. Fishing Lines catalog (preserving online line weight & stock_length if already set > 0 for `price == 0`)
             for item in linesFile.items {
                 try connection.run("""
                 INSERT INTO fishing_lines (id, name, weight, price, stock_length)
                 VALUES (?, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                     name = excluded.name,
-                    weight = excluded.weight,
+                    weight = CASE WHEN excluded.price = 0 AND fishing_lines.weight > 0 THEN fishing_lines.weight ELSE excluded.weight END,
                     price = excluded.price,
-                    stock_length = excluded.stock_length;
+                    stock_length = CASE WHEN excluded.price = 0 AND fishing_lines.stock_length > 0 THEN fishing_lines.stock_length ELSE excluded.stock_length END;
                 """, bindings: [
                     .integer(Int64(item.id)),
                     .text(item.name),
-                    .integer(Int64(item.max_weight_kg_db)),
+                    .integer(Int64(item.max_weight_kg)),
                     .integer(Int64(item.price_coins)),
-                    .integer(Int64(item.stock_length_meters))
+                    .integer(Int64(item.stock_length_m))
                 ])
             }
 
-            // 5. Coils catalog
+            // 5. Coils catalog (preserving online coil bearing_count if already set > 0 for `price == 0`)
             for item in coilsFile.items {
                 try connection.run("""
                 INSERT INTO coils (id, name, bearing_count, price)
                 VALUES (?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                     name = excluded.name,
-                    bearing_count = excluded.bearing_count,
+                    bearing_count = CASE WHEN excluded.price = 0 AND coils.bearing_count > 0 THEN coils.bearing_count ELSE excluded.bearing_count END,
                     price = excluded.price;
                 """, bindings: [
                     .integer(Int64(item.id)),
@@ -1021,7 +1306,8 @@ extension ReferenceCatalogStore {
                 (2, "Карась золотой", 2131231099, 500, 77, 3, 7, 3, 4),
                 (3, "Плотва", 2131231157, 250, 35, 2, 5, 4, 3),
                 (4, "Окунь", 2131231135, 400, 62, 3, 5, 3, 4),
-                (5, "Щука", 2131231168, 2000, 306, 4, 5, 4, 5)
+                (5, "Щука", 2131231168, 2000, 306, 4, 5, 4, 5),
+                (71, "Старая покрышка", 2131231100, 5000, 5, 5, 5, 1, 1)
             ]
             for f in starterFishes {
                 let md5 = FishingChecksum.fishMd5(
@@ -1147,6 +1433,85 @@ extension ReferenceCatalogStore {
             INSERT INTO coupons (id, name, day_count, price, dn)
             VALUES (1, 'Путевой купон (1 день)', 1, 150000, 288);
             """)
+
+            // All 14 Achievements (`AchievementGenerator` + `D0.d.m`)
+            let starterAchievements: [(Int, Int, Int)] = [
+                (1, 2131231372, 200),
+                (2, 2131231378, 700),
+                (3, 2131231379, -500),
+                (4, 2131231380, 550),
+                (5, 2131231381, 450),
+                (6, 2131231382, 350),
+                (7, 2131231383, 650),
+                (8, 2131231384, 750),
+                (9, 2131231385, 800),
+                (10, 2131231373, 500),
+                (11, 2131231374, -700),
+                (12, 2131231375, 1000),
+                (13, 2131231376, 300),
+                (14, 2131231377, 400)
+            ]
+            for a in starterAchievements {
+                let achMd5 = FishingChecksum.achievementMd5(
+                    id: a.0,
+                    score: 0,
+                    level: 0,
+                    nag: 0,
+                    nagsize: a.2,
+                    date: nowMs,
+                    installationUuid: installationUuid
+                )
+                try connection.run("""
+                INSERT OR IGNORE INTO achievements (id, image, score, level, nag, nagsize, date, md5)
+                VALUES (?, ?, 0, 0, 0, ?, ?, ?);
+                """, bindings: [
+                    .integer(Int64(a.0)),
+                    .integer(Int64(a.1)),
+                    .integer(Int64(a.2)),
+                    .integer(nowMs),
+                    .text(achMd5)
+                ])
+            }
+
+            // Starter Quests covering Types 2, 7, 1, 3, 4 (`QuestGenerator`)
+            let starterQuests: [(Int, Int, String, String, String, String, Int, String)] = [
+                (1, 2, "0", "1,2,12", "0", "20000", 0, "200,150"),
+                (2, 7, "3,4,5", "0", "5,5,5", "500-1000,500-1000,500-1000", 0, "500,300"),
+                (3, 1, "1", "1", "3", "0", 0, "150,100"),
+                (4, 3, "5", "1", "2", "1500", 0, "300,200"),
+                (5, 4, "3", "2", "2", "300", 0, "250,150")
+            ]
+            for q in starterQuests {
+                let qMd5 = FishingChecksum.questMd5(
+                    id: q.0,
+                    type: q.1,
+                    fish: q.2,
+                    bait: q.3,
+                    num: q.4,
+                    weight: q.5,
+                    cat: q.6,
+                    nag: q.7,
+                    res: "null",
+                    made: 0,
+                    date: nowMs,
+                    installationUuid: installationUuid
+                )
+                try connection.run("""
+                INSERT OR IGNORE INTO quests (id, type, fish, bait, num, weight, cat, nag, res, made, date, md5)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'null', 0, ?, ?);
+                """, bindings: [
+                    .integer(Int64(q.0)),
+                    .integer(Int64(q.1)),
+                    .text(q.2),
+                    .text(q.3),
+                    .text(q.4),
+                    .text(q.5),
+                    .integer(Int64(q.6)),
+                    .text(q.7),
+                    .integer(nowMs),
+                    .text(qMd5)
+                ])
+            }
 
             // Starter Pond #0 ('Кедровый остров') & Pond #1 ('Лесное озеро')
             try connection.run("""

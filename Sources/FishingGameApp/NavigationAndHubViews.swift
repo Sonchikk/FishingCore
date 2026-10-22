@@ -4,7 +4,7 @@ import FishingDatabase
 
 /// Root container view providing tab navigation between the Fishing Pond (`GameActivity`),
 /// Base Hub (`MainActivity` / `PondListActivity`), Shop (`ShopActivity`),
-/// Inventory/Backpack (`BackpackActivity`), and Fishnet (`Fishnet` / `MyRecordsActivity`).
+/// Inventory/Backpack (`BackpackActivity`), Fishnet (`Fishnet`), and Progress (`Achievements` / `Quests` / `MyRecordsActivity`).
 public struct FishingRootView: View {
     @StateObject private var coordinator: FishingAppCoordinator
 
@@ -56,6 +56,14 @@ public struct FishingRootView: View {
                 Label(AppNavigationTab.fishnet.titleRu, systemImage: AppNavigationTab.fishnet.systemIconName)
             }
             .tag(AppNavigationTab.fishnet)
+
+            NavigationStack {
+                ProgressAndRecordsView(coordinator: coordinator)
+            }
+            .tabItem {
+                Label(AppNavigationTab.progress.titleRu, systemImage: AppNavigationTab.progress.systemIconName)
+            }
+            .tag(AppNavigationTab.progress)
         }
         .alert(item: $coordinator.activeAlert) { alert in
             Alert(
@@ -83,6 +91,14 @@ public struct BaseHubView: View {
                 LabeledContent("Опыт (XP)", value: "\(coordinator.profile.experience)")
                 LabeledContent("Разряд", value: "\(coordinator.profile.category)")
                 LabeledContent("Рыб в садке", value: "\(coordinator.fishnetEntries.count) / \(PlayerStateRepository.maxFishnetCapacity)")
+            }
+
+            Section("Графика и шейдер воды (Metal)") {
+                Toggle("Анимация воды (WATER_SHADER)", isOn: $coordinator.isWaterShaderEnabled)
+                LabeledContent(
+                    "Статус 3-проходного шейдера F0.n",
+                    value: coordinator.isWaterShaderActive ? "Активен (256×512 FBO)" : "Выключен (2D Canvas)"
+                )
             }
 
             Section("Быстрые действия") {
@@ -434,6 +450,104 @@ public struct FishnetView: View {
             }
         }
         .navigationTitle("Садок")
+    }
+}
+
+// MARK: - 5. Progress, Personal Species Records, Quests & Achievements Screen (`MyRecordsActivity` + `F0.o`)
+
+public struct ProgressAndRecordsView: View {
+    @ObservedObject public var coordinator: FishingAppCoordinator
+
+    private static let achievementTitlesRu: [Int: (String, String)] = [
+        1: ("Завсегдатай", "Заходи порыбачить каждый день"),
+        2: ("Большой улов", "Поймай много рыб"),
+        3: ("Хулиган", "Ломает много удилищ"),
+        4: ("Любитель заданий", "Выполняй задания"),
+        5: ("Временщик", "Участвуй в турнирах с регистрацией"),
+        6: ("Инди-рыбак", "Создавай индивидуальные турниры"),
+        7: ("Люблю 25", "Лови рыб со знаком 25 (сумма цифр веса = 25)"),
+        8: ("Красавчик", "Одинаковые цифры — красивый вес (1111+, 2222+)"),
+        9: ("Максималист", "Поймай крупную рыбу (рекорд веса)"),
+        10: ("Богач", "Заработай кучу денег"),
+        11: ("Транжира", "Выбрасывай снасти"),
+        12: ("Редкий улов", "Поймай покрышку, ботинок, крокодила или клад"),
+        13: ("Купонщик", "Купи много купонов"),
+        14: ("Путешественник", "Открой все водоёмы")
+    ]
+
+    public init(coordinator: FishingAppCoordinator) {
+        self.coordinator = coordinator
+    }
+
+    private var caughtRecords: [PersonalSpeciesRecord] {
+        coordinator.personalRecords.filter { $0.weightGrams > 0 }
+    }
+
+    public var body: some View {
+        List {
+            Section("Личные рекорды по видам рыб (\(caughtRecords.count))") {
+                if caughtRecords.isEmpty {
+                    Text("Пока нет пойманных рыб. Забросьте удочку на вкладке «Водоём»!")
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(caughtRecords) { rec in
+                        HStack {
+                            Text(rec.fishName)
+                                .font(.headline)
+                            Spacer()
+                            Text("\(rec.weightGrams) г")
+                                .font(.subheadline.monospacedDigit().bold())
+                                .foregroundStyle(.orange)
+                        }
+                    }
+                }
+            }
+
+            Section("Квесты (\(coordinator.quests.filter { $0.made > 0 }.count)/\(coordinator.quests.count))") {
+                ForEach(coordinator.quests) { quest in
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Квест #\(quest.id) (тип \(quest.type), разряд \(quest.requiredCategory)+)")
+                                .font(.headline)
+                            Text("Цель (вес/кол-во): \(quest.weightCsv) / \(quest.numCsv) • Прогресс: \(quest.progressRes)")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Text(quest.made > 0 ? "Выполнен ✅" : "В процессе")
+                            .font(.caption.bold())
+                            .foregroundStyle(quest.made > 0 ? .green : .blue)
+                    }
+                }
+            }
+
+            Section("Достижения (\(coordinator.achievements.count)/14)") {
+                ForEach(coordinator.achievements) { ach in
+                    let meta = Self.achievementTitlesRu[ach.id] ?? ("Достижение #\(ach.id)", "")
+                    let thresholds = (ach.id >= 1 && ach.id <= BalanceTables.achievementThresholds.count)
+                        ? BalanceTables.achievementThresholds[ach.id - 1]
+                        : [0, 0, 0]
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("\(ach.id). \(meta.0)")
+                                .font(.headline)
+                            Text("\(meta.1) • Пороги: \(thresholds.map(String.init).joined(separator: " / "))")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        VStack(alignment: .trailing, spacing: 2) {
+                            Text("Ур. \(ach.level)/3")
+                                .font(.caption.bold())
+                                .foregroundStyle(ach.level > 0 ? .green : .secondary)
+                            Text("Счёт: \(ach.score)")
+                                .font(.caption2.monospacedDigit())
+                        }
+                    }
+                }
+            }
+        }
+        .navigationTitle("Рекорды и Квесты")
     }
 }
 

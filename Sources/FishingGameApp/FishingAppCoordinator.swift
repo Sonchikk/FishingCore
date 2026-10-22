@@ -10,6 +10,7 @@ public enum AppNavigationTab: String, CaseIterable, Sendable, Identifiable {
     case shop = "shop"
     case inventory = "inventory"
     case fishnet = "fishnet"
+    case progress = "progress"
 
     public var id: String { rawValue }
 
@@ -20,6 +21,7 @@ public enum AppNavigationTab: String, CaseIterable, Sendable, Identifiable {
         case .shop: return "Магазин"
         case .inventory: return "Рюкзак"
         case .fishnet: return "Садок"
+        case .progress: return "Прогресс"
         }
     }
 
@@ -30,6 +32,7 @@ public enum AppNavigationTab: String, CaseIterable, Sendable, Identifiable {
         case .shop: return "cart.fill"
         case .inventory: return "backpack.fill"
         case .fishnet: return "basket.fill"
+        case .progress: return "trophy.fill"
         }
     }
 }
@@ -131,7 +134,8 @@ public enum FishingModalAlert: Equatable, Sendable, Identifiable {
 }
 
 /// Main integration coordinator connecting SwiftUI screens with `FishingCore` (`FishingStateMachine`,
-/// `GameClockTimer`) and `FishingDatabase` (`SQLiteConnection`, `ReferenceCatalogStore`, `PlayerStateRepository`).
+/// `GameClockTimer`), `FishingDatabase` (`SQLiteConnection`, `ReferenceCatalogStore`, `PlayerStateRepository`,
+/// `QuestAndAchievementEngine`), and the 3-pass Metal water renderer (`WaterMetalRenderer`).
 @MainActor
 public final class FishingAppCoordinator: ObservableObject {
     public let connection: SQLiteConnection
@@ -142,6 +146,24 @@ public final class FishingAppCoordinator: ObservableObject {
     @Published public var selectedTab: AppNavigationTab = .fishingPond
     @Published public var selectedPondIndex: Int = 0
     @Published public private(set) var availablePonds: [PondCatalogItem] = []
+
+    /// Corresponds to `SharedPreferences("FFF-ANDROID")["WATER_SHADER"]` (`GameActivity.b0()`).
+    @Published public var isWaterShaderEnabled: Bool = true
+    /// Corresponds to `SharedPreferences("pond_fons_pref")["pond_fon_set_" + pondIndex]` (`GameActivity.b0()`).
+    @Published public var pondBackgroundSetIndex: Int = 1
+
+    /// Exact activation check (`GameActivity.b0()`): `pond_fon_set_<id> > 0 && WATER_SHADER == true`.
+    public var isWaterShaderActive: Bool {
+        WaterShaderActivationPolicy.shouldActivate(
+            pondBackgroundSetIndex: pondBackgroundSetIndex,
+            waterShaderSettingEnabled: isWaterShaderEnabled
+        )
+    }
+
+    /// Corresponds to `SharedPreferences("FFF-ANDROID")["TASKS"]` (`F0.o.b`).
+    @Published public var tasksEnabled: Bool = true
+    /// Active UI / quest evaluation language (`F0.g.b(ctx)`: `"ru"`, `"en"`, `"de"`, `"es"`, `"pt"`).
+    @Published public var languageCode: String = "ru"
 
     @Published public private(set) var profile: PlayerProfileRecord = PlayerProfileRecord()
     @Published public private(set) var tackleSlots: UserTackleSlotRecord = UserTackleSlotRecord()
@@ -155,6 +177,10 @@ public final class FishingAppCoordinator: ObservableObject {
     @Published public private(set) var activeCoupon: UserCouponItem? = nil
     @Published public private(set) var fishnetEntries: [FishnetEntryRecord] = []
     @Published public private(set) var overflowFcount: Int = 0
+
+    @Published public private(set) var achievements: [AchievementRecord] = []
+    @Published public private(set) var quests: [QuestRecord] = []
+    @Published public private(set) var personalRecords: [PersonalSpeciesRecord] = []
 
     @Published public private(set) var catalogRods: [FishingRodSpec] = []
     @Published public private(set) var catalogCoils: [CoilSpec] = []
@@ -172,9 +198,6 @@ public final class FishingAppCoordinator: ObservableObject {
     private var systemRng = SystemFishingRandom()
     private var visualRng = SystemFishingRandom()
 
-    /// Creates and bootstraps the coordinator on a given SQLite file path (or `:memory:` for tests/previews).
-    /// Automatically runs schema migrations v21, imports `jsonDataDirectoryURL` if provided (or seeds the
-    /// built-in starter catalog if empty), initializes the new player state (`500` coins), and loads Pond #0.
     public init(
         databasePath: String? = nil,
         jsonDataDirectoryURL: URL? = nil,
@@ -263,6 +286,10 @@ public final class FishingAppCoordinator: ObservableObject {
         fishnetEntries = try repository.listFishnetEntries()
         overflowFcount = try repository.loadOverflowFcount()
 
+        achievements = try repository.listAchievements()
+        quests = try repository.listQuests()
+        personalRecords = try repository.listPersonalRecords(onlyCaught: false)
+
         catalogRods = try catalog.listAllRodSpecs().filter { $0.price > 0 && $0.weight <= 179 }
         catalogCoils = try catalog.listAllCoilSpecs().filter { $0.price > 0 && $0.bearingCount <= 7 }
         catalogLines = try catalog.listAllLineSpecs().filter { $0.price > 0 && $0.stockLength <= 100 && $0.weight <= 376 }
@@ -307,8 +334,6 @@ public final class FishingAppCoordinator: ObservableObject {
 
     // MARK: - Shop & Starter Kit Actions
 
-    /// Buys and equips a complete starter tackle kit (rod #1, line #1, coil #1, hook #1, bait #1)
-    /// inside a single atomic SQLite transaction so a new player can start fishing immediately.
     public func buyAndEquipStarterKit(nowMs: Int64 = Int64(Date().timeIntervalSince1970 * 1000)) {
         do {
             try connection.transaction {
@@ -484,6 +509,7 @@ public final class FishingAppCoordinator: ObservableObject {
     public func sellAllFishInFishnet(nowMs: Int64 = Int64(Date().timeIntervalSince1970 * 1000)) {
         do {
             let result = try repository.sellAllFish(nowMs: nowMs)
+            try repository.evaluateAchievementOnFishSale(newBalance: result.newBalance, nowMs: nowMs)
             try reloadAllStateFromDatabase()
             activeAlert = .fishSold(result: result)
         } catch let err as PlayerPersistenceError {
@@ -510,7 +536,6 @@ public final class FishingAppCoordinator: ObservableObject {
         }
     }
 
-    /// Casts the bobber at screen coordinates `(x, y)` using `SystemFishingRandom`.
     public func castAt(
         x: Float,
         y: Float,
@@ -519,7 +544,6 @@ public final class FishingAppCoordinator: ObservableObject {
         castAt(x: x, y: y, nowMs: nowMs, rng: &systemRng)
     }
 
-    /// Casts the bobber at screen coordinates `(x, y)` with a custom RNG (for deterministic unit testing).
     public func castAt(
         x: Float,
         y: Float,
@@ -538,8 +562,6 @@ public final class FishingAppCoordinator: ObservableObject {
         refreshLineGeometry()
         handleFishingUIEvents(events, nowMs: nowMs)
 
-        // In `GameView$c.run()`, `.missingTackleHold` (state 4) with `holdStateFlag == false`
-        // immediately transitions back to `.idle` on the next loop iteration.
         if stateMachine.state == .missingTackleHold || stateMachine.state == .alarmPermissionHold {
             let followUp = stateMachine.stepTick(
                 nowMs: nowMs,
@@ -551,26 +573,21 @@ public final class FishingAppCoordinator: ObservableObject {
         }
     }
 
-    /// Resets the current cast/fight back to `.idle` (`GameView.r()` -> `GameView$c.o()`).
     public func resetCastToIdle() {
         let events = stateMachine.resetToIdle()
         currentLineCurve = nil
         handleFishingUIEvents(events, nowMs: Int64(Date().timeIntervalSince1970 * 1000))
     }
 
-    /// Sets whether the player is actively pressing/pulling the reel button (`GameView.setPulled`).
     public func setReelPulled(_ pulled: Bool) {
         stateMachine.setPulled(pulled)
         refreshLineGeometry()
     }
 
-    /// Advances the fishing state machine by one tick using `SystemFishingRandom`.
     public func stepSimulationTick(nowMs: Int64 = Int64(Date().timeIntervalSince1970 * 1000)) {
         stepSimulationTick(nowMs: nowMs, rng: &systemRng)
     }
 
-    /// Advances the fishing state machine by one tick with an explicit RNG (`200ms` during fight, `300ms` otherwise).
-    /// Automatically persists any tackle wear/breakage and caught fish to SQLite when a fight concludes.
     public func stepSimulationTick(
         nowMs: Int64,
         rng: inout some FishingRandomGenerator
@@ -583,10 +600,6 @@ public final class FishingAppCoordinator: ObservableObject {
         )
         handleFishingUIEvents(events, nowMs: nowMs)
 
-        // If `stepFightPhysics` transitioned the state machine into a terminal outcome state
-        // (`.fishCaught`, `.lineBroken`, `.rodBroken`, `.coilBroken`, `.fishEscaped`),
-        // persist the mutated `stateMachine.tackle` to SQLite first, then flush the terminal state
-        // transition back to `.idle` (matching `GameView$c.run()` switch cases 3, 5, 6, 7, 8).
         switch stateMachine.state {
         case .fishCaught, .lineBroken, .rodBroken, .coilBroken, .fishEscaped:
             try? repository.syncAssembledTackleAfterFight(stateMachine.tackle)
@@ -604,15 +617,12 @@ public final class FishingAppCoordinator: ObservableObject {
         }
     }
 
-    /// Fast-forwards the waiting-for-bite timer (`scheduledBiteTimeMs + 1`) so the player or tester
-    /// can trigger the bite check immediately without waiting 15..84 seconds.
     public func fastForwardToScheduledBite() {
         guard stateMachine.state == .waitingForBite else { return }
         let targetMs = stateMachine.scheduledBiteTimeMs + 1
         stepSimulationTick(nowMs: targetMs, rng: &systemRng)
     }
 
-    /// Advances the game clock by 1 in-game minute (`FishingService$a.run()`, every 2,000 ms real time).
     public func stepGameClockMinute() {
         let isPaidPond = currentPondItem?.requiresCoupon ?? false
         var couponTicks: Int? = activeCoupon.map { max(1, $0.remainingTimeUnits / 2000) }
@@ -657,6 +667,14 @@ public final class FishingAppCoordinator: ObservableObject {
             case .fishCaught(let caughtFish):
                 do {
                     let result = try repository.recordCaughtFish(caughtFish, nowMs: nowMs)
+                    try repository.evaluateAchievementsOnCatch(caughtFish, nowMs: nowMs)
+                    _ = try repository.evaluateQuestsOnCatch(
+                        caughtFish,
+                        playerCategory: result.categoryRankAfter,
+                        tasksEnabled: tasksEnabled,
+                        languageCode: languageCode,
+                        nowMs: nowMs
+                    )
                     try reloadAllStateFromDatabase()
                     activeAlert = .catchDialog(
                         fish: caughtFish,
@@ -674,6 +692,7 @@ public final class FishingAppCoordinator: ObservableObject {
                 activeAlert = .lineBroken
 
             case .rodBroken:
+                try? repository.evaluateAchievementOnRodBroken(nowMs: nowMs)
                 try? reloadAllStateFromDatabase()
                 activeAlert = .rodBroken
 
