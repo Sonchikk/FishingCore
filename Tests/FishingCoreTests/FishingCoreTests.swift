@@ -231,7 +231,14 @@ final class FishingCoreTests: XCTestCase {
     }
 
     func testCriticalTensionOverloadBreaksRodWhenLineIsStrongerThanRod() {
-        var rng = ScriptedFishingRandom(ints: [0, 2, 10, 100, 50])
+        // RNG sequence:
+        // 0   -> cast randomSeconds (0)
+        // 2   -> obfuscationMultiplier = 2 + 2 = 4
+        // 70  -> fishIdx 0 (Карась, prob 60%) roll: 70 >= 60 (skip Карась)
+        // 10  -> fishIdx 1 (Щука, prob 80%) roll: 10 < 80 (hook Щука, id=2, 500..2500g)
+        // 998 -> weight bracket roll: > 995 (80%..100% bracket: 2100..2500g)
+        // 300 -> weight offset within 2100..2500g: 2100 + 300 = 2400g (2.4 kg on a 3.0 kg rod)
+        var rng = ScriptedFishingRandom(ints: [0, 2, 70, 10, 998, 300])
         var sm = FishingStateMachine(
             pondData: makeTestPond(),
             fishCatalogById1Based: makeTestCatalog(),
@@ -239,6 +246,8 @@ final class FishingCoreTests: XCTestCase {
         )
         sm.cast(x: 640, y: 500, nowMs: 1000, rng: &rng)
         sm.stepTick(nowMs: 100_000, rng: &rng)
+        XCTAssertEqual(sm.activeFishId1Based, 2)
+        XCTAssertEqual(sm.activeFishWeightGrams, 2400)
         sm.setPulled(true)
 
         let rod = sm.tackle.userRod!.rod
