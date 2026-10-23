@@ -1376,6 +1376,9 @@ public struct PondCatalogItem: Sendable, Equatable, Identifiable {
     public let chatPondId: Int
     public let nameRu: String
     public let nameEn: String
+    public let nameDe: String
+    public let nameEs: String
+    public let namePt: String
     public let requiredRank: Int
     public let requiresCoupon: Bool
     public let pondImageName: String
@@ -1386,6 +1389,9 @@ public struct PondCatalogItem: Sendable, Equatable, Identifiable {
         chatPondId: Int,
         nameRu: String,
         nameEn: String,
+        nameDe: String = "",
+        nameEs: String = "",
+        namePt: String = "",
         requiredRank: Int,
         requiresCoupon: Bool,
         pondImageName: String
@@ -1395,6 +1401,9 @@ public struct PondCatalogItem: Sendable, Equatable, Identifiable {
         self.chatPondId = chatPondId
         self.nameRu = nameRu
         self.nameEn = nameEn
+        self.nameDe = nameDe
+        self.nameEs = nameEs
+        self.namePt = namePt
         self.requiredRank = requiredRank
         self.requiresCoupon = requiresCoupon
         self.pondImageName = pondImageName
@@ -1483,7 +1492,7 @@ extension ReferenceCatalogStore {
 
     public func listAllPonds() throws -> [PondCatalogItem] {
         let rows = try connection.query("""
-        SELECT pond_data_id, ui_display_index, chat_pond_id, name_ru, name_en, required_rank, requires_coupon, pond_image_name
+        SELECT pond_data_id, ui_display_index, chat_pond_id, name_ru, name_en, name_de, name_es, name_pt, required_rank, requires_coupon, pond_image_name
         FROM ref_ponds
         ORDER BY ui_display_index ASC, pond_data_id ASC;
         """)
@@ -1494,6 +1503,9 @@ extension ReferenceCatalogStore {
                 chatPondId: $0.int("chat_pond_id"),
                 nameRu: $0.string("name_ru"),
                 nameEn: $0.string("name_en"),
+                nameDe: $0.string("name_de"),
+                nameEs: $0.string("name_es"),
+                namePt: $0.string("name_pt"),
                 requiredRank: $0.int("required_rank"),
                 requiresCoupon: $0.int("requires_coupon") != 0,
                 pondImageName: $0.string("pond_image_name")
