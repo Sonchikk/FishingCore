@@ -709,4 +709,126 @@ final class FishingGameAppTests: XCTestCase {
         XCTAssertEqual(packs[0].baseName, "sounds")
         XCTAssertEqual(packs[1].relativePath, "fon/pond0/bg_1.png")
     }
+
+    // MARK: - 18. Phase 10: HTTP Request Builders for `auth.php`, `fish.php`, `buyballs.php`, `registration_app.php` & `tt.php`
+
+    func testHttpEndpointRequestBuildersAndPlainPasswordRegistrationRule() throws {
+        let uuid = "00000000-0000-0000-0000-000000000000"
+        let authReq = FishingHttpRequestBuilder.makeAuthProfileRequest(
+            login: "fisher1",
+            password: "secret",
+            installationUuid: uuid
+        )
+        XCTAssertEqual(authReq.httpMethod, "GET")
+        XCTAssertEqual(authReq.url?.absoluteString, "http://fish-mob.ru/fff/auth.php")
+        XCTAssertEqual(authReq.value(forHTTPHeaderField: "X-Fish-Login"), "fisher1")
+        XCTAssertEqual(authReq.value(forHTTPHeaderField: "X-Fish-Uuid"), FishingChecksum.md5(uuid))
+
+        let regNew = FishingHttpRequestBuilder.makeAccountRegistrationOrRecoveryRequest(
+            loginOrEmail: "new_player",
+            plainPassword: "myPass123",
+            languageCode: "ru",
+            categoryRank: 3
+        )
+        XCTAssertEqual(regNew.value(forHTTPHeaderField: "X-Fish-Pass"), "myPass123")
+        XCTAssertEqual(regNew.value(forHTTPHeaderField: "X-Fish-KeyReg"), "367sdy672fdg243dtr671dfuReg")
+        XCTAssertEqual(regNew.value(forHTTPHeaderField: "X-Fish-regType"), "0")
+
+        let regRecover = FishingHttpRequestBuilder.makeAccountRegistrationOrRecoveryRequest(
+            loginOrEmail: "player@example.com",
+            plainPassword: "myPass123"
+        )
+        XCTAssertEqual(regRecover.value(forHTTPHeaderField: "X-Fish-regType"), "1")
+
+        let pearlsReq = FishingHttpRequestBuilder.makeBuyPearlsRequest(
+            login: "fisher1",
+            password: "secret",
+            pearlsAmount: 100,
+            receiptSignData: "{}",
+            receiptSignature: "sig123"
+        )
+        XCTAssertEqual(pearlsReq.value(forHTTPHeaderField: "X-Fish-KeyBuy"), "367sdy672fdg243dtr671dfu")
+        XCTAssertEqual(pearlsReq.value(forHTTPHeaderField: "X-Fish-Balls"), "100")
+        XCTAssertEqual(pearlsReq.value(forHTTPHeaderField: "X-Fish-Pass"), FishingNetworkCrypto.doubleMd5Password("secret"))
+    }
+
+    // MARK: - 19. Phase 10: `auth_chat.php`, `fish.php`, `top.php` & `rek.php` Response Parsers
+
+    func testChatAuthFishCatchTopPlayersAndWorldRecordsParsers() throws {
+        XCTAssertEqual(
+            FishingOnlineResponseParser.parseChatAuthResponse("1:48291"),
+            .authenticated(userId: 48291)
+        )
+        XCTAssertEqual(
+            FishingOnlineResponseParser.parseChatAuthResponse("3:Account banned"),
+            .rejected(statusCode: 3, message: "Account banned")
+        )
+
+        XCTAssertEqual(FishingOnlineResponseParser.parseFishCatchUploadResponse("status=1000"), .accepted)
+        XCTAssertEqual(FishingOnlineResponseParser.parseFishCatchUploadResponse("status=1100"), .newWorldRecord)
+        XCTAssertEqual(FishingOnlineResponseParser.parseFishCatchUploadResponse("status=2000"), .rejected(statusCode: 2000))
+
+        let topRaw = """
+        1:master_angler:75000000:45
+        2:river_king:12000000:35
+        """
+        let topList = FishingOnlineResponseParser.parseTopPlayersResponse(topRaw)
+        XCTAssertEqual(topList.count, 2)
+        XCTAssertEqual(topList[0].login, "master_angler")
+        XCTAssertEqual(topList[0].categoryRank, 45)
+
+        let rekRaw = """
+        Карась:2950:master_angler
+        Щука:24800:river_king
+        """
+        let records = FishingOnlineResponseParser.parseWorldSpeciesRecordsResponse(rekRaw)
+        XCTAssertEqual(records.count, 2)
+        XCTAssertEqual(records[1].fishName, "Щука")
+        XCTAssertEqual(records[1].weightGrams, 24800)
+    }
+
+    // MARK: - 20. Phase 10: Sleep-Mode Clock Catch-Up (`GameActivity.onResume`) & `tourType` Resolution
+
+    func testSleepModeClockCatchUpAndTournamentTypeResolution() throws {
+        let coordinator = try FishingAppCoordinator(
+            databasePath: ":memory:",
+            initialHour: 21,
+            initialMinute: 50,
+            nowMs: 1_000_000
+        )
+        XCTAssertTrue(coordinator.dayNightLighting.isDaylight)
+        XCTAssertEqual(coordinator.audioHaptics.activeAmbientTrack?.isDaylightTrack, true)
+
+        coordinator.buyAndEquipStarterKit(nowMs: 999_000)
+        var rng = ScriptedFishingRandom(ints: [10])
+        coordinator.castAt(x: 640, y: 500, nowMs: 1_000_000, rng: &rng)
+        XCTAssertEqual(coordinator.stateMachine.state, .waitingForBite)
+
+        // Advance 20 game minutes (40,000 ms) during sleep -> crosses 22:00 into night
+        let caughtUp = coordinator.handleResumeAfterSleep(
+            beginTimeMs: 1_000_000,
+            beginHour: 21,
+            beginMinute: 50,
+            nowMs: 1_040_000
+        )
+        XCTAssertTrue(caughtUp)
+        XCTAssertEqual(coordinator.gameClock.hour, 22)
+        XCTAssertEqual(coordinator.gameClock.minute, 10)
+        XCTAssertFalse(coordinator.dayNightLighting.isDaylight)
+        XCTAssertEqual(coordinator.audioHaptics.activeAmbientTrack?.isDaylightTrack, false)
+
+        XCTAssertEqual(coordinator.resolveCurrentCatchTourType(hasActiveIndividualTour: false), 0)
+        XCTAssertEqual(coordinator.resolveCurrentCatchTourType(hasActiveIndividualTour: true), 1)
+    }
+
+    // MARK: - 21. Phase 10: iOS 18+ `NSAppTransportSecurity` Configuration Verification
+
+    func testIOSAppTransportSecurityConfiguration() throws {
+        let ats = FishingIOSAppConfiguration.appTransportSecurityPlistDictionary
+        XCTAssertEqual(ats["NSAllowsArbitraryLoads"] as? Bool, false)
+        let domains = ats["NSExceptionDomains"] as? [String: [String: Bool]]
+        XCTAssertEqual(domains?["fish-mob.ru"]?["NSExceptionAllowsInsecureHTTPLoads"], true)
+        XCTAssertEqual(domains?["chat.fish-mob.ru"]?["NSExceptionAllowsInsecureHTTPLoads"], true)
+        XCTAssertEqual(FishingIOSAppConfiguration.chatServerPort, 15701)
+    }
 }

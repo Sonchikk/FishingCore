@@ -865,4 +865,42 @@ public final class FishingAppCoordinator: ObservableObject {
         try reloadAllStateFromDatabase()
         return record
     }
+
+    // MARK: - Phase 10: Sleep-Mode Clock Catch-Up (`GameActivity.onResume`) & Tournament `tourType` Resolution
+
+    /// Reconstructs `GameActivity.onResume` (`pc=0014..00b0`, `MECHANICS.md` Section 7.1):
+    /// Fast-forwards `HOUR:MINUTE` after returning from sleep during `.waitingForBite` or `.fishFight`
+    /// if `0 < (nowMs - beginTimeMs) / 2000 < 120` game minutes and drift exceeds `> 2` minutes.
+    @discardableResult
+    public func handleResumeAfterSleep(
+        beginTimeMs: Int64,
+        beginHour: Int,
+        beginMinute: Int,
+        nowMs: Int64
+    ) -> Bool {
+        let didCatchUp = gameClock.catchUpAfterSleepIfNeeded(
+            stateCode: stateMachine.state.rawValue,
+            beginTimeMs: beginTimeMs,
+            beginHour: beginHour,
+            beginMinute: beginMinute,
+            nowMs: nowMs
+        )
+        if didCatchUp {
+            dayNightLighting = DayNightLighting.forHour(gameClock.hour)
+            stateMachine.timeOfDay = BiteTimeOfDay.from(hour: gameClock.hour, minute: gameClock.minute)
+            audioHaptics.syncAmbientTrack(pondIndex: selectedPondIndex, hour: gameClock.hour)
+        }
+        return didCatchUp
+    }
+
+    /// Resolves `tourType` (`0`, `1`, or `2`) for `X-Fish-Folp` (`FishingService$d.a`, `NETWORK.md` Section 3.1).
+    public func resolveCurrentCatchTourType(hasActiveIndividualTour: Bool = false) -> Int {
+        if onlineTours.contains(where: { $0.active == 1 }) {
+            return 2
+        }
+        if hasActiveIndividualTour {
+            return 1
+        }
+        return 0
+    }
 }
