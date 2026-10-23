@@ -1,9 +1,169 @@
 import Foundation
 import SwiftUI
+import CoreGraphics
+import ImageIO
 import Metal
 import MetalKit
 import simd
 import FishingCore
+
+// MARK: - 0. Original APK Drawable & Texture Loader (`OriginalGameAssetsLoader`)
+
+/// Loads the 339 original PNG sprites (`background.png`, `second_background.png`, `pond_1_big..15_big.png`,
+/// `pond_1..15.png`, `fishing_rod_0..15.png`, `bobber.png`, `bobber_hide.png`, `push_me.png`, `push_me_on.png`,
+/// `fish_1..141.png`, `bait_1..40.png`, `md_achiv_1..14.png`, etc.) extracted from `fishing181.apk` (`resources.arsc`)
+/// inside `App/Resources/GameData/Drawables/`.
+public enum OriginalGameAssetsLoader: Sendable {
+    private final class ImageCache: @unchecked Sendable {
+        static let shared = ImageCache()
+        private let lock = NSLock()
+        private var storage: [String: CGImage] = [:]
+
+        func get(_ key: String) -> CGImage? {
+            lock.lock()
+            defer { lock.unlock() }
+            return storage[key]
+        }
+
+        func set(_ image: CGImage, for key: String) {
+            lock.lock()
+            defer { lock.unlock() }
+            storage[key] = image
+        }
+    }
+
+    /// Resolves the file URL of `<name>.png` inside `GameData/Drawables/` across app bundles and test layouts.
+    public static func resolveDrawableURL(
+        named name: String,
+        gameDataDirectoryURL: URL? = nil,
+        bundle: Bundle = .main
+    ) -> URL? {
+        let cleanName = name.hasSuffix(".png") ? String(name.dropLast(4)) : name
+        var candidates: [URL] = []
+
+        if let explicitDir = gameDataDirectoryURL {
+            candidates.append(explicitDir.appendingPathComponent("Drawables/\(cleanName).png"))
+            candidates.append(explicitDir.appendingPathComponent("\(cleanName).png"))
+        }
+        if let bundleGameData = bundle.url(forResource: "GameData", withExtension: nil) {
+            candidates.append(bundleGameData.appendingPathComponent("Drawables/\(cleanName).png"))
+        }
+        if let resourceRoot = bundle.resourceURL {
+            candidates.append(resourceRoot.appendingPathComponent("GameData/Drawables/\(cleanName).png"))
+            candidates.append(resourceRoot.appendingPathComponent("Drawables/\(cleanName).png"))
+        }
+        if let directBundleURL = bundle.url(forResource: cleanName, withExtension: "png") {
+            candidates.append(directBundleURL)
+        }
+        if let envDir = ProcessInfo.processInfo.environment["FISHING_GAMEDATA_DIR"], !envDir.isEmpty {
+            let envURL = URL(fileURLWithPath: envDir, isDirectory: true)
+            candidates.append(envURL.appendingPathComponent("Drawables/\(cleanName).png"))
+        }
+
+        // Package root fallback during local development / tests
+        let sourceRoot = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        candidates.append(sourceRoot.appendingPathComponent("App/Resources/GameData/Drawables/\(cleanName).png"))
+
+        for url in candidates {
+            if FileManager.default.fileExists(atPath: url.path) {
+                return url
+            }
+        }
+        return nil
+    }
+
+    /// Loads and caches a `CGImage` for an original APK drawable name (e.g. `"pond_1_big"`, `"fishing_rod_0"`, `"fish_1"`).
+    public static func loadCGImage(
+        named name: String,
+        gameDataDirectoryURL: URL? = nil,
+        bundle: Bundle = .main
+    ) -> CGImage? {
+        let cleanName = name.hasSuffix(".png") ? String(name.dropLast(4)) : name
+        if gameDataDirectoryURL == nil, let cached = ImageCache.shared.get(cleanName) {
+            return cached
+        }
+        guard let url = resolveDrawableURL(named: cleanName, gameDataDirectoryURL: gameDataDirectoryURL, bundle: bundle),
+              let dataProvider = CGDataProvider(url: url as CFURL),
+              let cgImage = CGImage(
+                  pngDataProviderSource: dataProvider,
+                  decode: nil,
+                  shouldInterpolate: true,
+                  intent: .defaultIntent
+              ) else {
+            return nil
+        }
+        if gameDataDirectoryURL == nil {
+            ImageCache.shared.set(cgImage, for: cleanName)
+        }
+        return cgImage
+    }
+
+    /// Returns a SwiftUI `Image` for an original APK drawable name, or `nil` if not bundled.
+    public static func image(
+        named name: String,
+        gameDataDirectoryURL: URL? = nil,
+        bundle: Bundle = .main
+    ) -> Image? {
+        guard let cgImage = loadCGImage(named: name, gameDataDirectoryURL: gameDataDirectoryURL, bundle: bundle) else {
+            return nil
+        }
+        return Image(decorative: cgImage, scale: 1.0, orientation: .up)
+    }
+
+    /// Rasterizes a `CGImage` into a tightly packed 4-byte `RGBA8` buffer (`width * height * 4` bytes, top-to-bottom rows).
+    public static func decodeRGBA8(from cgImage: CGImage) -> (width: Int, height: Int, rgba: [UInt8])? {
+        let width = cgImage.width
+        let height = cgImage.height
+        guard width > 0, height > 0 else { return nil }
+
+        var rgba = [UInt8](repeating: 0, count: width * height * 4)
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        let bitmapInfo = CGBitmapInfo.byteOrder32Big.rawValue | CGImageAlphaInfo.premultipliedLast.rawValue
+
+        let success = rgba.withUnsafeMutableBytes { rawPtr -> Bool in
+            guard let baseAddress = rawPtr.baseAddress,
+                  let ctx = CGContext(
+                      data: baseAddress,
+                      width: width,
+                      height: height,
+                      bitsPerComponent: 8,
+                      bytesPerRow: width * 4,
+                      space: colorSpace,
+                      bitmapInfo: bitmapInfo
+                  ) else {
+                return false
+            }
+            ctx.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+            return true
+        }
+        guard success else { return nil }
+        return (width, height, rgba)
+    }
+
+    /// Reconstructs `F0.n.s(d0, e0)` (full pond texture `B`) and `F0.n.r(d0, e0)` (top 25% sky/shore slice `f0`)
+    /// from the original `pond_<id>_big.png` resource (`RENDERER.md` Section 2.2).
+    public static func decodePondAndTopQuarterSkyRGBA(
+        pondIndex0Based: Int,
+        gameDataDirectoryURL: URL? = nil,
+        bundle: Bundle = .main
+    ) -> (width: Int, height: Int, fullRGBA: [UInt8], skyHeight: Int, skyRGBA: [UInt8])? {
+        let clampedNumber = max(1, min(15, pondIndex0Based + 1))
+        let bigName = "pond_\(clampedNumber)_big"
+        let fallbackSmallName = "pond_\(clampedNumber)"
+        guard let cgImage = loadCGImage(named: bigName, gameDataDirectoryURL: gameDataDirectoryURL, bundle: bundle)
+                ?? loadCGImage(named: fallbackSmallName, gameDataDirectoryURL: gameDataDirectoryURL, bundle: bundle),
+              let decoded = decodeRGBA8(from: cgImage) else {
+            return nil
+        }
+        let skyHeight = max(1, decoded.height / 4)
+        let skyByteCount = skyHeight * decoded.width * 4
+        let skyRGBA = Array(decoded.rgba.prefix(skyByteCount))
+        return (decoded.width, decoded.height, decoded.rgba, skyHeight, skyRGBA)
+    }
+}
 
 // MARK: - 1. Water Shader Activation Policy (`GameActivity.b0()` & `GameView.u()`)
 
@@ -117,6 +277,12 @@ public enum TgaTextureLoader: Sendable {
             candidates.append(resourceRoot.appendingPathComponent("GameData/Textures/\(filename)"))
             candidates.append(resourceRoot.appendingPathComponent("Textures/\(filename)"))
         }
+        let sourceRoot = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        candidates.append(sourceRoot.appendingPathComponent("App/Resources/GameData/Textures/\(filename)"))
+
         for url in candidates {
             if FileManager.default.fileExists(atPath: url.path),
                let data = try? Data(contentsOf: url),
@@ -186,110 +352,100 @@ public enum WaterShaderMath: Sendable {
         noise1Sample: SIMD4<Float>,
         noise2Sample: SIMD4<Float>
     ) -> SIMD2<Float> {
-        let rawNoise = ((noise1Sample - SIMD4<Float>(repeating: 0.5)) * 2.0)
-            + ((noise2Sample - SIMD4<Float>(repeating: 0.5)) * 2.0)
-        let nLen = simd_length(rawNoise)
-        let vNoise = nLen > 1e-6 ? (rawNoise / nLen) : SIMD4<Float>(0, 0, 1, 0)
+        let n1 = (noise1Sample - SIMD4<Float>(repeating: 0.5)) * 2.0
+        let n2 = (noise2Sample - SIMD4<Float>(repeating: 0.5)) * 2.0
+        let sum = n1 + n2
+        let len4 = sqrt(simd_dot(sum, sum))
+        let vNoise = len4 > 1e-6 ? (sum / len4) : SIMD4<Float>(0, 0, 1, 0)
 
         let camDistVec = ndcPosition - SIMD3<Float>(0.0, -1.5, 0.5)
         let fLength = max(1e-4, simd_length(camDistVec))
-        var vUV = texCoords - (SIMD2<Float>(vNoise.x, vNoise.y) / (50.0 * fLength))
+        var vUV = texCoords - SIMD2<Float>(vNoise.x, vNoise.y) / (50.0 * fLength)
 
         vUV.x = min(0.99, max(0.01, vUV.x))
         vUV.y = min(0.99, max(0.01, vUV.y))
         return vUV
     }
 
-    /// `PSBackGround.glsl`: computes the golden sun specular reflection factor `pow(fCos, 192.0)`
-    /// using the authentic uninitialized `vLightPos = (0.0, 0.0, 0.0)` (`RENDERER.md` Section 4.2 & 6.4).
-    public static func computeSpecularMixFactor(
+    /// `PSBackGround.glsl`: computes golden sun specular reflection (`pow(fCos, 192.0)`, `vLightPos = (0, 0, 0)`).
+    public static func applyWaterSpecularAndAlpha(
+        diffuseColor: SIMD4<Float>,
         ndcPosition: SIMD3<Float>,
-        normalizedNoise: SIMD3<Float>,
+        normalizedNoise4D: SIMD4<Float>,
         lightPos: SIMD3<Float> = SIMD3<Float>(0.0, 0.0, 0.0)
-    ) -> Float {
+    ) -> SIMD4<Float> {
         let lightVec = ndcPosition - lightPos
         let vLight = simd_length(lightVec) > 1e-6 ? simd_normalize(lightVec) : SIMD3<Float>(0, 1, 0)
         let camVec = SIMD3<Float>(0.0, -0.8, -0.35) - ndcPosition
-        let vCamera = simd_length(camVec) > 1e-6 ? simd_normalize(camVec) : SIMD3<Float>(0, 0, -1)
+        let vCamera = simd_length(camVec) > 1e-6 ? simd_normalize(camVec) : SIMD3<Float>(0, -1, 0)
 
-        let n = simd_length(normalizedNoise) > 1e-6 ? simd_normalize(normalizedNoise) : SIMD3<Float>(0, 0, 1)
-        let reflectedVec = vLight - (2.0 * simd_dot(vLight, n) * n)
-        let vReflected = simd_length(reflectedVec) > 1e-6 ? simd_normalize(reflectedVec) : vLight
+        let noiseXYZ = SIMD3<Float>(normalizedNoise4D.x, normalizedNoise4D.y, normalizedNoise4D.z)
+        let reflRaw = vLight - (2.0 * simd_dot(vLight, noiseXYZ) * noiseXYZ)
+        let vReflected = simd_length(reflRaw) > 1e-6 ? simd_normalize(reflRaw) : noiseXYZ
 
-        let fCos = max(Float(0.0), simd_dot(vReflected, vCamera))
-        return pow(fCos, 192.0)
+        let fCos = max(0.0, simd_dot(vReflected, vCamera))
+        let specFactor = pow(fCos, 192.0)
+        let gold = SIMD4<Float>(1.0, 0.8, 0.0, 1.0)
+        var mixed = diffuseColor * (1.0 - specFactor) + gold * specFactor
+        mixed.w = 0.8
+        return mixed
     }
 
-    /// `PSBlit0.glsl` (day) & `PSBlit0_night.glsl` (night):
-    /// Day (`05:00..21:59`): `RGB` unchanged, `A = 0.9`.
-    /// Night (`22:00..04:59`): `R *= 0.25, G *= 0.25, B *= 0.40, A = 0.9`.
-    public static func applyBlitShaderColor(
-        sample: SIMD4<Float>,
-        isDayLight: Bool
-    ) -> SIMD4<Float> {
-        if isDayLight {
-            return SIMD4<Float>(sample.x, sample.y, sample.z, 0.9)
+    /// `PSBlit0.glsl` (day) and `PSBlit0_night.glsl` (night: `R *= 0.25, G *= 0.25, B *= 0.40, A = 0.9`).
+    public static func applyScreenBlitTint(color: SIMD4<Float>, isDaylight: Bool) -> SIMD4<Float> {
+        if isDaylight {
+            return SIMD4<Float>(color.x, color.y, color.z, 0.9)
         } else {
-            return SIMD4<Float>(
-                sample.x * 0.25,
-                sample.y * 0.25,
-                sample.z * 0.40,
-                0.9
-            )
+            return SIMD4<Float>(color.x * 0.25, color.y * 0.25, color.z * 0.40, 0.9)
         }
     }
 }
 
-// MARK: - 4. Metal Shading Language (MSL) Port of All 5 Shaders (`assets/Shaders/*.glsl`)
+// MARK: - 4. Embedded Metal Shading Language (MSL) Translation of All 5 GLSL Shaders
 
 public enum WaterMetalShaderSource: Sendable {
-    /// Complete MSL library source translating:
-    /// - `VSBackGround.glsl` -> `vertexBackGround`
-    /// - `PSBackGround.glsl` -> `fragmentBackGround`
-    /// - `VSBlit0.glsl`      -> `vertexBlit0`
-    /// - `PSBlit0.glsl`      -> `fragmentBlit0Day`
-    /// - `PSBlit0_night.glsl`-> `fragmentBlit0Night`
+    /// Direct MSL port of `VSBackGround.glsl`, `PSBackGround.glsl`, `VSBlit0.glsl`, `PSBlit0.glsl`, and `PSBlit0_night.glsl`.
     public static let mslSource: String = """
     #include <metal_stdlib>
     using namespace metal;
 
     struct WaterVertexIn {
-        float2 aPosition [[attribute(0)]];
-        float2 aTexCoords [[attribute(1)]];
+        float2 position [[attribute(0)]];
+        float2 texCoords [[attribute(1)]];
     };
 
-    struct WaterBackGroundVaryings {
+    struct WaterBackgroundVaryings {
         float4 position [[position]];
         float2 vTexCoords;
         float3 vPosition;
     };
 
-    struct WaterBlitVaryings {
+    struct BlitVaryings {
         float4 position [[position]];
         float2 vTexCoords;
     };
 
     struct WaterUniforms {
         float vOffset;
-        float3 vLightPos;
+        float3 vLightPos; // Uninitialized in F0.n -> always float3(0.0, 0.0, 0.0)
     };
 
     // 1. VSBackGround.glsl (Pass 1 Vertex Shader)
-    vertex WaterBackGroundVaryings vertexBackGround(
+    vertex WaterBackgroundVaryings vertexBackGround(
         uint vertexID [[vertex_id]],
         constant float4 *vertices [[buffer(0)]]
     ) {
-        float4 posAndUV = vertices[vertexID];
-        WaterBackGroundVaryings out;
-        out.vTexCoords = posAndUV.zw;
-        out.position = float4(posAndUV.x, posAndUV.y, 0.0, 1.0);
-        out.vPosition = out.position.xyz;
+        WaterBackgroundVaryings out;
+        float4 packed = vertices[vertexID];
+        out.position = float4(packed.xy, 0.0, 1.0);
+        out.vTexCoords = packed.zw;
+        out.vPosition = float3(packed.xy, 0.0);
         return out;
     }
 
     // 2. PSBackGround.glsl (Pass 1 Fragment Shader -> 256x512 offscreen FBO)
     fragment float4 fragmentBackGround(
-        WaterBackGroundVaryings in [[stage_in]],
+        WaterBackgroundVaryings in [[stage_in]],
         texture2d<float> vDiffuseTexture [[texture(0)]],
         texture2d<float> vNoise1Texture [[texture(1)]],
         texture2d<float> vNoise2Texture [[texture(2)]],
@@ -299,17 +455,17 @@ public enum WaterMetalShaderSource: Sendable {
     ) {
         float2 vTexCoords1 = in.vTexCoords;
         vTexCoords1.x = vTexCoords1.x - uniforms.vOffset;
-        float4 vNoise1 = vNoise1Texture.sample(noiseSampler, fract(vTexCoords1 * 3.0));
+        float4 vNoise1 = vNoise1Texture.sample(noiseSampler, vTexCoords1 * 3.0);
 
         vTexCoords1 = in.vTexCoords;
         vTexCoords1.x = vTexCoords1.x + uniforms.vOffset;
-        float4 vNoise2 = vNoise2Texture.sample(noiseSampler, fract(vTexCoords1 * 3.0));
+        float4 vNoise2 = vNoise2Texture.sample(noiseSampler, vTexCoords1 * 3.0);
 
         float4 vNoise = ((vNoise1 - 0.5) * 2.0) + ((vNoise2 - 0.5) * 2.0);
         vNoise = normalize(vNoise);
 
-        float fLenght = length(in.vPosition - float3(0.0, -1.5, 0.5));
-        float2 vUV = in.vTexCoords - (vNoise.xy / (50.0 * fLenght));
+        float fLength = length(in.vPosition - float3(0.0, -1.5, 0.5));
+        float2 vUV = in.vTexCoords - (vNoise.xy / (50.0 * fLength));
         vUV = clamp(vUV, float2(0.01, 0.01), float2(0.99, 0.99));
 
         float4 vColor = vDiffuseTexture.sample(diffuseSampler, vUV);
@@ -325,76 +481,78 @@ public enum WaterMetalShaderSource: Sendable {
     }
 
     // 3. VSBlit0.glsl (Pass 2 & Pass 3 Vertex Shader)
-    vertex WaterBlitVaryings vertexBlit0(
+    vertex BlitVaryings vertexBlit0(
         uint vertexID [[vertex_id]],
         constant float4 *vertices [[buffer(0)]]
     ) {
-        float4 posAndUV = vertices[vertexID];
-        WaterBlitVaryings out;
-        out.vTexCoords = posAndUV.zw;
-        out.position = float4(posAndUV.x, posAndUV.y, 0.0, 1.0);
+        BlitVaryings out;
+        float4 packed = vertices[vertexID];
+        out.position = float4(packed.xy, 0.0, 1.0);
+        out.vTexCoords = packed.zw;
         return out;
     }
 
-    // 4. PSBlit0.glsl (Day Blit Fragment Shader, 05:00..21:59)
+    // 4. PSBlit0.glsl (Daylight Blit Fragment Shader, 05:00..21:59)
     fragment float4 fragmentBlit0Day(
-        WaterBlitVaryings in [[stage_in]],
+        BlitVaryings in [[stage_in]],
         texture2d<float> vTexture0 [[texture(0)]],
         sampler linearSampler [[sampler(0)]]
     ) {
-        float4 color = vTexture0.sample(linearSampler, in.vTexCoords);
-        color.a = 0.9;
-        return color;
+        float4 c = vTexture0.sample(linearSampler, in.vTexCoords);
+        c.a = 0.9;
+        return c;
     }
 
     // 5. PSBlit0_night.glsl (Night Blit Fragment Shader, 22:00..04:59)
     fragment float4 fragmentBlit0Night(
-        WaterBlitVaryings in [[stage_in]],
+        BlitVaryings in [[stage_in]],
         texture2d<float> vTexture0 [[texture(0)]],
         sampler linearSampler [[sampler(0)]]
     ) {
-        float4 color = vTexture0.sample(linearSampler, in.vTexCoords);
-        color.r = color.r * 0.25;
-        color.g = color.g * 0.25;
-        color.b = color.b * 0.40;
-        color.a = 0.9;
-        return color;
+        float4 c = vTexture0.sample(linearSampler, in.vTexCoords);
+        c.r *= 0.25;
+        c.g *= 0.25;
+        c.b *= 0.40;
+        c.a = 0.9;
+        return c;
     }
     """
 }
 
-// MARK: - 5. Three-Pass Metal Water Renderer (`F0.n` — `WaterMetalRenderer`)
+// MARK: - 5. 3-Pass Metal Water Renderer (`F0.n` — `WaterMetalRenderer`)
 
-/// Native Metal (`MTKViewDelegate`) port of `F0.n` (`WaterGLRenderer`, `RENDERER.md` Section 2):
-/// - Pass 0 (`F0.n.o()`): increments `vOffset` by `+0.0005` (`0.0 .. 1.0`);
-/// - Pass 1 (`F0.n.k()`): renders water refraction and golden sun specular into a fixed `256 x 512`
-///   offscreen texture (`offscreenWaterTexture`) with linear filtering;
-/// - Pass 2 (`F0.n.j(isDay)`): blits `offscreenWaterTexture` across the full screen (`[-1, 1] x [-1, 1]`)
-///   using `fragmentBlit0Day` or `fragmentBlit0Night`;
-/// - Pass 3 (`F0.n.l(isDay)`): overlays the static top 25% sky/shore texture (`[-1, 1] x [0.5, 1.0]` in NDC)
-///   so sky and trees are not distorted by water refraction.
+/// Native Metal reconstruction of `F0.n` (`WaterGLRenderer`, `RENDERER.md` Section 2):
+/// - **Pass 1 (`k()`)**: Renders the full pond texture `B` with counter-scrolling normal maps `wNoise3` (`-vOffset`)
+///   and `wNoise4` (`+vOffset`) into an offscreen **`256 x 512`** texture `Y` (`WaterShaderMath.offscreenWidth x offscreenHeight`).
+/// - **Pass 2 (`j(isDay)`)**: Blits `Y` onto the full screen with `alpha = 0.9` using either day (`PSBlit0`)
+///   or night (`PSBlit0_night`: `R *= 0.25, G *= 0.25, B *= 0.40`) fragment shader.
+/// - **Pass 3 (`l(isDay)`)**: Overlays the top quarter of the screen (`Y in [0.5, 1.0]` NDC = top 25%)
+///   with the unrefracted sky/shoreline texture `f0`.
 @MainActor
 public final class WaterMetalRenderer: NSObject, MTKViewDelegate {
     public let device: MTLDevice
     public let commandQueue: MTLCommandQueue
 
-    public private(set) var phaseOffset: Float = 0.0
-    public var isDayLight: Bool = true
+    public let waterPassPipeline: MTLRenderPipelineState
+    public let dayBlitPipeline: MTLRenderPipelineState
+    public let nightBlitPipeline: MTLRenderPipelineState
 
-    public private(set) var waterPassPipeline: MTLRenderPipelineState
-    public private(set) var dayBlitPipeline: MTLRenderPipelineState
-    public private(set) var nightBlitPipeline: MTLRenderPipelineState
-
-    public private(set) var offscreenWaterTexture: MTLTexture
+    public let offscreenWaterTexture: MTLTexture
+    public let noise1Texture: MTLTexture
+    public let noise2Texture: MTLTexture
     public private(set) var diffusePondTexture: MTLTexture
     public private(set) var topQuarterSkyTexture: MTLTexture
-    public private(set) var noise1Texture: MTLTexture
-    public private(set) var noise2Texture: MTLTexture
+    public private(set) var currentPondIndex: Int
 
     private let fullScreenQuadBuffer: MTLBuffer
     private let topQuarterSkyQuadBuffer: MTLBuffer
     private let linearClampSampler: MTLSamplerState
     private let linearRepeatSampler: MTLSamplerState
+
+    /// Corresponds to `F0.n.V` (`vOffset` in `[0.0 .. 1.0]`, incremented by `+0.0005` per frame).
+    public private(set) var phaseOffset: Float = 0.0
+    /// Corresponds to `F0.n.c0` (`true` = day `05:00..21:59`, `false` = night `22:00..04:59`).
+    public var isDayLight: Bool = true
 
     private struct UniformPayload {
         var vOffset: Float
@@ -408,7 +566,9 @@ public final class WaterMetalRenderer: NSObject, MTKViewDelegate {
     public init?(
         device: MTLDevice? = MTLCreateSystemDefaultDevice(),
         noise1TGAData: Data? = nil,
-        noise2TGAData: Data? = nil
+        noise2TGAData: Data? = nil,
+        pondIndex: Int = 0,
+        gameDataDirectoryURL: URL? = nil
     ) {
         guard let dev = device,
               let queue = dev.makeCommandQueue(),
@@ -423,6 +583,7 @@ public final class WaterMetalRenderer: NSObject, MTKViewDelegate {
 
         self.device = dev
         self.commandQueue = queue
+        self.currentPondIndex = pondIndex
 
         // Pass 1 pipeline (`256 x 512` offscreen target)
         let backDesc = MTLRenderPipelineDescriptor()
@@ -516,15 +677,23 @@ public final class WaterMetalRenderer: NSObject, MTKViewDelegate {
         )
         offscreenDesc.usage = [.renderTarget, .shaderRead]
 
-        let rawNoise1 = noise1TGAData ?? TgaTextureLoader.loadBundledNoiseTGA(named: "wNoise3.tga") ?? TgaTextureLoader.makeProceduralWaveNoiseTGA(seedPhase: 0)
-        let rawNoise2 = noise2TGAData ?? TgaTextureLoader.loadBundledNoiseTGA(named: "wNoise4.tga") ?? TgaTextureLoader.makeProceduralWaveNoiseTGA(seedPhase: 37)
+        let rawNoise1 = noise1TGAData
+            ?? TgaTextureLoader.loadBundledNoiseTGA(named: "wNoise3.tga", gameDataDirectoryURL: gameDataDirectoryURL)
+            ?? TgaTextureLoader.makeProceduralWaveNoiseTGA(seedPhase: 0)
+        let rawNoise2 = noise2TGAData
+            ?? TgaTextureLoader.loadBundledNoiseTGA(named: "wNoise4.tga", gameDataDirectoryURL: gameDataDirectoryURL)
+            ?? TgaTextureLoader.makeProceduralWaveNoiseTGA(seedPhase: 37)
 
         guard let offscreenTex = dev.makeTexture(descriptor: offscreenDesc),
               let decoded1 = try? TgaTextureLoader.decode(data: rawNoise1),
               let decoded2 = try? TgaTextureLoader.decode(data: rawNoise2),
               let n1Tex = Self.makeRGBATexture(device: dev, width: decoded1.width, height: decoded1.height, rgba: decoded1.rgbaBytes),
               let n2Tex = Self.makeRGBATexture(device: dev, width: decoded2.width, height: decoded2.height, rgba: decoded2.rgbaBytes),
-              let (pondTex, skyTex) = Self.makeProceduralPondAndSkyTextures(device: dev, width: 256, height: 256) else {
+              let (pondTex, skyTex) = Self.makeBundledOrProceduralPondAndSkyTextures(
+                  device: dev,
+                  pondIndex0Based: pondIndex,
+                  gameDataDirectoryURL: gameDataDirectoryURL
+              ) else {
             return nil
         }
 
@@ -535,6 +704,20 @@ public final class WaterMetalRenderer: NSObject, MTKViewDelegate {
         self.topQuarterSkyTexture = skyTex
 
         super.init()
+    }
+
+    /// Updates `diffusePondTexture` (`B`) and `topQuarterSkyTexture` (`f0`) when the active pond changes (`0..14`).
+    public func setPondIndex(_ pondIndex: Int, gameDataDirectoryURL: URL? = nil) {
+        guard pondIndex != currentPondIndex else { return }
+        if let (pondTex, skyTex) = Self.makeBundledOrProceduralPondAndSkyTextures(
+            device: device,
+            pondIndex0Based: pondIndex,
+            gameDataDirectoryURL: gameDataDirectoryURL
+        ) {
+            self.diffusePondTexture = pondTex
+            self.topQuarterSkyTexture = skyTex
+            self.currentPondIndex = pondIndex
+        }
     }
 
     public func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {}
@@ -624,6 +807,22 @@ public final class WaterMetalRenderer: NSObject, MTKViewDelegate {
         return tex
     }
 
+    private static func makeBundledOrProceduralPondAndSkyTextures(
+        device: MTLDevice,
+        pondIndex0Based: Int,
+        gameDataDirectoryURL: URL? = nil
+    ) -> (MTLTexture, MTLTexture)? {
+        if let decoded = OriginalGameAssetsLoader.decodePondAndTopQuarterSkyRGBA(
+            pondIndex0Based: pondIndex0Based,
+            gameDataDirectoryURL: gameDataDirectoryURL
+        ),
+           let pondTex = makeRGBATexture(device: device, width: decoded.width, height: decoded.height, rgba: decoded.fullRGBA),
+           let skyTex = makeRGBATexture(device: device, width: decoded.width, height: decoded.skyHeight, rgba: decoded.skyRGBA) {
+            return (pondTex, skyTex)
+        }
+        return makeProceduralPondAndSkyTextures(device: device, width: 256, height: 256)
+    }
+
     private static func makeProceduralPondAndSkyTextures(
         device: MTLDevice,
         width: Int,
@@ -681,13 +880,15 @@ import UIKit
 
 public struct MetalWaterSurfaceView: UIViewRepresentable {
     public var isDayLight: Bool
+    public var pondIndex: Int
 
-    public init(isDayLight: Bool) {
+    public init(isDayLight: Bool, pondIndex: Int = 0) {
         self.isDayLight = isDayLight
+        self.pondIndex = pondIndex
     }
 
     public func makeCoordinator() -> WaterMetalRenderer? {
-        WaterMetalRenderer()
+        WaterMetalRenderer(pondIndex: pondIndex)
     }
 
     public func makeUIView(context: Context) -> MTKView {
@@ -697,6 +898,7 @@ public struct MetalWaterSurfaceView: UIViewRepresentable {
         mtkView.isPaused = false
         if let renderer = context.coordinator {
             renderer.isDayLight = isDayLight
+            renderer.setPondIndex(pondIndex)
             mtkView.device = renderer.device
             mtkView.delegate = renderer
             mtkView.colorPixelFormat = .bgra8Unorm
@@ -706,6 +908,7 @@ public struct MetalWaterSurfaceView: UIViewRepresentable {
 
     public func updateUIView(_ uiView: MTKView, context: Context) {
         context.coordinator?.isDayLight = isDayLight
+        context.coordinator?.setPondIndex(pondIndex)
     }
 }
 #elseif canImport(AppKit)
@@ -713,13 +916,15 @@ import AppKit
 
 public struct MetalWaterSurfaceView: NSViewRepresentable {
     public var isDayLight: Bool
+    public var pondIndex: Int
 
-    public init(isDayLight: Bool) {
+    public init(isDayLight: Bool, pondIndex: Int = 0) {
         self.isDayLight = isDayLight
+        self.pondIndex = pondIndex
     }
 
     public func makeCoordinator() -> WaterMetalRenderer? {
-        WaterMetalRenderer()
+        WaterMetalRenderer(pondIndex: pondIndex)
     }
 
     public func makeNSView(context: Context) -> MTKView {
@@ -729,6 +934,7 @@ public struct MetalWaterSurfaceView: NSViewRepresentable {
         mtkView.isPaused = false
         if let renderer = context.coordinator {
             renderer.isDayLight = isDayLight
+            renderer.setPondIndex(pondIndex)
             mtkView.device = renderer.device
             mtkView.delegate = renderer
             mtkView.colorPixelFormat = .bgra8Unorm
@@ -738,6 +944,7 @@ public struct MetalWaterSurfaceView: NSViewRepresentable {
 
     public func updateNSView(_ nsView: MTKView, context: Context) {
         context.coordinator?.isDayLight = isDayLight
+        context.coordinator?.setPondIndex(pondIndex)
     }
 }
 #endif

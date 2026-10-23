@@ -910,5 +910,19 @@ final class FishingGameAppTests: XCTestCase {
         XCTAssertEqual(coordinator2.profile.balance, balanceAfterStarterKit)
         XCTAssertEqual(coordinator2.ownedRods.count, 1)
         XCTAssertEqual(coordinator2.fishCatalogById.count, 141)
+        // 6. Verify OriginalGameAssetsLoader decodes bundled pond_1_big.png and top-25% sky slice when Drawables/ are present
+        if OriginalGameAssetsLoader.resolveDrawableURL(named: "pond_1_big", gameDataDirectoryURL: gameDataURL) != nil {
+            let pondDecoded = OriginalGameAssetsLoader.decodePondAndTopQuarterSkyRGBA(
+                pondIndex0Based: 0,
+                gameDataDirectoryURL: gameDataURL
+            )
+            XCTAssertNotNil(pondDecoded)
+            if let pondDecoded {
+                XCTAssertGreaterThan(pondDecoded.width, 0)
+                XCTAssertGreaterThan(pondDecoded.height, 0)
+                XCTAssertEqual(pondDecoded.skyHeight, max(1, pondDecoded.height / 4))
+                XCTAssertEqual(pondDecoded.skyRGBA.count, pondDecoded.width * pondDecoded.skyHeight * 4)
+            }
+        }
     }
 }
