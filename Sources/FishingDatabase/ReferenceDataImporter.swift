@@ -1593,8 +1593,8 @@ extension ReferenceCatalogStore {
                 (2, "kosp", 6, 220, 100),
                 (3, "master", 13, 550, 100),
                 (5, "somik", 45, 3200, 100),
-                (14, "venol", 0, 0, 0),
-                (15, "master line", 0, 0, 0),
+                (14, "leska 600", 0, 0, 0),
+                (15, "leska 810", 0, 0, 0),
                 (16, "big fish", 0, 0, 0)
             ]
             for l in starterLines {
@@ -1614,8 +1614,8 @@ extension ReferenceCatalogStore {
                 (1, "gert", 1, 100),
                 (2, "terf", 2, 300),
                 (3, "rosl", 3, 850),
-                (8, "super", 0, 0),
-                (9, "master coil", 0, 0),
+                (8, "rewery", 0, 0),
+                (9, "tyhol", 0, 0),
                 (10, "wectern", 0, 0)
             ]
             for c in starterCoils {

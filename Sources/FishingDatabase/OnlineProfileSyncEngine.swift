@@ -165,8 +165,9 @@ public enum FishingNetworkCrypto: Sendable {
     /// Replicates the tournament header string truncation quirk in `x0.p.A(String)` (`NETWORK.md` Section 7.1 #4):
     /// If the string ends with `\n` (`charAt(len - 1) == 10`), truncates the last 3 characters (`substring(0, len - 3)`).
     public static func truncateTournamentHeaderString(_ raw: String) -> String {
-        guard raw.hasSuffix("\n"), raw.count >= 3 else { return raw }
-        return String(raw.dropLast(3))
+        let utf16 = Array(raw.utf16)
+        guard utf16.last == 0x000A, utf16.count >= 3 else { return raw }
+        return String(decoding: utf16.dropLast(3), as: UTF16.self)
     }
 }
 
@@ -381,7 +382,7 @@ extension PlayerStateRepository {
                     installationUuid: installationUuid
                 )
                 try connection.run("""
-                INSERT INTO user_fishing_rods (id, fishing_rod_id, strength, date, md5)
+                INSERT INTO user_fishing_rods (id, fishing_rod, strength, date, md5)
                 VALUES (?, ?, ?, ?, ?);
                 """, bindings: [
                     .integer(Int64(rowId)),
@@ -428,7 +429,7 @@ extension PlayerStateRepository {
                     installationUuid: installationUuid
                 )
                 try connection.run("""
-                INSERT INTO user_coils (id, coil_id, strength, date, md5)
+                INSERT INTO user_coils (id, coil, strength, date, md5)
                 VALUES (?, ?, ?, ?, ?);
                 """, bindings: [
                     .integer(Int64(rowId)),
@@ -475,7 +476,7 @@ extension PlayerStateRepository {
                     installationUuid: installationUuid
                 )
                 try connection.run("""
-                INSERT INTO user_fishing_lines (id, fishing_line_id, length, date, md5)
+                INSERT INTO user_fishing_lines (id, fishing_line, length, date, md5)
                 VALUES (?, ?, ?, ?, ?);
                 """, bindings: [
                     .integer(Int64(rowId)),
