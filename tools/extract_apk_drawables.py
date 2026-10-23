@@ -1,6 +1,13 @@
 #!/usr/bin/env python3
-"""Extracts all 339 original game PNG drawables, TGA normal maps, and GLSL shaders from fishing181.apk."""
-import os, sys, zipfile
+"""Extracts all 339 original game PNG drawables, TGA normal maps, GLSL shaders, and iOS AppIcon.appiconset from fishing181.apk."""
+import io
+import json
+import os
+import struct
+import subprocess
+import sys
+import zipfile
+import zlib
 
 DRAWABLE_MAP = {
   "about_game": "res/Qp.png",
@@ -344,6 +351,88 @@ DRAWABLE_MAP = {
   "www_btn": "res/pe.png"
 }
 
+
+def _make_png_chunk(chunk_type: bytes, data: bytes) -> bytes:
+    crc = zlib.crc32(chunk_type + data) & 0xFFFFFFFF
+    return struct.pack(">I", len(data)) + chunk_type + data + struct.pack(">I", crc)
+
+
+def _write_solid_rgb_png(out_path: str, width: int = 1024, height: int = 1024, rgb=(16, 32, 44)) -> None:
+    raw_row = b"\x00" + bytes(rgb) * width
+    compressed = zlib.compress(raw_row * height, level=6)
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+    png_bytes = (
+        b"\x89PNG\r\n\x1a\n"
+        + _make_png_chunk(b"IHDR", ihdr)
+        + _make_png_chunk(b"IDAT", compressed)
+        + _make_png_chunk(b"IEND", b"")
+    )
+    with open(out_path, "wb") as f:
+        f.write(png_bytes)
+
+
+def generate_ios_appiconset(ic_launcher_png_bytes: bytes, resources_root_dir: str) -> None:
+    """Generates App/Resources/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png (opaque RGB) + Contents.json."""
+    xcassets_dir = os.path.join(resources_root_dir, "Assets.xcassets")
+    appicon_dir = os.path.join(xcassets_dir, "AppIcon.appiconset")
+    os.makedirs(appicon_dir, exist_ok=True)
+
+    with open(os.path.join(xcassets_dir, "Contents.json"), "w", encoding="utf-8") as f:
+        json.dump({"info": {"author": "xcode", "version": 1}}, f, indent=2)
+
+    appicon_contents = {
+        "images": [
+            {
+                "filename": "AppIcon-1024.png",
+                "idiom": "universal",
+                "platform": "ios",
+                "size": "1024x1024"
+            }
+        ],
+        "info": {
+            "author": "xcode",
+            "version": 1
+        }
+    }
+    with open(os.path.join(appicon_dir, "Contents.json"), "w", encoding="utf-8") as f:
+        json.dump(appicon_contents, f, indent=2)
+
+    target_png = os.path.join(appicon_dir, "AppIcon-1024.png")
+
+    # 1. Try Pillow (PIL) first for high-quality Lanczos upscaling onto an opaque dark-water background
+    try:
+        from PIL import Image
+        src = Image.open(io.BytesIO(ic_launcher_png_bytes)).convert("RGBA")
+        bg = Image.new("RGBA", (1024, 1024), (16, 32, 44, 255))
+        resized = src.resize((1024, 1024), getattr(Image, "Resampling", Image).LANCZOS)
+        composited = Image.alpha_composite(bg, resized).convert("RGB")
+        composited.save(target_png, format="PNG")
+        return
+    except Exception:
+        pass
+
+    # 2. On macOS runners without Pillow, use built-in `/usr/bin/sips`
+    if os.path.exists("/usr/bin/sips"):
+        tmp_src = os.path.join(appicon_dir, "_tmp_ic_launcher.png")
+        with open(tmp_src, "wb") as f:
+            f.write(ic_launcher_png_bytes)
+        try:
+            subprocess.run(
+                ["/usr/bin/sips", "-z", "1024", "1024", "-s", "format", "png", tmp_src, "--out", target_png],
+                check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            os.remove(tmp_src)
+            return
+        except Exception:
+            if os.path.exists(tmp_src):
+                os.remove(tmp_src)
+
+    # 3. Pure-Python fallback
+    _write_solid_rgb_png(target_png, 1024, 1024)
+
+
 def main():
     if len(sys.argv) < 3:
         print("Usage: extract_apk_drawables.py <path_to_fishing181.apk> <path_to_GameData_dir>")
@@ -372,7 +461,14 @@ def main():
             elif member.startswith("assets/Shaders/") and member.endswith(".glsl"):
                 with open(os.path.join(shaders_dir, os.path.basename(member)), "wb") as out:
                     out.write(zf.read(member))
-    print(f"Extracted {count} PNG drawables + TGA textures + GLSL shaders into {game_data_dir}")
+
+        # Generate App/Resources/Assets.xcassets/AppIcon.appiconset from ic_launcher (`res/Gd.png`)
+        if "res/Gd.png" in names:
+            resources_root = os.path.dirname(os.path.abspath(game_data_dir))
+            generate_ios_appiconset(zf.read("res/Gd.png"), resources_root)
+
+    print(f"Extracted {count} PNG drawables + TGA textures + GLSL shaders + AppIcon.appiconset into {game_data_dir}")
+
 
 if __name__ == "__main__":
     main()

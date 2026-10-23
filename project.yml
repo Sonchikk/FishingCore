@@ -44,6 +44,7 @@ targets:
       path: App/Info.plist
     sources:
       - path: App/FishingIOSApp.swift
+      - path: App/Resources/Assets.xcassets
       - path: App/Resources/GameData
         type: folder
         buildPhase: resources
@@ -63,6 +64,7 @@ targets:
         CURRENT_PROJECT_VERSION: "203"
         GENERATE_INFOPLIST_FILE: NO
         INFOPLIST_FILE: App/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         TARGETED_DEVICE_FAMILY: "1,2"
         CODE_SIGNING_ALLOWED: NO
         CODE_SIGNING_REQUIRED: NO

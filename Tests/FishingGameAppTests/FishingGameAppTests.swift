@@ -617,6 +617,8 @@ final class FishingGameAppTests: XCTestCase {
                 XCTAssertEqual(pondDecoded.skyHeight, max(1, pondDecoded.height / 4))
                 XCTAssertEqual(pondDecoded.skyRGBA.count, pondDecoded.width * pondDecoded.skyHeight * 4)
             }
+            XCTAssertNotNil(OriginalGameAssetsLoader.resolveDrawableURL(named: "screansaver", gameDataDirectoryURL: gameDataURL))
+            XCTAssertNotNil(OriginalGameAssetsLoader.resolveDrawableURL(named: "ic_launcher", gameDataDirectoryURL: gameDataURL))
         }
     }
 }

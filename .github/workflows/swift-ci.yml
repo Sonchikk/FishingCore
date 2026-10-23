@@ -46,7 +46,7 @@ jobs:
       - name: Swift version
         run: swift --version
 
-      - name: Extract original APK sprites & textures into App/Resources/GameData (if fishing181.apk is present)
+      - name: Extract original APK sprites, textures & iOS AppIcon (if fishing181.apk is present)
         run: |
           mkdir -p App/Resources/GameData/Drawables
           if [ -d "data" ]; then
@@ -57,6 +57,7 @@ jobs:
             python3 tools/extract_apk_drawables.py "$APK_FILE" App/Resources/GameData
           fi
           echo "Drawables count in App/Resources/GameData/Drawables: $(ls -1 App/Resources/GameData/Drawables 2>/dev/null | wc -l)"
+          ls -la App/Resources/Assets.xcassets/AppIcon.appiconset || true
 
       - name: Build all targets (FishingCore, FishingDatabase, FishingGameApp)
         run: swift build -v
@@ -94,9 +95,37 @@ jobs:
           ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" FishingIOSApp-iOS18-Simulator.app.zip
           ls -lh FishingIOSApp-iOS18-Simulator.app.zip
 
+      - name: Build iOS Device .ipa (arm64 iPhone / iPad — Sideloadly / AltStore / Xcode)
+        run: |
+          xcodebuild \
+            -project FishingIOSApp.xcodeproj \
+            -scheme FishingIOSApp \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build/DerivedDataDevice \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            AD_HOC_CODE_SIGNING_ALLOWED=YES \
+            build
+          DEVICE_APP_PATH="build/DerivedDataDevice/Build/Products/Release-iphoneos/FishingIOSApp.app"
+          ls -la "$DEVICE_APP_PATH"
+          rm -rf build/ipa_stage
+          mkdir -p build/ipa_stage/Payload
+          cp -R "$DEVICE_APP_PATH" build/ipa_stage/Payload/FishingIOSApp.app
+          (cd build/ipa_stage && ditto -c -k --sequesterRsrc --keepParent Payload "${GITHUB_WORKSPACE}/FishingIOSApp-iOS18-Device.ipa")
+          ls -lh FishingIOSApp-iOS18-Device.ipa
+
       - name: Upload FishingIOSApp.app Simulator Artifact
         uses: actions/upload-artifact@v4
         with:
           name: FishingIOSApp-iOS18-Simulator
           path: FishingIOSApp-iOS18-Simulator.app.zip
+          if-no-files-found: error
+
+      - name: Upload FishingIOSApp.ipa Device Artifact (arm64 iPhone/iPad)
+        uses: actions/upload-artifact@v4
+        with:
+          name: FishingIOSApp-iOS18-Device-IPA
+          path: FishingIOSApp-iOS18-Device.ipa
           if-no-files-found: error

@@ -14,24 +14,38 @@ private enum OriginalGameTheme {
 }
 
 /// Root container view replacing the generic iOS `TabView` with the authentic full-screen
-/// screen switching of «Рыбалка для друзей» v1.81 (`MainActivity`, `PondListActivity`, `GameActivity`,
-/// `ShopActivity`, `BackpackActivity`, `FishpondActivity`, `MyRecordsActivity`, `OnlineGameActivity`)
+/// screen switching of «Рыбалка для друзей» v1.81 (`SplashScreenActivity`, `MainActivity`, `PondListActivity`,
+/// `GameActivity`, `ShopActivity`, `BackpackActivity`, `FishpondActivity`, `MyRecordsActivity`, `OnlineGameActivity`)
 /// and the original `CatchDialog` (`C0.d`, `res/layout/catch_dialog.xml` `res/-w.xml`) overlay.
 public struct FishingRootView: View {
     @StateObject private var coordinator: FishingAppCoordinator
+    @State private var isShowingSplash: Bool
 
-    public init(coordinator: FishingAppCoordinator? = nil) {
+    public init(
+        coordinator: FishingAppCoordinator? = nil,
+        showSplashOnAppear: Bool = true
+    ) {
         if let coordinator {
             _coordinator = StateObject(wrappedValue: coordinator)
         } else {
             let resolved = (try? AppBundleDatabaseBootstrapper.bootstrapAppCoordinator()) ?? (try! FishingAppCoordinator())
             _coordinator = StateObject(wrappedValue: resolved)
         }
+        _isShowingSplash = State(initialValue: showSplashOnAppear)
     }
 
     public var body: some View {
         ZStack {
-            activeScreenView
+            if isShowingSplash {
+                OriginalSplashScreenView(
+                    versionString: FishingIOSAppConfiguration.marketingVersion
+                ) {
+                    finishSplashAndOpenMainHub()
+                }
+                .transition(.opacity)
+            } else {
+                activeScreenView
+            }
 
             if let alert = coordinator.activeAlert {
                 OriginalGameModalOverlay(alert: alert) {
@@ -40,7 +54,14 @@ public struct FishingRootView: View {
                 .transition(.opacity.combined(with: .scale(scale: 0.95)))
             }
         }
+        .animation(.easeInOut(duration: 0.2), value: isShowingSplash)
         .animation(.easeInOut(duration: 0.15), value: coordinator.activeAlert?.id)
+    }
+
+    private func finishSplashAndOpenMainHub() {
+        guard isShowingSplash else { return }
+        coordinator.selectedTab = .baseHub
+        isShowingSplash = false
     }
 
     @ViewBuilder
@@ -64,7 +85,63 @@ public struct FishingRootView: View {
     }
 }
 
-// MARK: - 0. Authentic `CatchDialog` (`C0.d`, `res/-w.xml`) & Game Alert Modal Overlay
+// MARK: - 0A. Authentic `SplashScreenActivity` (`res/layout/splash.xml` `res/ym.xml`: `@drawable/screansaver` + `@id/splash_text`)
+
+public struct OriginalSplashScreenView: View {
+    public let versionString: String
+    public let onFinish: () -> Void
+
+    public init(
+        versionString: String = "1.81",
+        onFinish: @escaping () -> Void
+    ) {
+        self.versionString = versionString
+        self.onFinish = onFinish
+    }
+
+    public var body: some View {
+        ZStack(alignment: .bottom) {
+            splashArtworkBackground
+
+            VStack(spacing: 8) {
+                ProgressView()
+                    .tint(OriginalGameTheme.goldText)
+                Text("Загрузка... (v\(versionString))")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(OriginalGameTheme.goldText)
+                    .shadow(color: .black, radius: 3, x: 0, y: 1)
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 12)
+            .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 10))
+            .padding(.bottom, 36)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            onFinish()
+        }
+        .task {
+            try? await Task.sleep(nanoseconds: 1_200_000_000)
+            onFinish()
+        }
+    }
+
+    @ViewBuilder
+    private var splashArtworkBackground: some View {
+        if let splashImg = OriginalGameAssetsLoader.image(named: "screansaver")
+            ?? OriginalGameAssetsLoader.image(named: "background") {
+            splashImg
+                .resizable()
+                .scaledToFill()
+                .ignoresSafeArea()
+        } else {
+            Color(red: 0.06, green: 0.14, blue: 0.20)
+                .ignoresSafeArea()
+        }
+    }
+}
+
+// MARK: - 0B. Authentic `CatchDialog` (`C0.d`, `res/-w.xml`) & Game Alert Modal Overlay
 
 private struct OriginalGameModalOverlay: View {
     let alert: FishingModalAlert
