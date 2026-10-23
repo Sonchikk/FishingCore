@@ -20,6 +20,7 @@ private enum OriginalGameTheme {
 public struct FishingRootView: View {
     @StateObject private var coordinator: FishingAppCoordinator
     @State private var isShowingSplash: Bool
+    private let gameClockTimer = Timer.publish(every: 2.0, on: .main, in: .common).autoconnect()
 
     public init(
         coordinator: FishingAppCoordinator? = nil,
@@ -56,6 +57,11 @@ public struct FishingRootView: View {
         }
         .animation(.easeInOut(duration: 0.2), value: isShowingSplash)
         .animation(.easeInOut(duration: 0.15), value: coordinator.activeAlert?.id)
+        .onReceive(gameClockTimer) { _ in
+            if !isShowingSplash {
+                coordinator.stepGameClockMinute()
+            }
+        }
     }
 
     private func finishSplashAndOpenMainHub() {
@@ -576,21 +582,12 @@ private struct BaseDashboardSubView: View {
                         .foregroundStyle(OriginalGameTheme.goldText)
                 }
                 Spacer()
-                if !coordinator.assembledTackle.isComplete {
-                    Button {
-                        coordinator.buyAndEquipStarterKit()
-                    } label: {
-                        OriginalStyledActionButtonLabel(title: "Стартовый набор", minWidth: 110)
-                    }
-                    .buttonStyle(.plain)
-                } else {
-                    Button {
-                        coordinator.selectedTab = .fishingPond
-                    } label: {
-                        OriginalStyledActionButtonLabel(title: "Ловить →", minWidth: 96)
-                    }
-                    .buttonStyle(.plain)
+                Button {
+                    coordinator.selectedTab = .fishingPond
+                } label: {
+                    OriginalStyledActionButtonLabel(title: "Ловить →", minWidth: 96)
                 }
+                .buttonStyle(.plain)
             }
             .padding(.horizontal, 14)
         }
@@ -946,6 +943,8 @@ private struct SettingsSubView: View {
                         Toggle("Звуки (SOUND)", isOn: $coordinator.audioHaptics.soundEnabled)
                             .foregroundStyle(OriginalGameTheme.goldText)
                         Toggle("Вибрация (VIBRATION)", isOn: $coordinator.audioHaptics.vibrationEnabled)
+                            .foregroundStyle(OriginalGameTheme.goldText)
+                        Toggle("Панель отладки на водоёме (DEV)", isOn: $coordinator.isDebugOverlayEnabled)
                             .foregroundStyle(OriginalGameTheme.goldText)
 
                         HStack {

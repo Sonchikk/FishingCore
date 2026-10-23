@@ -228,6 +228,47 @@ public struct FishingStateMachine: Sendable, Equatable {
         }
     }
 
+    /// Steps one visual canvas frame (`GameView$a` 60ms render loop: `D0.a.k(Canvas)` bounds clamping & ripple
+    /// expansion + `D0.b.d(Canvas)` cast line animation & tautness curve) and persists the mutated structs.
+    /// If `displayBobberPosition` is supplied (e.g. interpolated between 200ms physics ticks), the returned
+    /// line curve attaches to that display coordinate while preserving the authoritative `self.bobber` state.
+    @discardableResult
+    public mutating func stepVisualFrame(
+        stepRipplesAndCast: Bool = true,
+        displayBobberPosition: Point2D? = nil,
+        rng: inout some FishingRandomGenerator
+    ) -> QuadraticBezierCurve? {
+        guard var currentBobber = bobber else {
+            return nil
+        }
+        if stepRipplesAndCast {
+            currentBobber.clampAndStep(
+                canvasWidth: viewWidth,
+                canvasHeight: viewHeight,
+                rng: &rng
+            )
+            self.bobber = currentBobber
+        }
+
+        guard var currentLine = lineGeometry else {
+            return nil
+        }
+        var bobberForLine = currentBobber
+        if let displayPos = displayBobberPosition {
+            bobberForLine.x = displayPos.x
+            bobberForLine.y = displayPos.y
+        }
+        let curve = currentLine.stepAndBuildCurve(
+            rod: rodSprite,
+            bobber: bobberForLine,
+            jitterRandom: rng.nextFloat()
+        )
+        if stepRipplesAndCast {
+            self.lineGeometry = currentLine
+        }
+        return curve
+    }
+
     @discardableResult
     public mutating func stepTick(
         nowMs: Int64,

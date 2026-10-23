@@ -621,4 +621,35 @@ final class FishingGameAppTests: XCTestCase {
             XCTAssertNotNil(OriginalGameAssetsLoader.resolveDrawableURL(named: "ic_launcher", gameDataDirectoryURL: gameDataURL))
         }
     }
+
+    @MainActor
+    func testVisualFramePersistenceAndReelPullIdempotence() throws {
+        let coordinator = try FishingAppCoordinator(databasePath: ":memory:", nowMs: 1_700_000_000_000)
+        XCTAssertFalse(coordinator.isDebugOverlayEnabled)
+
+        coordinator.buyAndEquipStarterKit(nowMs: 1_700_000_001_000)
+        coordinator.castAt(x: 640, y: 500, nowMs: 1_700_000_002_000)
+        XCTAssertEqual(coordinator.stateMachine.state, .waitingForBite)
+        XCTAssertNotNil(coordinator.renderedBobberPosition)
+        XCTAssertEqual(coordinator.renderedBobberPosition?.x, 640)
+        XCTAssertEqual(coordinator.renderedBobberPosition?.y, 500)
+
+        let baseWallMs: Int64 = 1_700_000_010_000
+        for step in 1...15 {
+            coordinator.stepVisualFrameTick(wallNowMs: baseWallMs + Int64(step * 65))
+        }
+        XCTAssertEqual(coordinator.stateMachine.lineGeometry?.isCastAnimating, false)
+        XCTAssertEqual(coordinator.currentLineCurve?.alpha, 180)
+
+        coordinator.fastForwardToScheduledBite()
+        if coordinator.stateMachine.state == .fishFight {
+            XCTAssertEqual(coordinator.stateMachine.bobber?.isBiteTexture, true)
+            coordinator.setReelPulled(true)
+            let tensionFactorAfterFirstPull = coordinator.stateMachine.lineGeometry?.tensionFactor ?? 0
+            // Repeatedly calling setReelPulled(true) (simulating DragGesture.onChanged touch samples) must be a no-op
+            coordinator.setReelPulled(true)
+            coordinator.setReelPulled(true)
+            XCTAssertEqual(coordinator.stateMachine.lineGeometry?.tensionFactor, tensionFactorAfterFirstPull)
+        }
+    }
 }

@@ -276,7 +276,7 @@ public struct FishingLineGeometry: Sendable, Equatable {
         let start = Self.rodTipPoint(for: rod)
         let targetX = bobber.x
         let targetY: Float
-        if bobber.bitmapHeight <= 10 {
+        if bobber.isBiteTexture || bobber.bitmapHeight <= 10 {
             targetY = bobber.y
         } else {
             targetY = bobber.y + Float(bobber.bitmapHeight / 2)
@@ -302,7 +302,16 @@ public struct FishingLineGeometry: Sendable, Equatable {
                 alpha: alpha,
                 strokeWidth: 1.5
             )
-        } else if isPulled && tensionFactor > 0.1 {
+        }
+
+        // Per-frame line tautness ramp (`D0.b.d(Canvas)` in original bytecode)
+        if isPulled {
+            tensionFactor = min(1.0, tensionFactor + 0.1)
+        } else {
+            tensionFactor = max(0.0, tensionFactor - 0.05)
+        }
+
+        if isPulled && tensionFactor > 0.1 {
             let ctrlX = (start.x + targetX) / 2.0
             let lift = (tensionFactor * 0.3) * 20.0
             let ctrlY = ((start.y + targetY) / 2.0) - lift

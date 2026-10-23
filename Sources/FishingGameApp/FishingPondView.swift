@@ -7,7 +7,7 @@ import FishingDatabase
 /// - Full-screen `@drawable/second_background` frame;
 /// - Top `pbExp` experience bar + `btPonds` (`@drawable/pond_out`) exit button + `top_menu` (`@drawable/tchat`, `@drawable/task_btn`, `@drawable/tours_btn`);
 /// - Interactive `GameView` combining 3-pass Metal water (`pond_<id>_big.png` + `wNoise3/4.tga`), expanding ripples (`D0.a`),
-///   original bobber sprites (`@drawable/bobber` / `@drawable/bobber_hide`), Quadratic Bezier line (`D0.b`),
+///   original bobber sprites (`@drawable/bobber` `16x52` / `@drawable/bobber_hide` `12x12`), Quadratic Bezier line (`D0.b`),
 ///   and 16-frame bent rod sprites (`@drawable/fishing_rod_0..15`, `D0.c`);
 /// - Bottom control panel with `game_progress` tension bar (`0..250`), `game_current_bait` (`@drawable/btn_background` + `@drawable/bait_<id>`),
 ///   `game_time` (`@drawable/time_background`, `#EBB968`), `"У - X"` / `"К - Y"` durability labels,
@@ -17,8 +17,10 @@ public struct FishingPondView: View {
     @ObservedObject public var coordinator: FishingAppCoordinator
     @State private var isBaitChooserPresented: Bool = false
 
-    private let fightTimer = Timer.publish(every: 0.2, on: .main, in: .common).autoconnect()
-    private let gameClockTimer = Timer.publish(every: 2.0, on: .main, in: .common).autoconnect()
+    /// 200 ms (`5 Hz`) physics & state-machine tick matching `GameView$c.run()`.
+    private let fightPhysicsTimer = Timer.publish(every: 0.2, on: .main, in: .common).autoconnect()
+    /// ~30 FPS (`0.033 s`) visual render & interpolation tick matching `GameView$a` (`D0.a`, `D0.b`).
+    private let visualFrameTimer = Timer.publish(every: 1.0 / 30.0, on: .main, in: .common).autoconnect()
 
     public static let goldTextColor = Color(red: 235.0 / 255.0, green: 185.0 / 255.0, blue: 104.0 / 255.0) // #EBB968
 
@@ -32,19 +34,24 @@ public struct FishingPondView: View {
             VStack(spacing: 0) {
                 PondExperienceTopBarView(coordinator: coordinator)
                 pondInteractiveArea
+                if coordinator.isDebugOverlayEnabled {
+                    PondDeveloperDebugToolbarView(coordinator: coordinator)
+                }
                 PondBottomControlsPanelView(
                     coordinator: coordinator,
                     onPresentBaitChooser: { isBaitChooserPresented = true }
                 )
             }
         }
-        .onReceive(fightTimer) { _ in
+        .onReceive(fightPhysicsTimer) { _ in
             if coordinator.stateMachine.state != .idle {
                 coordinator.stepSimulationTick()
             }
         }
-        .onReceive(gameClockTimer) { _ in
-            coordinator.stepGameClockMinute()
+        .onReceive(visualFrameTimer) { _ in
+            if coordinator.stateMachine.state != .idle {
+                coordinator.stepVisualFrameTick()
+            }
         }
         .sheet(isPresented: $isBaitChooserPresented) {
             BaitQuickChooserSheet(coordinator: coordinator)
@@ -142,20 +149,38 @@ public struct FishingPondView: View {
             context.stroke(path, with: .color(.white.opacity(alpha)), lineWidth: 2.0)
         }
 
+        let displayPos = coordinator.renderedBobberPosition ?? Point2D(x: bobber.x, y: bobber.y)
         let bobberDrawableName = bobber.isBiteTexture ? "bobber_hide" : "bobber"
-        let bobberRect = CGRect(
-            x: CGFloat(bobber.x) - 14.0,
-            y: CGFloat(bobber.y) - 22.0,
-            width: 28.0,
-            height: 44.0
-        )
+
+        // Preserve exact native sprite proportions from `fishing181.apk`:
+        // - `bobber.png` (`res/ky.png`) is `16 x 52` px (full float with top bead, thin stem, and bulb)
+        // - `bobber_hide.png` (`res/uh1.png`) is `12 x 12` px (submerged float showing only the top red bead)
+        let bobberRect: CGRect
+        if bobber.isBiteTexture {
+            bobberRect = CGRect(
+                x: CGFloat(displayPos.x) - 6.0,
+                y: CGFloat(displayPos.y) - 6.0,
+                width: 12.0,
+                height: 12.0
+            )
+        } else {
+            bobberRect = CGRect(
+                x: CGFloat(displayPos.x) - 8.0,
+                y: CGFloat(displayPos.y) - 26.0,
+                width: 16.0,
+                height: 52.0
+            )
+        }
+
         if let bobberImg = OriginalGameAssetsLoader.image(named: bobberDrawableName) {
             let resolved = context.resolve(bobberImg)
             context.draw(resolved, in: bobberRect)
+        } else if bobber.isBiteTexture {
+            context.fill(Path(ellipseIn: bobberRect), with: .color(.red))
         } else {
-            let topHalf = CGRect(x: bobberRect.minX + 6.0, y: bobberRect.minY, width: 16.0, height: 18.0)
-            let bottomHalf = CGRect(x: bobberRect.minX + 6.0, y: bobberRect.minY + 18.0, width: 16.0, height: 18.0)
-            context.fill(Path(ellipseIn: topHalf), with: .color(bobber.isBiteTexture ? .orange : .red))
+            let topHalf = CGRect(x: bobberRect.minX + 2.0, y: bobberRect.minY, width: 12.0, height: 22.0)
+            let bottomHalf = CGRect(x: bobberRect.minX + 2.0, y: bobberRect.minY + 22.0, width: 12.0, height: 22.0)
+            context.fill(Path(ellipseIn: topHalf), with: .color(.red))
             context.fill(Path(ellipseIn: bottomHalf), with: .color(.white))
         }
     }
@@ -331,27 +356,16 @@ private struct PondTopOverlayBarView: View {
 
             Spacer()
 
-            HStack(spacing: 6) {
-                Text(localizedCurrentPondTitle)
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(FishingPondView.goldTextColor)
-                    .shadow(color: .black, radius: 2, x: 0, y: 1)
-
-                Button {
-                    coordinator.isWaterShaderEnabled.toggle()
-                } label: {
-                    Text(coordinator.isWaterShaderActive ? "GL Вода" : "2D Вода")
-                        .font(.system(size: 10, weight: .bold))
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 3)
-                        .background(Color.black.opacity(0.55), in: Capsule())
-                        .foregroundStyle(.white)
+            Text(localizedCurrentPondTitle)
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(FishingPondView.goldTextColor)
+                .shadow(color: .black, radius: 2, x: 0, y: 1)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 5)
+                .background(Color.black.opacity(0.45), in: Capsule())
+                .onLongPressGesture(minimumDuration: 1.5) {
+                    coordinator.isDebugOverlayEnabled.toggle()
                 }
-                .buttonStyle(.plain)
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 4)
-            .background(Color.black.opacity(0.45), in: Capsule())
 
             Spacer()
 
@@ -395,6 +409,90 @@ private struct PondTopOverlayBarView: View {
         }
         .padding(.horizontal, 8)
         .padding(.top, 6)
+    }
+}
+
+// MARK: - 3B. Separated Developer Debug Toolbar (Hidden by Default for Normal Players)
+
+private struct PondDeveloperDebugToolbarView: View {
+    @ObservedObject var coordinator: FishingAppCoordinator
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Text("DEV")
+                .font(.system(size: 10, weight: .heavy))
+                .padding(.horizontal, 5)
+                .padding(.vertical, 2)
+                .background(Color.yellow, in: RoundedRectangle(cornerRadius: 4))
+                .foregroundStyle(.black)
+
+            if coordinator.stateMachine.state == .waitingForBite {
+                Button {
+                    coordinator.fastForwardToScheduledBite()
+                } label: {
+                    Text("⚡ Клёв сейчас")
+                        .font(.system(size: 11, weight: .bold))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.orange, in: Capsule())
+                        .foregroundStyle(.black)
+                }
+                .buttonStyle(.plain)
+            }
+
+            Button {
+                coordinator.isWaterShaderEnabled.toggle()
+            } label: {
+                Text(coordinator.isWaterShaderActive ? "GL Вода" : "2D Вода")
+                    .font(.system(size: 11, weight: .bold))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.white.opacity(0.2), in: Capsule())
+                    .foregroundStyle(.white)
+            }
+            .buttonStyle(.plain)
+
+            Button {
+                for _ in 0..<60 {
+                    coordinator.stepGameClockMinute()
+                }
+            } label: {
+                Text("+1ч")
+                    .font(.system(size: 11, weight: .bold))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.white.opacity(0.2), in: Capsule())
+                    .foregroundStyle(.white)
+            }
+            .buttonStyle(.plain)
+
+            if !coordinator.assembledTackle.isComplete {
+                Button {
+                    coordinator.buyAndEquipStarterKit()
+                } label: {
+                    Text("Собрать снасть")
+                        .font(.system(size: 11, weight: .bold))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(FishingPondView.goldTextColor, in: Capsule())
+                        .foregroundStyle(.black)
+                }
+                .buttonStyle(.plain)
+            }
+
+            Spacer()
+
+            Button {
+                coordinator.isDebugOverlayEnabled = false
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .foregroundStyle(.white.opacity(0.75))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 4)
+        .background(Color.black.opacity(0.75))
     }
 }
 
@@ -459,6 +557,7 @@ private struct PondBottomControlsPanelView: View {
                 RoundedRectangle(cornerRadius: 4)
                     .fill(tensionColor)
                     .frame(width: geo.size.width * tensionFraction)
+                    .animation(.linear(duration: 0.18), value: coordinator.stateMachine.tension)
                 RoundedRectangle(cornerRadius: 4)
                     .stroke(Color.white.opacity(0.35), lineWidth: 1)
             }
@@ -516,26 +615,10 @@ private struct PondBottomControlsPanelView: View {
                     .fill(Color.black.opacity(0.65))
                     .frame(height: 40)
             }
-            HStack(spacing: 6) {
-                Text(String(format: "%02d:%02d", coordinator.gameClock.hour, coordinator.gameClock.minute))
-                    .font(.system(size: 17, weight: .bold).monospacedDigit())
-                    .foregroundStyle(FishingPondView.goldTextColor)
-
-                if coordinator.stateMachine.state == .waitingForBite {
-                    Button {
-                        coordinator.fastForwardToScheduledBite()
-                    } label: {
-                        Text("⚡Клёв")
-                            .font(.system(size: 10, weight: .bold))
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 3)
-                            .background(Color.orange, in: Capsule())
-                            .foregroundStyle(.black)
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(.horizontal, 8)
+            Text(String(format: "%02d:%02d", coordinator.gameClock.hour, coordinator.gameClock.minute))
+                .font(.system(size: 18, weight: .bold).monospacedDigit())
+                .foregroundStyle(FishingPondView.goldTextColor)
+                .padding(.horizontal, 8)
         }
         .frame(maxWidth: .infinity)
     }
@@ -596,20 +679,6 @@ private struct PondBottomControlsPanelView: View {
             .buttonStyle(.plain)
 
             Spacer()
-
-            if !coordinator.assembledTackle.isComplete {
-                Button {
-                    coordinator.buyAndEquipStarterKit()
-                } label: {
-                    Text("Собрать снасть")
-                        .font(.system(size: 11, weight: .bold))
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 6)
-                        .background(FishingPondView.goldTextColor, in: RoundedRectangle(cornerRadius: 6))
-                        .foregroundStyle(.black)
-                }
-                .buttonStyle(.plain)
-            }
         }
     }
 
@@ -628,19 +697,20 @@ private struct PondBottomControlsPanelView: View {
             DragGesture(minimumDistance: 0)
                 .onChanged { _ in
                     if coordinator.stateMachine.state == .idle {
-                        if !coordinator.assembledTackle.isComplete {
-                            coordinator.buyAndEquipStarterKit()
-                        }
-                        coordinator.castAt(
-                            x: Float(coordinator.stateMachine.viewWidth) * 0.5,
-                            y: Float(coordinator.stateMachine.viewHeight) * 0.55
-                        )
+                        // Match `GameActivity$s.onTouch`: re-cast into saved `Xbobber, Ybobber` (or center)
+                        let targetX = coordinator.stateMachine.lastCastMetadata?.bobberX
+                            ?? (Float(coordinator.stateMachine.viewWidth) * 0.5)
+                        let targetY = coordinator.stateMachine.lastCastMetadata?.bobberY
+                            ?? (Float(coordinator.stateMachine.viewHeight) * 0.55)
+                        coordinator.castAt(x: targetX, y: targetY)
                     } else {
                         coordinator.setReelPulled(true)
                     }
                 }
                 .onEnded { _ in
-                    coordinator.setReelPulled(false)
+                    if coordinator.stateMachine.state != .idle {
+                        coordinator.setReelPulled(false)
+                    }
                 }
         )
     }
@@ -720,9 +790,9 @@ private struct BaitQuickChooserSheet: View {
                 Text("В рюкзаке нет наживок")
                     .font(.headline)
                     .foregroundStyle(.white)
-                Button("Купить стартовый набор") {
-                    coordinator.buyAndEquipStarterKit()
+                Button("Открыть магазин") {
                     dismiss()
+                    coordinator.selectedTab = .shop
                 }
                 .buttonStyle(.borderedProminent)
             }

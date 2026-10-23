@@ -155,6 +155,9 @@ public final class FishingAppCoordinator: ObservableObject {
     /// Corresponds to `SharedPreferences("pond_fons_pref")["pond_fon_set_" + pondIndex]` (`GameActivity.b0()`).
     @Published public var pondBackgroundSetIndex: Int = 1
 
+    /// Controls visibility of developer debug tools on the pond screen (hidden by default for normal gameplay).
+    @Published public var isDebugOverlayEnabled: Bool = false
+
     /// Exact activation check (`GameActivity.b0()`): `pond_fon_set_<id> > 0 && WATER_SHADER == true`.
     public var isWaterShaderActive: Bool {
         WaterShaderActivationPolicy.shouldActivate(
@@ -211,7 +214,14 @@ public final class FishingAppCoordinator: ObservableObject {
     @Published public private(set) var dayNightLighting: DayNightLighting
     @Published public private(set) var stateMachine: FishingStateMachine
     @Published public private(set) var currentLineCurve: QuadraticBezierCurve? = nil
+    /// Smoothly interpolated visual bobber coordinates between 200ms `GameView$c` physics ticks.
+    @Published public private(set) var renderedBobberPosition: Point2D? = nil
     @Published public var activeAlert: FishingModalAlert? = nil
+
+    private var previousPhysicsBobberPos: Point2D? = nil
+    private var targetPhysicsBobberPos: Point2D? = nil
+    private var lastPhysicsTickWallMs: Int64 = 0
+    private var lastRippleStepWallMs: Int64 = 0
 
     private var systemRng = SystemFishingRandom()
     private var visualRng = SystemFishingRandom()
@@ -347,6 +357,9 @@ public final class FishingAppCoordinator: ObservableObject {
             _ = stateMachine.resetToIdle()
             stateMachine.pondData = pond
             currentLineCurve = nil
+            renderedBobberPosition = nil
+            previousPhysicsBobberPos = nil
+            targetPhysicsBobberPos = nil
         } catch {
             activeAlert = .operationError(message: "Не удалось загрузить водоём #\(pondIndex): \(error)")
         }
@@ -539,7 +552,7 @@ public final class FishingAppCoordinator: ObservableObject {
         }
     }
 
-    // MARK: - Fishing Gameplay Loop (`GameView` + `GameView$c`)
+    // MARK: - Fishing Gameplay Loop (`GameView` + `GameView$c` + `GameView$a`)
 
     public func updateViewportSize(width: Int, height: Int) {
         guard width > 100, height > 100 else { return }
@@ -579,7 +592,20 @@ public final class FishingAppCoordinator: ObservableObject {
             currentMinute: gameClock.minute,
             rng: &rng
         )
-        refreshLineGeometry()
+        let wallMs = Int64(Date().timeIntervalSince1970 * 1000)
+        lastPhysicsTickWallMs = wallMs
+        lastRippleStepWallMs = wallMs
+        if let bobber = stateMachine.bobber {
+            let pt = Point2D(x: bobber.x, y: bobber.y)
+            previousPhysicsBobberPos = pt
+            targetPhysicsBobberPos = pt
+            renderedBobberPosition = pt
+        } else {
+            previousPhysicsBobberPos = nil
+            targetPhysicsBobberPos = nil
+            renderedBobberPosition = nil
+        }
+        refreshLineGeometry(stepRipplesAndCast: true)
         handleFishingUIEvents(events, nowMs: nowMs)
 
         if stateMachine.state == .missingTackleHold || stateMachine.state == .alarmPermissionHold {
@@ -596,12 +622,19 @@ public final class FishingAppCoordinator: ObservableObject {
     public func resetCastToIdle() {
         let events = stateMachine.resetToIdle()
         currentLineCurve = nil
+        renderedBobberPosition = nil
+        previousPhysicsBobberPos = nil
+        targetPhysicsBobberPos = nil
         handleFishingUIEvents(events, nowMs: Int64(Date().timeIntervalSince1970 * 1000))
     }
 
     public func setReelPulled(_ pulled: Bool) {
+        // Avoid redundant @Published mutations when DragGesture.onChanged fires continuously during a hold
+        guard stateMachine.isPulled != pulled || (pulled && stateMachine.isPreHookBobbing) else {
+            return
+        }
         stateMachine.setPulled(pulled)
-        refreshLineGeometry()
+        refreshLineGeometry(stepRipplesAndCast: false)
     }
 
     public func stepSimulationTick(nowMs: Int64 = Int64(Date().timeIntervalSince1970 * 1000)) {
@@ -612,6 +645,8 @@ public final class FishingAppCoordinator: ObservableObject {
         nowMs: Int64,
         rng: inout some FishingRandomGenerator
     ) {
+        let startBobberPos = renderedBobberPosition ?? stateMachine.bobber.map { Point2D(x: $0.x, y: $0.y) }
+
         let events = stateMachine.stepTick(
             nowMs: nowMs,
             fishnetCount: fishnetEntries.count,
@@ -632,9 +667,57 @@ public final class FishingAppCoordinator: ObservableObject {
             handleFishingUIEvents(terminalEvents, nowMs: nowMs)
             try? reloadAllStateFromDatabase()
             currentLineCurve = nil
+            renderedBobberPosition = nil
+            previousPhysicsBobberPos = nil
+            targetPhysicsBobberPos = nil
         default:
-            refreshLineGeometry()
+            let wallMs = Int64(Date().timeIntervalSince1970 * 1000)
+            lastPhysicsTickWallMs = wallMs
+            lastRippleStepWallMs = wallMs
+            _ = stateMachine.stepVisualFrame(
+                stepRipplesAndCast: true,
+                displayBobberPosition: nil,
+                rng: &visualRng
+            )
+            if let bobber = stateMachine.bobber {
+                let newTarget = Point2D(x: bobber.x, y: bobber.y)
+                previousPhysicsBobberPos = startBobberPos ?? newTarget
+                targetPhysicsBobberPos = newTarget
+                if stateMachine.state != .fishFight {
+                    renderedBobberPosition = newTarget
+                }
+            } else {
+                previousPhysicsBobberPos = nil
+                targetPhysicsBobberPos = nil
+                renderedBobberPosition = nil
+            }
+            refreshLineGeometry(stepRipplesAndCast: false)
         }
+    }
+
+    /// High-frequency visual frame update (`~30 FPS`) reproducing `GameView$a`'s `60 ms` canvas loop
+    /// and smoothly interpolating the displayed bobber and fishing line between `200 ms` `GameView$c` physics ticks.
+    public func stepVisualFrameTick(wallNowMs: Int64 = Int64(Date().timeIntervalSince1970 * 1000)) {
+        guard stateMachine.state != .idle, stateMachine.bobber != nil else { return }
+
+        if stateMachine.state == .fishFight,
+           let prev = previousPhysicsBobberPos,
+           let target = targetPhysicsBobberPos {
+            let elapsed = Float(max(0, wallNowMs - lastPhysicsTickWallMs))
+            let t = min(1.0, elapsed / 200.0)
+            let smoothX = prev.x + (target.x - prev.x) * t
+            let smoothY = prev.y + (target.y - prev.y) * t
+            renderedBobberPosition = Point2D(x: smoothX, y: smoothY)
+        } else if let bobber = stateMachine.bobber {
+            renderedBobberPosition = Point2D(x: bobber.x, y: bobber.y)
+        }
+
+        // Step `D0.a.l()` ripples and `D0.b.c()` cast progress at the original 60ms cadence (`GameView$a`)
+        let shouldStep60ms = (wallNowMs - lastRippleStepWallMs) >= 60
+        if shouldStep60ms {
+            lastRippleStepWallMs = wallNowMs
+        }
+        refreshLineGeometry(stepRipplesAndCast: shouldStep60ms)
     }
 
     public func fastForwardToScheduledBite() {
@@ -644,32 +727,27 @@ public final class FishingAppCoordinator: ObservableObject {
     }
 
     public func stepGameClockMinute() {
-        let isPaidPond = currentPondItem?.requiresCoupon ?? false
-        var couponTicks: Int? = activeCoupon.map { max(1, $0.remainingTimeUnits / 2000) }
+        let isPaidPond = (selectedTab == .fishingPond) && (currentPondItem?.requiresCoupon ?? false)
+        var couponTicks: Int? = activeCoupon.map { max(1, $0.remainingTimeUnits) }
         gameClock.tickOneGameMinute(isPaidPond: isPaidPond, activeCouponRemainingTicks: &couponTicks)
         dayNightLighting = DayNightLighting.forHour(gameClock.hour)
         stateMachine.timeOfDay = BiteTimeOfDay.from(hour: gameClock.hour, minute: gameClock.minute)
+        audioHaptics.syncAmbientTrack(pondIndex: selectedPondIndex, hour: gameClock.hour)
     }
 
     // MARK: - Internal Helpers
 
-    private func refreshLineGeometry() {
-        guard var bobber = stateMachine.bobber else {
+    private func refreshLineGeometry(stepRipplesAndCast: Bool = true) {
+        guard stateMachine.bobber != nil else {
             currentLineCurve = nil
+            renderedBobberPosition = nil
             return
         }
-        bobber.clampAndStep(
-            canvasWidth: stateMachine.viewWidth,
-            canvasHeight: stateMachine.viewHeight,
+        currentLineCurve = stateMachine.stepVisualFrame(
+            stepRipplesAndCast: stepRipplesAndCast,
+            displayBobberPosition: renderedBobberPosition,
             rng: &visualRng
         )
-        if var line = stateMachine.lineGeometry {
-            currentLineCurve = line.stepAndBuildCurve(
-                rod: stateMachine.rodSprite,
-                bobber: bobber,
-                jitterRandom: visualRng.nextFloat()
-            )
-        }
     }
 
     private func handleFishingUIEvents(_ events: [FishingUIEvent], nowMs: Int64) {
@@ -763,7 +841,6 @@ public final class FishingAppCoordinator: ObservableObject {
             return "Ошибка инвентаря: \(detail)"
         }
     }
-
 
     // MARK: - Online Profile Restore (`C0.a.l`), Online Shop (`MainActivity$d.c`) & TCP Chat (`0xACED0005`)
 
