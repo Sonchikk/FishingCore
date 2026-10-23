@@ -21,8 +21,25 @@ jobs:
 
       - name: Install iOS Simulator platform
         run: |
-          sudo xcodebuild -runFirstLaunch
-          sudo xcodebuild -downloadPlatform iOS -buildVersion 18.2
+          sudo xcodebuild -runFirstLaunch || true
+          xcrun simctl list > /dev/null
+
+          for attempt in 1 2 3; do
+            echo "Download attempt $attempt"
+            if sudo xcodebuild -downloadPlatform iOS -buildVersion 18.2; then
+              echo "iOS Simulator platform installed."
+              break
+            fi
+
+            if [ "$attempt" -eq 3 ]; then
+              echo "Failed to install iOS Simulator platform."
+              exit 1
+            fi
+
+            sleep 15
+            xcrun simctl list > /dev/null
+          done
+
           xcodebuild -showsdks
           xcrun simctl list devices available
 
