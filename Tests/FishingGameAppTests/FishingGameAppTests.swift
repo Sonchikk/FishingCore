@@ -796,7 +796,7 @@ final class FishingGameAppTests: XCTestCase {
             initialMinute: 50,
             nowMs: 1_000_000
         )
-        XCTAssertTrue(coordinator.dayNightLighting.isDaylight)
+        XCTAssertTrue(coordinator.dayNightLighting.isDayLight)
         XCTAssertEqual(coordinator.audioHaptics.activeAmbientTrack?.isDaylightTrack, true)
 
         coordinator.buyAndEquipStarterKit(nowMs: 999_000)
@@ -814,7 +814,7 @@ final class FishingGameAppTests: XCTestCase {
         XCTAssertTrue(caughtUp)
         XCTAssertEqual(coordinator.gameClock.hour, 22)
         XCTAssertEqual(coordinator.gameClock.minute, 10)
-        XCTAssertFalse(coordinator.dayNightLighting.isDaylight)
+        XCTAssertFalse(coordinator.dayNightLighting.isDayLight)
         XCTAssertEqual(coordinator.audioHaptics.activeAmbientTrack?.isDaylightTrack, false)
 
         XCTAssertEqual(coordinator.resolveCurrentCatchTourType(hasActiveIndividualTour: false), 0)
