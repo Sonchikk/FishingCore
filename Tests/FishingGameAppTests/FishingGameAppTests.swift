@@ -557,4 +557,156 @@ final class FishingGameAppTests: XCTestCase {
         let sellOutcome = try coordinator.receiveChatStreamPacket(JavaObjectStreamCodec.encodeMess(sellFishMess), currentUserId: 42)
         XCTAssertEqual(sellOutcome, .unhandledSystemCommand("sellFish"))
     }
+
+    // MARK: - 14. Phase 9: 5-Language Localization (`F0.g.b`) & Quest/Task Language Gate (`F0.o.b`)
+
+    func testFiveLanguageLocalizationAndQuestLanguageGate() throws {
+        let coordinator = try FishingAppCoordinator(databasePath: ":memory:", nowMs: 1000)
+        guard let pond0 = coordinator.availablePonds.first(where: { $0.id == 0 }) else {
+            XCTFail("Expected Pond #0 in catalog")
+            return
+        }
+
+        coordinator.setLanguage(.ru)
+        XCTAssertEqual(coordinator.localeManager.pondName(for: pond0), "Кедровый остров")
+        XCTAssertTrue(coordinator.localeManager.areQuestsAndTasksActive)
+
+        coordinator.setLanguage(.en)
+        XCTAssertEqual(coordinator.localeManager.pondName(for: pond0), "Cedar Island")
+        XCTAssertEqual(coordinator.localeManager.tabTitle(for: .shop), "Shop")
+        XCTAssertTrue(coordinator.localeManager.areQuestsAndTasksActive)
+
+        coordinator.setLanguage(.de)
+        XCTAssertEqual(coordinator.localeManager.pondName(for: pond0), "Zederinsel")
+        XCTAssertEqual(coordinator.localeManager.missingTackleComponentName(.rod), "Angelrute")
+        XCTAssertFalse(coordinator.localeManager.areQuestsAndTasksActive)
+
+        coordinator.setLanguage(.es)
+        XCTAssertEqual(coordinator.localeManager.pondName(for: pond0), "Isla de Cedro")
+        XCTAssertFalse(coordinator.localeManager.areQuestsAndTasksActive)
+
+        coordinator.setLanguage(.pt)
+        XCTAssertEqual(coordinator.localeManager.pondName(for: pond0), "Ilha do Cedro")
+        XCTAssertFalse(coordinator.localeManager.areQuestsAndTasksActive)
+    }
+
+    // MARK: - 15. Phase 9: Audio, SFX (`F0.p`), Ambient Day/Night Tracks (`pondsm.txt`) & `FishingService` Anti-Cheat Intervals
+
+    func testAudioHapticsAndFishingServiceAntiCheatIntervals() throws {
+        var controller = FishingAudioAndHapticsController()
+        controller.syncAmbientTrack(pondIndex: 0, hour: 6)
+        XCTAssertEqual(controller.activeAmbientTrack?.isDaylightTrack, true)
+        XCTAssertEqual(controller.activeAmbientTrack?.trackIndex, 0)
+        XCTAssertEqual(controller.activeAmbientTrack?.resourceName, "sounds/fon/pond0_day.ogg")
+
+        controller.syncAmbientTrack(pondIndex: 0, hour: 23)
+        XCTAssertEqual(controller.activeAmbientTrack?.isDaylightTrack, false)
+        XCTAssertEqual(controller.activeAmbientTrack?.trackIndex, 1)
+        XCTAssertEqual(controller.activeAmbientTrack?.resourceName, "sounds/fon/pond0_night.ogg")
+
+        controller.recordCastScheduledBite(beginTimeMs: 100_000)
+        XCTAssertEqual(controller.playedSoundEffects, [.castBobber])
+
+        controller.handleBiteSignalWhat0(nowMs: 104_000)
+        XCTAssertEqual(controller.biteAlarmTriggerCount, 1)
+        XCTAssertEqual(controller.vibrationTriggerCount, 1)
+
+        controller.setReelLooping(true)
+        XCTAssertTrue(controller.isReelLoopPlaying)
+
+        controller.handleCatchSignalWhat1(nowMs: 108_500)
+        XCTAssertFalse(controller.isReelLoopPlaying)
+        XCTAssertEqual(controller.lastAntiCheatCatchDeltaMs, -8500)
+        XCTAssertEqual(controller.lastAntiCheatBiteDelaySeconds, 4)
+    }
+
+    // MARK: - 16. Phase 9: Server Rewards (`reaward.php`, `OnlineGameActivity$f.a`) Atomic SQLite Claim
+
+    func testServerRewardsClaimUpdatesCoinsExpAndInventoryAtomically() throws {
+        let coordinator = try FishingAppCoordinator(databasePath: ":memory:", nowMs: 1000)
+        let initialBalance = coordinator.profile.balance
+
+        let rewardResponse = "--notes=2,1=5000,2=1600,3=11,4=8,5=14,6=2,7=3"
+        let summary = try coordinator.claimServerRewards(rewardResponse, nowMs: 3000)
+
+        XCTAssertEqual(summary.unreadNotesCount, 2)
+        XCTAssertEqual(summary.coinsAdded, 5000)
+        XCTAssertEqual(summary.experienceAdded, 1600)
+        XCTAssertEqual(summary.newBalance, initialBalance + 5000)
+        XCTAssertEqual(summary.newExperience, 1600)
+        XCTAssertEqual(summary.newCategoryRank, 2)
+        XCTAssertEqual(summary.grantedItems.count, 7)
+
+        XCTAssertTrue(try coordinator.repository.verifyPlayerProfileIntegrity())
+        XCTAssertTrue(coordinator.ownedRods.contains(where: { $0.rod.id == 11 }))
+        XCTAssertTrue(coordinator.ownedCoils.contains(where: { $0.coil.id == 8 }))
+        XCTAssertTrue(coordinator.ownedLines.contains(where: { $0.line.id == 14 }))
+        XCTAssertTrue(coordinator.ownedHooks.contains(where: { $0.hook.id == 2 }))
+        XCTAssertTrue(coordinator.ownedBaits.contains(where: { $0.bait.id == 3 }))
+    }
+
+    // MARK: - 17. Phase 9: Fisherman Contracts (`user_task` / `user_task_data`), `tour_results.php` & `update.php` Manifests
+
+    func testUserTaskContractProgressionAndTournamentAndUpdateManifests() throws {
+        let coordinator = try FishingAppCoordinator(databasePath: ":memory:", nowMs: 1000)
+
+        let contract = try coordinator.assignFishermanContract(
+            taskType: 1,
+            targetFishId: 1,
+            targetBaitId: 1,
+            requiredCount: 2,
+            requiredWeightGrams: 400,
+            bonusExperience: 600,
+            nowMs: 2000
+        )
+        XCTAssertEqual(contract.made, 0)
+        XCTAssertEqual(coordinator.activeContract?.requiredCount, 2)
+
+        guard let karas = coordinator.fishCatalogById[1] else {
+            XCTFail("Missing fish #1")
+            return
+        }
+        let catch1 = CaughtUserFish(
+            fish: karas,
+            weightGrams: 500,
+            pondIndex: 0,
+            baitIndex: 0,
+            rodWeightKg: 3,
+            catchTimeMs: 2500
+        )
+        let bonus1 = try coordinator.repository.evaluateUserTaskOnCatch(catch1, isLanguageSupported: true, nowMs: 2500)
+        XCTAssertEqual(bonus1, 0)
+        XCTAssertEqual(try coordinator.repository.loadActiveUserTaskContract()?.currentCount, 1)
+
+        let catch2 = CaughtUserFish(
+            fish: karas,
+            weightGrams: 650,
+            pondIndex: 0,
+            baitIndex: 0,
+            rodWeightKg: 3,
+            catchTimeMs: 3000
+        )
+        let bonus2 = try coordinator.repository.evaluateUserTaskOnCatch(catch2, isLanguageSupported: true, nowMs: 3000)
+        XCTAssertEqual(bonus2, 600)
+        XCTAssertEqual(try coordinator.repository.loadActiveUserTaskContract()?.made, 1)
+        XCTAssertEqual(try coordinator.repository.loadPlayerProfile().experience, 600)
+        XCTAssertEqual(try coordinator.repository.loadPlayerProfile().category, 1)
+
+        let tourSnap = FishingNetworkCrypto.parseTournamentResultsResponse(
+            "--regin=1,left=900,start=0,users=angler1|angler2,tour=Кубок дня\r\n"
+        )
+        XCTAssertTrue(tourSnap.isRegistered)
+        XCTAssertEqual(tourSnap.secondsLeft, 900)
+        XCTAssertEqual(tourSnap.participants, ["angler1", "angler2"])
+        XCTAssertEqual(tourSnap.tournamentHeader, "Кубок дн")
+
+        let manifestRaw = """
+        1,sounds,sound,ru,1700000000,4500000,sounds/sounds.zip
+        2,pond0,fon,all,1700000100,1250000,fon/pond0/bg_1.png
+        """
+        let packs = FishingNetworkCrypto.parseAssetPacksManifest(manifestRaw)
+        XCTAssertEqual(packs.count, 2)
+        XCTAssertEqual(packs[0].baseName, "sounds")
+        XCTAssertEqual(packs[1].relativePath, "fon/pond0/bg_1.png")
+    }
 }

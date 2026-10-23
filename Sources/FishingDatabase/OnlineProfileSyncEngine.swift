@@ -646,3 +646,592 @@ extension PlayerStateRepository {
         )
     }
 }
+
+// MARK: - 5. Server Rewards (`reaward.php`), Tournament Results (`tour_results.php`), Asset Packs (`update.php`) & Contracts (`user_task`)
+
+/// Reward item types granted by `http://fish-mob.ru/fff/reaward.php` (`OnlineGameActivity$f.a`, `NETWORK.md` Section 2 #7).
+public enum ServerRewardType: Int, Sendable, Equatable {
+    case coins = 1
+    case experience = 2
+    case fishingRod = 3
+    case coil = 4
+    case fishingLine = 5
+    case hook = 6
+    case bait = 7
+}
+
+public struct ServerRewardGrant: Sendable, Equatable {
+    public let rewardType: ServerRewardType
+    public let valueOrItemId: Int
+
+    public init(rewardType: ServerRewardType, valueOrItemId: Int) {
+        self.rewardType = rewardType
+        self.valueOrItemId = valueOrItemId
+    }
+}
+
+public struct ServerRewardClaimSummary: Sendable, Equatable {
+    public let unreadNotesCount: Int
+    public let coinsAdded: Int
+    public let experienceAdded: Int
+    public let newBalance: Int
+    public let newExperience: Int
+    public let newCategoryRank: Int
+    public let grantedItems: [ServerRewardGrant]
+}
+
+/// Parsed response from `http://fish-mob.ru/fff/tour_results.php` (`x0.p$b.a`, `NETWORK.md` Section 2 #12).
+public struct TournamentResultsSnapshot: Sendable, Equatable {
+    public let isRegistered: Bool
+    public let secondsLeft: Int
+    public let secondsToStart: Int
+    public let participants: [String]
+    public let tournamentHeader: String
+
+    public init(
+        isRegistered: Bool,
+        secondsLeft: Int,
+        secondsToStart: Int,
+        participants: [String],
+        tournamentHeader: String
+    ) {
+        self.isRegistered = isRegistered
+        self.secondsLeft = secondsLeft
+        self.secondsToStart = secondsToStart
+        self.participants = participants
+        self.tournamentHeader = tournamentHeader
+    }
+}
+
+/// Downloadable asset pack entry from `http://fish-mob.ru/fff/update.php` (`SettingsActivity$F.a`, `NETWORK.md` Section 2 #17):
+/// `base,basename,type,lang,addtime,size,path`
+public struct AssetPackManifestEntry: Sendable, Equatable, Identifiable {
+    public let baseId: Int
+    public let baseName: String
+    public let packType: String
+    public let language: String
+    public let addedTimestamp: Int64
+    public let sizeBytes: Int64
+    public let relativePath: String
+
+    public var id: String { "\(baseId)_\(packType)_\(language)_\(relativePath)" }
+
+    public init(
+        baseId: Int,
+        baseName: String,
+        packType: String,
+        language: String,
+        addedTimestamp: Int64,
+        sizeBytes: Int64,
+        relativePath: String
+    ) {
+        self.baseId = baseId
+        self.baseName = baseName
+        self.packType = packType
+        self.language = language
+        self.addedTimestamp = addedTimestamp
+        self.sizeBytes = sizeBytes
+        self.relativePath = relativePath
+    }
+}
+
+/// Active fisherman order/contract stored in `user_task` + `user_task_data` (`MECHANICS.md` Section 6.1 #3).
+public struct UserTaskContractRecord: Sendable, Equatable, Identifiable {
+    public let id: Int
+    public let taskType: Int       // 1 = count, 2 = total weight
+    public let targetFishId: Int
+    public let targetBaitId: Int   // 0 = any bait
+    public let requiredCount: Int
+    public let requiredWeightGrams: Int
+    public let bonusExperience: Int
+    public var currentCount: Int
+    public var currentWeightGrams: Int
+    public var made: Int           // 0 = active, 1 = completed
+
+    public init(
+        id: Int,
+        taskType: Int,
+        targetFishId: Int,
+        targetBaitId: Int,
+        requiredCount: Int,
+        requiredWeightGrams: Int,
+        bonusExperience: Int,
+        currentCount: Int,
+        currentWeightGrams: Int,
+        made: Int
+    ) {
+        self.id = id
+        self.taskType = taskType
+        self.targetFishId = targetFishId
+        self.targetBaitId = targetBaitId
+        self.requiredCount = requiredCount
+        self.requiredWeightGrams = requiredWeightGrams
+        self.bonusExperience = bonusExperience
+        self.currentCount = currentCount
+        self.currentWeightGrams = currentWeightGrams
+        self.made = made
+    }
+}
+
+extension FishingNetworkCrypto {
+    /// Parses `tour_results.php` payload (`--regin=1,left=1200,start=0,users=u1|u2,tour=Header\r\n`).
+    public static func parseTournamentResultsResponse(_ raw: String) -> TournamentResultsSnapshot {
+        let cleaned = raw.hasPrefix("--") ? String(raw.dropFirst(2)) : raw
+        var isReg = false
+        var leftSec = 0
+        var startSec = 0
+        var users: [String] = []
+        var tourHeader = ""
+
+        for part in cleaned.split(separator: ",", omittingEmptySubsequences: true) {
+            let kv = part.split(separator: "=", maxSplits: 1).map(String.init)
+            guard kv.count == 2 else { continue }
+            switch kv[0].trimmingCharacters(in: .whitespacesAndNewlines) {
+            case "regin":
+                isReg = (kv[1].trimmingCharacters(in: .whitespacesAndNewlines) == "1")
+            case "left":
+                leftSec = Int(kv[1].trimmingCharacters(in: .whitespacesAndNewlines)) ?? 0
+            case "start":
+                startSec = Int(kv[1].trimmingCharacters(in: .whitespacesAndNewlines)) ?? 0
+            case "users":
+                users = kv[1].split(separator: "|").map(String.init).filter { !$0.isEmpty }
+            case "tour":
+                tourHeader = truncateTournamentHeaderString(kv[1])
+            default:
+                break
+            }
+        }
+
+        return TournamentResultsSnapshot(
+            isRegistered: isReg,
+            secondsLeft: leftSec,
+            secondsToStart: startSec,
+            participants: users,
+            tournamentHeader: tourHeader
+        )
+    }
+
+    /// Parses `update.php` asset pack manifest lines (`base,basename,type,lang,addtime,size,path`).
+    public static func parseAssetPacksManifest(_ raw: String) -> [AssetPackManifestEntry] {
+        var entries: [AssetPackManifestEntry] = []
+        for line in raw.components(separatedBy: .newlines) {
+            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { continue }
+            let cols = trimmed.split(separator: ",", omittingEmptySubsequences: false).map {
+                String($0).trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+            guard cols.count >= 7,
+                  let baseId = Int(cols[0]),
+                  let addTime = Int64(cols[4]),
+                  let sizeBytes = Int64(cols[5]) else { continue }
+            entries.append(
+                AssetPackManifestEntry(
+                    baseId: baseId,
+                    baseName: cols[1],
+                    packType: cols[2],
+                    language: cols[3],
+                    addedTimestamp: addTime,
+                    sizeBytes: sizeBytes,
+                    relativePath: cols[6]
+                )
+            )
+        }
+        return entries
+    }
+}
+
+extension PlayerStateRepository {
+
+    /// Parses and applies server rewards from `http://fish-mob.ru/fff/reaward.php` (`OnlineGameActivity$f.a`, `NETWORK.md` Section 2 #7):
+    /// Format: `--notes=N,1=5000,2=1200,3=11,4=8,5=14,6=2,7=3`
+    @discardableResult
+    public func claimServerRewardsResponse(
+        _ response: String,
+        nowMs: Int64
+    ) throws -> ServerRewardClaimSummary {
+        let trimmed = response.trimmingCharacters(in: .whitespacesAndNewlines)
+        let body = trimmed.hasPrefix("--") ? String(trimmed.dropFirst(2)) : trimmed
+        let tokens = body.split(separator: ",").map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
+
+        var notesCount = 0
+        var grants: [ServerRewardGrant] = []
+
+        for token in tokens {
+            let kv = token.split(separator: "=", maxSplits: 1).map(String.init)
+            guard kv.count == 2 else { continue }
+            let key = kv[0].trimmingCharacters(in: .whitespacesAndNewlines)
+            let valStr = kv[1].trimmingCharacters(in: .whitespacesAndNewlines)
+            if key == "notes", let n = Int(valStr) {
+                notesCount = n
+            } else if let typeInt = Int(key),
+                      let rewardType = ServerRewardType(rawValue: typeInt),
+                      let val = Int(valStr), val > 0 {
+                grants.append(ServerRewardGrant(rewardType: rewardType, valueOrItemId: val))
+            }
+        }
+
+        return try connection.transaction {
+            var profile = try loadPlayerProfile()
+            guard try verifyPlayerProfileIntegrity() else {
+                throw PlayerPersistenceError.integrityCheckFailed("user_data MD5 mismatch before claimServerRewardsResponse")
+            }
+
+            var coinsAdded = 0
+            var expAdded = 0
+
+            for grant in grants {
+                switch grant.rewardType {
+                case .coins:
+                    coinsAdded += grant.valueOrItemId
+                    profile.balance += grant.valueOrItemId
+
+                case .experience:
+                    expAdded += grant.valueOrItemId
+                    profile.experience += grant.valueOrItemId
+                    profile.category = ProgressionCalculator.categoryForExperience(
+                        profile.experience,
+                        balanceTables: balanceTables
+                    )
+
+                case .fishingRod:
+                    guard let spec = try catalog.loadFishingRodSpec(id: grant.valueOrItemId) else { continue }
+                    let rowId = Int(try connection.run("""
+                    INSERT INTO user_fishing_rods (fishing_rod, strength, date, md5)
+                    VALUES (?, 100, ?, );
+                    """, bindings: [.integer(Int64(spec.id)), .integer(nowMs)]))
+                    let md5 = FishingChecksum.userInvMd5(
+                        rowId: rowId,
+                        baseItemId: spec.id,
+                        date: nowMs,
+                        attributeValue: 100,
+                        installationUuid: installationUuid
+                    )
+                    try connection.run(
+                        "UPDATE user_fishing_rods SET md5 = ? WHERE id = ?;",
+                        bindings: [.text(md5), .integer(Int64(rowId))]
+                    )
+
+                case .coil:
+                    guard let spec = try catalog.loadCoilSpec(id: grant.valueOrItemId) else { continue }
+                    let rowId = Int(try connection.run("""
+                    INSERT INTO user_coils (coil, strength, date, md5)
+                    VALUES (?, 100, ?, );
+                    """, bindings: [.integer(Int64(spec.id)), .integer(nowMs)]))
+                    let md5 = FishingChecksum.userInvMd5(
+                        rowId: rowId,
+                        baseItemId: spec.id,
+                        date: nowMs,
+                        attributeValue: 100,
+                        installationUuid: installationUuid
+                    )
+                    try connection.run(
+                        "UPDATE user_coils SET md5 = ? WHERE id = ?;",
+                        bindings: [.text(md5), .integer(Int64(rowId))]
+                    )
+
+                case .fishingLine:
+                    guard let spec = try catalog.loadFishingLineSpec(id: grant.valueOrItemId) else { continue }
+                    let lengthM = max(100, spec.stockLength)
+                    let rowId = Int(try connection.run("""
+                    INSERT INTO user_fishing_lines (fishing_line, length, date, md5)
+                    VALUES (?, ?, ?, );
+                    """, bindings: [
+                        .integer(Int64(spec.id)),
+                        .integer(Int64(lengthM)),
+                        .integer(nowMs)
+                    ]))
+                    let md5 = FishingChecksum.userInvMd5(
+                        rowId: rowId,
+                        baseItemId: spec.id,
+                        date: nowMs,
+                        attributeValue: lengthM,
+                        installationUuid: installationUuid
+                    )
+                    try connection.run(
+                        "UPDATE user_fishing_lines SET md5 = ? WHERE id = ?;",
+                        bindings: [.text(md5), .integer(Int64(rowId))]
+                    )
+
+                case .hook:
+                    let stockAmount = try catalog.loadHookStockAmount(id: grant.valueOrItemId)
+                    guard stockAmount > 0 else { continue }
+                    try connection.run("""
+                    INSERT INTO user_hooks (hook, amount)
+                    VALUES (?, ?);
+                    """, bindings: [
+                        .integer(Int64(grant.valueOrItemId)),
+                        .integer(Int64(stockAmount))
+                    ])
+
+                case .bait:
+                    guard let (_, stockAmount) = try catalog.loadBaitSpec(id: grant.valueOrItemId) else { continue }
+                    let existing = try connection.query(
+                        "SELECT id, amount FROM user_baits WHERE bait = ? LIMIT 1;",
+                        bindings: [.integer(Int64(grant.valueOrItemId))]
+                    )
+                    if let row = existing.first {
+                        let newAmt = row.int("amount") + stockAmount
+                        try connection.run(
+                            "UPDATE user_baits SET amount = ? WHERE id = ?;",
+                            bindings: [.integer(Int64(newAmt)), .integer(Int64(row.int("id")))]
+                        )
+                    } else {
+                        try connection.run("""
+                        INSERT INTO user_baits (bait, amount)
+                        VALUES (?, ?);
+                        """, bindings: [
+                            .integer(Int64(grant.valueOrItemId)),
+                            .integer(Int64(stockAmount))
+                        ])
+                    }
+                }
+            }
+
+            if coinsAdded > 0 || expAdded > 0 {
+                let newMd5 = FishingChecksum.userDataMd5(
+                    balance: profile.balance,
+                    experience: profile.experience,
+                    category: profile.category,
+                    date: nowMs,
+                    installationUuid: installationUuid
+                )
+                try connection.run("""
+                UPDATE user_data SET balance = ?, experience = ?, category = ?, date = ?, md5 = ? WHERE id = 1;
+                """, bindings: [
+                    .integer(Int64(profile.balance)),
+                    .integer(Int64(profile.experience)),
+                    .integer(Int64(profile.category)),
+                    .integer(nowMs),
+                    .text(newMd5)
+                ])
+            }
+
+            return ServerRewardClaimSummary(
+                unreadNotesCount: notesCount,
+                coinsAdded: coinsAdded,
+                experienceAdded: expAdded,
+                newBalance: profile.balance,
+                newExperience: profile.experience,
+                newCategoryRank: profile.category,
+                grantedItems: grants
+            )
+        }
+    }
+
+    // MARK: - Fisherman Orders / Contracts (`user_task` & `user_task_data`, `MECHANICS.md` Section 6.1 #3)
+
+    /// Creates or replaces the active fisherman contract in `user_task` and `user_task_data` with MD5 signatures.
+    @discardableResult
+    public func assignUserTaskContract(
+        taskType: Int,
+        targetFishId: Int,
+        targetBaitId: Int = 0,
+        requiredCount: Int,
+        requiredWeightGrams: Int,
+        bonusExperience: Int,
+        nowMs: Int64
+    ) throws -> UserTaskContractRecord {
+        try connection.transaction {
+            try connection.run("DELETE FROM user_task;")
+            try connection.run("DELETE FROM user_task_data;")
+
+            let taskId = 1
+            let taskMd5 = FishingChecksum.userTaskMd5(
+                id: taskId,
+                type: taskType,
+                fish: targetFishId,
+                bait: targetBaitId,
+                num: requiredCount,
+                weight: requiredWeightGrams,
+                totalWeight: bonusExperience,
+                installationUuid: installationUuid
+            )
+            try connection.run("""
+            INSERT INTO user_task (id, type, fish, bait, num, weight, total_weight, date, md5)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+            """, bindings: [
+                .integer(Int64(taskId)),
+                .integer(Int64(taskType)),
+                .integer(Int64(targetFishId)),
+                .integer(Int64(targetBaitId)),
+                .integer(Int64(requiredCount)),
+                .integer(Int64(requiredWeightGrams)),
+                .integer(Int64(bonusExperience)),
+                .integer(nowMs),
+                .text(taskMd5)
+            ])
+
+            let dataMd5 = FishingChecksum.userTaskDataMd5(
+                task: taskId,
+                num: 0,
+                weight: 0,
+                made: 0,
+                date: nowMs,
+                installationUuid: installationUuid
+            )
+            try connection.run("""
+            INSERT INTO user_task_data (id, task, num, weight, made, date, md5)
+            VALUES (1, ?, 0, 0, 0, ?, ?);
+            """, bindings: [
+                .integer(Int64(taskId)),
+                .integer(nowMs),
+                .text(dataMd5)
+            ])
+
+            return UserTaskContractRecord(
+                id: taskId,
+                taskType: taskType,
+                targetFishId: targetFishId,
+                targetBaitId: targetBaitId,
+                requiredCount: requiredCount,
+                requiredWeightGrams: requiredWeightGrams,
+                bonusExperience: bonusExperience,
+                currentCount: 0,
+                currentWeightGrams: 0,
+                made: 0
+            )
+        }
+    }
+
+    public func loadActiveUserTaskContract() throws -> UserTaskContractRecord? {
+        let taskRows = try connection.query("SELECT * FROM user_task ORDER BY id ASC LIMIT 1;")
+        let dataRows = try connection.query("SELECT * FROM user_task_data ORDER BY id ASC LIMIT 1;")
+        guard let t = taskRows.first, let d = dataRows.first else { return nil }
+
+        let taskId = t.int("id")
+        let taskType = t.int("type")
+        let fishId = t.int("fish")
+        let baitId = t.int("bait")
+        let reqNum = t.int("num")
+        let reqWeight = t.int("weight")
+        let bonusXp = t.int("total_weight")
+
+        let expectedTaskMd5 = FishingChecksum.userTaskMd5(
+            id: taskId,
+            type: taskType,
+            fish: fishId,
+            bait: baitId,
+            num: reqNum,
+            weight: reqWeight,
+            totalWeight: bonusXp,
+            installationUuid: installationUuid
+        )
+        guard t.string("md5") == expectedTaskMd5 else {
+            throw PlayerPersistenceError.integrityCheckFailed("user_task MD5 mismatch")
+        }
+
+        let curNum = d.int("num")
+        let curWeight = d.int("weight")
+        let made = d.int("made")
+        let dataDate = d.int64("date")
+        let expectedDataMd5 = FishingChecksum.userTaskDataMd5(
+            task: d.int("task"),
+            num: curNum,
+            weight: curWeight,
+            made: made,
+            date: dataDate,
+            installationUuid: installationUuid
+        )
+        guard d.string("md5") == expectedDataMd5 else {
+            throw PlayerPersistenceError.integrityCheckFailed("user_task_data MD5 mismatch")
+        }
+
+        return UserTaskContractRecord(
+            id: taskId,
+            taskType: taskType,
+            targetFishId: fishId,
+            targetBaitId: baitId,
+            requiredCount: reqNum,
+            requiredWeightGrams: reqWeight,
+            bonusExperience: bonusXp,
+            currentCount: curNum,
+            currentWeightGrams: curWeight,
+            made: made
+        )
+    }
+
+    /// Evaluates the active `user_task` contract on a caught fish (`LC0/d$a.onClick`, `MECHANICS.md` Section 6.1 #3).
+    /// When the contract completes (`made: 0 -> 1`), awards `bonusExperience` to `user_data` and updates `category` & `UserDataMd5`.
+    @discardableResult
+    public func evaluateUserTaskOnCatch(
+        _ caught: CaughtUserFish,
+        isLanguageSupported: Bool = true,
+        nowMs: Int64
+    ) throws -> Int {
+        guard isLanguageSupported,
+              var contract = try loadActiveUserTaskContract(),
+              contract.made == 0 else {
+            return 0
+        }
+
+        guard caught.fish.id == contract.targetFishId else { return 0 }
+        let baitId1Based = caught.baitIndex + 1
+        if contract.targetBaitId > 0 && baitId1Based != contract.targetBaitId {
+            return 0
+        }
+        if contract.requiredWeightGrams > 0 && contract.taskType == 1 && caught.weightGrams < contract.requiredWeightGrams {
+            return 0
+        }
+
+        return try connection.transaction {
+            contract.currentCount += 1
+            contract.currentWeightGrams += caught.weightGrams
+
+            let isDone: Bool
+            if contract.taskType == 2 {
+                isDone = contract.currentWeightGrams >= contract.requiredWeightGrams
+            } else {
+                isDone = contract.currentCount >= contract.requiredCount
+            }
+
+            if isDone {
+                contract.made = 1
+            }
+
+            let newDataMd5 = FishingChecksum.userTaskDataMd5(
+                task: contract.id,
+                num: contract.currentCount,
+                weight: contract.currentWeightGrams,
+                made: contract.made,
+                date: nowMs,
+                installationUuid: installationUuid
+            )
+            try connection.run("""
+            UPDATE user_task_data SET num = ?, weight = ?, made = ?, date = ?, md5 = ? WHERE task = ?;
+            """, bindings: [
+                .integer(Int64(contract.currentCount)),
+                .integer(Int64(contract.currentWeightGrams)),
+                .integer(Int64(contract.made)),
+                .integer(nowMs),
+                .text(newDataMd5),
+                .integer(Int64(contract.id))
+            ])
+
+            if isDone && contract.bonusExperience > 0 {
+                var profile = try loadPlayerProfile()
+                profile.experience += contract.bonusExperience
+                profile.category = ProgressionCalculator.categoryForExperience(
+                    profile.experience,
+                    balanceTables: balanceTables
+                )
+                let newMd5 = FishingChecksum.userDataMd5(
+                    balance: profile.balance,
+                    experience: profile.experience,
+                    category: profile.category,
+                    date: nowMs,
+                    installationUuid: installationUuid
+                )
+                try connection.run("""
+                UPDATE user_data SET experience = ?, category = ?, date = ?, md5 = ? WHERE id = 1;
+                """, bindings: [
+                    .integer(Int64(profile.experience)),
+                    .integer(Int64(profile.category)),
+                    .integer(nowMs),
+                    .text(newMd5)
+                ])
+                return contract.bonusExperience
+            }
+            return 0
+        }
+    }
+}

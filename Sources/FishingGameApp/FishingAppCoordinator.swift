@@ -190,6 +190,15 @@ public final class FishingAppCoordinator: ObservableObject {
     @Published public private(set) var onlineTours: [ChatTourModel] = []
     @Published public private(set) var onlineUsers: [ChatUserOnline] = []
     public var authLimiter = AuthAttemptLimiter()
+    @Published public var audioHaptics = FishingAudioAndHapticsController()
+    @Published public private(set) var activeContract: UserTaskContractRecord? = nil
+
+    public var localeManager: FishingLocaleManager {
+        FishingLocaleManager(
+            currentLanguage: FishingLanguage(rawValue: languageCode) ?? .ru,
+            tasksEnabled: tasksEnabled
+        )
+    }
 
     @Published public private(set) var catalogRods: [FishingRodSpec] = []
     @Published public private(set) var catalogCoils: [CoilSpec] = []
@@ -298,6 +307,8 @@ public final class FishingAppCoordinator: ObservableObject {
         achievements = try repository.listAchievements()
         quests = try repository.listQuests()
         personalRecords = try repository.listPersonalRecords(onlyCaught: false)
+        activeContract = try repository.loadActiveUserTaskContract()
+        audioHaptics.syncAmbientTrack(pondIndex: selectedPondIndex, hour: gameClock.hour)
 
         catalogRods = try catalog.listAllRodSpecs().filter { $0.price > 0 && $0.weight <= 179 }
         catalogCoils = try catalog.listAllCoilSpecs().filter { $0.price > 0 && $0.bearingCount <= 7 }
@@ -671,9 +682,10 @@ public final class FishingAppCoordinator: ObservableObject {
                 break
 
             case .biteTriggered:
-                break
+                audioHaptics.handleBiteSignalWhat0(nowMs: nowMs)
 
             case .fishCaught(let caughtFish):
+                audioHaptics.handleCatchSignalWhat1(nowMs: nowMs)
                 do {
                     let result = try repository.recordCaughtFish(caughtFish, nowMs: nowMs)
                     try repository.evaluateAchievementsOnCatch(caughtFish, nowMs: nowMs)
@@ -682,6 +694,11 @@ public final class FishingAppCoordinator: ObservableObject {
                         playerCategory: result.categoryRankAfter,
                         tasksEnabled: tasksEnabled,
                         languageCode: languageCode,
+                        nowMs: nowMs
+                    )
+                    _ = try repository.evaluateUserTaskOnCatch(
+                        caughtFish,
+                        isLanguageSupported: localeManager.areQuestsAndTasksActive,
                         nowMs: nowMs
                     )
                     try reloadAllStateFromDatabase()
@@ -697,19 +714,23 @@ public final class FishingAppCoordinator: ObservableObject {
                 }
 
             case .lineBroken:
+                audioHaptics.playSoundEffect(.lineBreak)
                 try? reloadAllStateFromDatabase()
                 activeAlert = .lineBroken
 
             case .rodBroken:
+                audioHaptics.playSoundEffect(.rodBreak)
                 try? repository.evaluateAchievementOnRodBroken(nowMs: nowMs)
                 try? reloadAllStateFromDatabase()
                 activeAlert = .rodBroken
 
             case .coilBroken:
+                audioHaptics.playSoundEffect(.coilBreak)
                 try? reloadAllStateFromDatabase()
                 activeAlert = .coilBroken
 
             case .fishEscaped:
+                audioHaptics.playSoundEffect(.fishSplash)
                 try? reloadAllStateFromDatabase()
                 activeAlert = .fishEscaped
 
@@ -804,5 +825,44 @@ public final class FishingAppCoordinator: ObservableObject {
             break
         }
         return outcome
+    }
+
+    // MARK: - Phase 9: Server Rewards (`reaward.php`), Fisherman Contracts (`user_task`) & Language Switching
+
+    public func setLanguage(_ language: FishingLanguage) {
+        self.languageCode = language.rawValue
+    }
+
+    @discardableResult
+    public func claimServerRewards(
+        _ response: String,
+        nowMs: Int64 = Int64(Date().timeIntervalSince1970 * 1000)
+    ) throws -> ServerRewardClaimSummary {
+        let summary = try repository.claimServerRewardsResponse(response, nowMs: nowMs)
+        try reloadAllStateFromDatabase()
+        return summary
+    }
+
+    @discardableResult
+    public func assignFishermanContract(
+        taskType: Int,
+        targetFishId: Int,
+        targetBaitId: Int = 0,
+        requiredCount: Int,
+        requiredWeightGrams: Int,
+        bonusExperience: Int,
+        nowMs: Int64 = Int64(Date().timeIntervalSince1970 * 1000)
+    ) throws -> UserTaskContractRecord {
+        let record = try repository.assignUserTaskContract(
+            taskType: taskType,
+            targetFishId: targetFishId,
+            targetBaitId: targetBaitId,
+            requiredCount: requiredCount,
+            requiredWeightGrams: requiredWeightGrams,
+            bonusExperience: bonusExperience,
+            nowMs: nowMs
+        )
+        try reloadAllStateFromDatabase()
+        return record
     }
 }
