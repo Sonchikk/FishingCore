@@ -895,62 +895,69 @@ extension PlayerStateRepository {
 
                 case .fishingRod:
                     guard let spec = try catalog.loadFishingRodSpec(id: grant.valueOrItemId) else { continue }
-                    let rowId = Int(try connection.run("""
-                    INSERT INTO user_fishing_rods (fishing_rod, strength, date, md5)
-                    VALUES (?, 100, ?, );
-                    """, bindings: [.integer(Int64(spec.id)), .integer(nowMs)]))
-                    let md5 = FishingChecksum.userInvMd5(
+                    let initialStrength = 100
+                    let rowId = try connection.scalarInt("SELECT COALESCE(MAX(id), 0) + 1 FROM user_fishing_rods;")
+                    let invMd5 = FishingChecksum.userInvMd5(
                         rowId: rowId,
                         baseItemId: spec.id,
                         date: nowMs,
-                        attributeValue: 100,
+                        attributeValue: initialStrength,
                         installationUuid: installationUuid
                     )
-                    try connection.run(
-                        "UPDATE user_fishing_rods SET md5 = ? WHERE id = ?;",
-                        bindings: [.text(md5), .integer(Int64(rowId))]
-                    )
+                    try connection.run("""
+                    INSERT INTO user_fishing_rods (id, fishing_rod, strength, date, md5)
+                    VALUES (?, ?, ?, ?, ?);
+                    """, bindings: [
+                        .integer(Int64(rowId)),
+                        .integer(Int64(spec.id)),
+                        .integer(Int64(initialStrength)),
+                        .integer(nowMs),
+                        .text(invMd5)
+                    ])
 
                 case .coil:
                     guard let spec = try catalog.loadCoilSpec(id: grant.valueOrItemId) else { continue }
-                    let rowId = Int(try connection.run("""
-                    INSERT INTO user_coils (coil, strength, date, md5)
-                    VALUES (?, 100, ?, );
-                    """, bindings: [.integer(Int64(spec.id)), .integer(nowMs)]))
-                    let md5 = FishingChecksum.userInvMd5(
+                    let initialStrength = 100
+                    let rowId = try connection.scalarInt("SELECT COALESCE(MAX(id), 0) + 1 FROM user_coils;")
+                    let invMd5 = FishingChecksum.userInvMd5(
                         rowId: rowId,
                         baseItemId: spec.id,
                         date: nowMs,
-                        attributeValue: 100,
+                        attributeValue: initialStrength,
                         installationUuid: installationUuid
                     )
-                    try connection.run(
-                        "UPDATE user_coils SET md5 = ? WHERE id = ?;",
-                        bindings: [.text(md5), .integer(Int64(rowId))]
-                    )
+                    try connection.run("""
+                    INSERT INTO user_coils (id, coil, strength, date, md5)
+                    VALUES (?, ?, ?, ?, ?);
+                    """, bindings: [
+                        .integer(Int64(rowId)),
+                        .integer(Int64(spec.id)),
+                        .integer(Int64(initialStrength)),
+                        .integer(nowMs),
+                        .text(invMd5)
+                    ])
 
                 case .fishingLine:
                     guard let spec = try catalog.loadFishingLineSpec(id: grant.valueOrItemId) else { continue }
                     let lengthM = max(100, spec.stockLength)
-                    let rowId = Int(try connection.run("""
-                    INSERT INTO user_fishing_lines (fishing_line, length, date, md5)
-                    VALUES (?, ?, ?, );
-                    """, bindings: [
-                        .integer(Int64(spec.id)),
-                        .integer(Int64(lengthM)),
-                        .integer(nowMs)
-                    ]))
-                    let md5 = FishingChecksum.userInvMd5(
+                    let rowId = try connection.scalarInt("SELECT COALESCE(MAX(id), 0) + 1 FROM user_fishing_lines;")
+                    let invMd5 = FishingChecksum.userInvMd5(
                         rowId: rowId,
                         baseItemId: spec.id,
                         date: nowMs,
                         attributeValue: lengthM,
                         installationUuid: installationUuid
                     )
-                    try connection.run(
-                        "UPDATE user_fishing_lines SET md5 = ? WHERE id = ?;",
-                        bindings: [.text(md5), .integer(Int64(rowId))]
-                    )
+                    try connection.run("""
+                    INSERT INTO user_fishing_lines (id, fishing_line, length, date, md5)
+                    VALUES (?, ?, ?, ?, ?);
+                    """, bindings: [
+                        .integer(Int64(rowId)),
+                        .integer(Int64(spec.id)),
+                        .integer(Int64(lengthM)),
+                        .integer(nowMs),
+                        .text(invMd5)
+                    ])
 
                 case .hook:
                     let stockAmount = try catalog.loadHookStockAmount(id: grant.valueOrItemId)
