@@ -1,0 +1,113 @@
+{
+  "metadata": {
+    "dataset": "hooks",
+    "source_class": "Lcom/evados/fishing/database/generators/HookGenerator;",
+    "ormlite_model": "Lcom/evados/fishing/database/objects/base/Hook;",
+    "sqlite_table": "hooks",
+    "supplementary_source": "LD0/d;.e:[I (max fish weights per hook)",
+    "extraction_method": "DalvikVM bytecode execution of HookGenerator.<init> and generate(0..9) + LD0/d;.r()",
+    "record_count": 10
+  },
+  "records": [
+    {
+      "id": 1,
+      "index_0based": 0,
+      "name": "fish 1",
+      "stockAmount": 5,
+      "price": 100,
+      "max_fish_weight_kg_d0d_e": 6,
+      "shop_drawable_res_hex": "0x7f0801eb",
+      "shop_drawable_name": "hooks"
+    },
+    {
+      "id": 2,
+      "index_0based": 1,
+      "name": "fish 2",
+      "stockAmount": 5,
+      "price": 2000,
+      "max_fish_weight_kg_d0d_e": 14,
+      "shop_drawable_res_hex": "0x7f0801eb",
+      "shop_drawable_name": "hooks"
+    },
+    {
+      "id": 3,
+      "index_0based": 2,
+      "name": "fish 3",
+      "stockAmount": 5,
+      "price": 6000,
+      "max_fish_weight_kg_d0d_e": 20,
+      "shop_drawable_res_hex": "0x7f0801eb",
+      "shop_drawable_name": "hooks"
+    },
+    {
+      "id": 4,
+      "index_0based": 3,
+      "name": "fish 4",
+      "stockAmount": 5,
+      "price": 12000,
+      "max_fish_weight_kg_d0d_e": 44,
+      "shop_drawable_res_hex": "0x7f0801eb",
+      "shop_drawable_name": "hooks"
+    },
+    {
+      "id": 5,
+      "index_0based": 4,
+      "name": "fish 5",
+      "stockAmount": 5,
+      "price": 18000,
+      "max_fish_weight_kg_d0d_e": 78,
+      "shop_drawable_res_hex": "0x7f0801eb",
+      "shop_drawable_name": "hooks"
+    },
+    {
+      "id": 6,
+      "index_0based": 5,
+      "name": "fish 6",
+      "stockAmount": 5,
+      "price": 29000,
+      "max_fish_weight_kg_d0d_e": 118,
+      "shop_drawable_res_hex": "0x7f0801eb",
+      "shop_drawable_name": "hooks"
+    },
+    {
+      "id": 7,
+      "index_0based": 6,
+      "name": "fish 7",
+      "stockAmount": 5,
+      "price": 42000,
+      "max_fish_weight_kg_d0d_e": 225,
+      "shop_drawable_res_hex": "0x7f0801eb",
+      "shop_drawable_name": "hooks"
+    },
+    {
+      "id": 8,
+      "index_0based": 7,
+      "name": "fish 8",
+      "stockAmount": 5,
+      "price": 64000,
+      "max_fish_weight_kg_d0d_e": 383,
+      "shop_drawable_res_hex": "0x7f0801eb",
+      "shop_drawable_name": "hooks"
+    },
+    {
+      "id": 9,
+      "index_0based": 8,
+      "name": "fish 9",
+      "stockAmount": 5,
+      "price": 75000,
+      "max_fish_weight_kg_d0d_e": 617,
+      "shop_drawable_res_hex": "0x7f0801eb",
+      "shop_drawable_name": "hooks"
+    },
+    {
+      "id": 10,
+      "index_0based": 9,
+      "name": "fish 10",
+      "stockAmount": 5,
+      "price": 100000,
+      "max_fish_weight_kg_d0d_e": 2177,
+      "shop_drawable_res_hex": "0x7f0801eb",
+      "shop_drawable_name": "hooks"
+    }
+  ]
+}

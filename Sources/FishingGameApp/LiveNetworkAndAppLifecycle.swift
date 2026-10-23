@@ -287,3 +287,124 @@ public enum FishingIOSAppConfiguration: Sendable {
         ]
     }
 }
+
+// MARK: - 4. Executable iOS App Bundle & `INSTALLATION` UUID Bootstrapper (`F0.e.a`, `NETWORK.md` Section 1.1)
+
+/// Reconstructs `F0.e` (`InstallationIdProvider`: persistent `<FilesDir>/INSTALLATION` UUID v4)
+/// and bootstraps `Application Support/FishingForFriends/fishing2.db` from the `.app` bundle's `GameData`
+/// directory on first launch while keeping subsequent app startups instantaneous.
+public enum AppBundleDatabaseBootstrapper: Sendable {
+    public static let appSupportSubdirectoryName = "FishingForFriends"
+    public static let installationFilename = "INSTALLATION"
+    public static let databaseFilename = "fishing2.db"
+    public static let bundledGameDataFolderName = "GameData"
+    public static let fullCatalogFishSpeciesCount = 141
+
+    /// Default `Application Support/FishingForFriends` directory URL on iOS / macOS.
+    public static func defaultAppSupportDirectoryURL() -> URL {
+        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+            ?? FileManager.default.temporaryDirectory
+        return base.appendingPathComponent(appSupportSubdirectoryName, isDirectory: true)
+    }
+
+    /// Exact reconstruction of `F0.e.a(Context)` (`NETWORK.md` Section 1.1):
+    /// Reads `<directoryURL>/INSTALLATION` if present and non-empty; otherwise generates a lowercased
+    /// UUID v4 string (`xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`) and writes it atomically in UTF-8.
+    public static func resolveOrCreateInstallationUuid(in directoryURL: URL) throws -> String {
+        try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+        let installationFileURL = directoryURL.appendingPathComponent(installationFilename, isDirectory: false)
+        if FileManager.default.fileExists(atPath: installationFileURL.path),
+           let existingData = try? Data(contentsOf: installationFileURL),
+           let existingString = String(data: existingData, encoding: .utf8)?
+               .trimmingCharacters(in: .whitespacesAndNewlines),
+           !existingString.isEmpty {
+            return existingString
+        }
+
+        let generatedUuid = UUID().uuidString.lowercased()
+        guard let utf8Data = generatedUuid.data(using: .utf8) else {
+            return generatedUuid
+        }
+        try utf8Data.write(to: installationFileURL, options: .atomic)
+        return generatedUuid
+    }
+
+    /// Locates the bundled `GameData` directory containing the 13 reference JSON files (`fishes.json`, etc.).
+    public static func resolveBundledGameDataURL(
+        explicitURL: URL? = nil,
+        bundle: Bundle = .main
+    ) -> URL? {
+        var candidates: [URL] = []
+        if let explicitURL {
+            candidates.append(explicitURL)
+        }
+        if let bundleGameData = bundle.url(forResource: bundledGameDataFolderName, withExtension: nil) {
+            candidates.append(bundleGameData)
+        }
+        if let resourceRoot = bundle.resourceURL {
+            candidates.append(resourceRoot.appendingPathComponent(bundledGameDataFolderName, isDirectory: true))
+            candidates.append(resourceRoot)
+        }
+
+        for candidate in candidates {
+            let fishesJSONPath = candidate.appendingPathComponent("fishes.json").path
+            if FileManager.default.fileExists(atPath: fishesJSONPath) {
+                return candidate
+            }
+        }
+        return nil
+    }
+
+    /// Checks whether the SQLite database at `databasePath` already contains the full 141-species reference catalog.
+    public static func isFullReferenceCatalogPopulated(atDatabasePath databasePath: String) -> Bool {
+        guard FileManager.default.fileExists(atPath: databasePath),
+              let conn = try? SQLiteConnection(path: databasePath) else {
+            return false
+        }
+        let fishCount = (try? conn.scalarInt("SELECT COUNT(*) FROM fishes;")) ?? 0
+        let pondCount = (try? conn.scalarInt("SELECT COUNT(*) FROM ref_ponds;")) ?? 0
+        return fishCount >= fullCatalogFishSpeciesCount && pondCount >= 15
+    }
+
+    /// Bootstraps `FishingAppCoordinator` for the standalone iOS application (`FishingIOSApp.app`):
+    /// 1. Ensures `Application Support/FishingForFriends` exists.
+    /// 2. Loads or creates the persistent `INSTALLATION` UUID (`F0.e.a`).
+    /// 3. On first launch (or if `< 141` fish species exist in `fishing2.db`), imports all 13 reference JSON files
+    ///    from `GameData` and signs every row with `installationUuid`.
+    /// 4. On subsequent launches, opens `fishing2.db` directly without re-importing static JSONs.
+    @MainActor
+    public static func bootstrapAppCoordinator(
+        appSupportDirectory: URL? = nil,
+        bundledGameDataURL: URL? = nil,
+        initialHour: Int = 6,
+        initialMinute: Int = 0,
+        viewWidth: Int = 1280,
+        viewHeight: Int = 800,
+        nowMs: Int64 = Int64(Date().timeIntervalSince1970 * 1000)
+    ) throws -> FishingAppCoordinator {
+        let supportDir = appSupportDirectory ?? defaultAppSupportDirectoryURL()
+        try FileManager.default.createDirectory(at: supportDir, withIntermediateDirectories: true)
+
+        let installationUuid = try resolveOrCreateInstallationUuid(in: supportDir)
+        let dbPath = supportDir.appendingPathComponent(databaseFilename, isDirectory: false).path
+        let resolvedGameDataURL = resolveBundledGameDataURL(explicitURL: bundledGameDataURL)
+
+        let jsonDirForInit: URL?
+        if isFullReferenceCatalogPopulated(atDatabasePath: dbPath) {
+            jsonDirForInit = nil
+        } else {
+            jsonDirForInit = resolvedGameDataURL
+        }
+
+        return try FishingAppCoordinator(
+            databasePath: dbPath,
+            jsonDataDirectoryURL: jsonDirForInit,
+            installationUuid: installationUuid,
+            initialHour: initialHour,
+            initialMinute: initialMinute,
+            viewWidth: viewWidth,
+            viewHeight: viewHeight,
+            nowMs: nowMs
+        )
+    }
+}

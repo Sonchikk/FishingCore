@@ -12,7 +12,7 @@ public struct FishingRootView: View {
         if let coordinator {
             _coordinator = StateObject(wrappedValue: coordinator)
         } else {
-            let resolved = try! FishingAppCoordinator()
+            let resolved = (try? AppBundleDatabaseBootstrapper.bootstrapAppCoordinator()) ?? (try! FishingAppCoordinator())
             _coordinator = StateObject(wrappedValue: resolved)
         }
     }

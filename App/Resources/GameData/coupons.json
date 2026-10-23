@@ -1,0 +1,132 @@
+{
+  "metadata": {
+    "dataset": "coupons",
+    "source_class": "Lcom/evados/fishing/database/generators/CouponGenerator;",
+    "ormlite_model": "Lcom/evados/fishing/database/objects/base/Coupon;",
+    "sqlite_table": "coupons",
+    "localization_resource": "0x7f12010e (string/coupon)",
+    "extraction_method": "DalvikVM bytecode execution of CouponGenerator.<init> and generate(0..6) + resources.arsc string extraction",
+    "record_count": 7
+  },
+  "records": [
+    {
+      "id": 1,
+      "index_0based": 0,
+      "name": "Путевой купон",
+      "names_i18n": {
+        "ru": "Путевой купон",
+        "en": "Route coupon",
+        "de": "Reisenkupon",
+        "es": "Cupón de viaje",
+        "pt": "Cupom de viagem"
+      },
+      "dayCount": 1,
+      "price": 150000,
+      "dn": 288,
+      "shop_drawable_res_hex": "0x7f080131",
+      "shop_drawable_name": "coupons"
+    },
+    {
+      "id": 2,
+      "index_0based": 1,
+      "name": "Путевой купон",
+      "names_i18n": {
+        "ru": "Путевой купон",
+        "en": "Route coupon",
+        "de": "Reisenkupon",
+        "es": "Cupón de viaje",
+        "pt": "Cupom de viagem"
+      },
+      "dayCount": 2,
+      "price": 300000,
+      "dn": 576,
+      "shop_drawable_res_hex": "0x7f080131",
+      "shop_drawable_name": "coupons"
+    },
+    {
+      "id": 3,
+      "index_0based": 2,
+      "name": "Путевой купон",
+      "names_i18n": {
+        "ru": "Путевой купон",
+        "en": "Route coupon",
+        "de": "Reisenkupon",
+        "es": "Cupón de viaje",
+        "pt": "Cupom de viagem"
+      },
+      "dayCount": 3,
+      "price": 450000,
+      "dn": 864,
+      "shop_drawable_res_hex": "0x7f080131",
+      "shop_drawable_name": "coupons"
+    },
+    {
+      "id": 4,
+      "index_0based": 3,
+      "name": "Путевой купон",
+      "names_i18n": {
+        "ru": "Путевой купон",
+        "en": "Route coupon",
+        "de": "Reisenkupon",
+        "es": "Cupón de viaje",
+        "pt": "Cupom de viagem"
+      },
+      "dayCount": 4,
+      "price": 600000,
+      "dn": 1152,
+      "shop_drawable_res_hex": "0x7f080131",
+      "shop_drawable_name": "coupons"
+    },
+    {
+      "id": 5,
+      "index_0based": 4,
+      "name": "Путевой купон",
+      "names_i18n": {
+        "ru": "Путевой купон",
+        "en": "Route coupon",
+        "de": "Reisenkupon",
+        "es": "Cupón de viaje",
+        "pt": "Cupom de viagem"
+      },
+      "dayCount": 5,
+      "price": 750000,
+      "dn": 1440,
+      "shop_drawable_res_hex": "0x7f080131",
+      "shop_drawable_name": "coupons"
+    },
+    {
+      "id": 6,
+      "index_0based": 5,
+      "name": "Путевой купон",
+      "names_i18n": {
+        "ru": "Путевой купон",
+        "en": "Route coupon",
+        "de": "Reisenkupon",
+        "es": "Cupón de viaje",
+        "pt": "Cupom de viagem"
+      },
+      "dayCount": 6,
+      "price": 900000,
+      "dn": 1728,
+      "shop_drawable_res_hex": "0x7f080131",
+      "shop_drawable_name": "coupons"
+    },
+    {
+      "id": 7,
+      "index_0based": 6,
+      "name": "Путевой купон",
+      "names_i18n": {
+        "ru": "Путевой купон",
+        "en": "Route coupon",
+        "de": "Reisenkupon",
+        "es": "Cupón de viaje",
+        "pt": "Cupom de viagem"
+      },
+      "dayCount": 7,
+      "price": 1050000,
+      "dn": 2016,
+      "shop_drawable_res_hex": "0x7f080131",
+      "shop_drawable_name": "coupons"
+    }
+  ]
+}

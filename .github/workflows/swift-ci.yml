@@ -59,3 +59,36 @@ jobs:
           xcodebuild build \
             -scheme FishingCore-Package \
             -destination 'generic/platform=iOS Simulator'
+
+      - name: Generate Xcode project & build FishingIOSApp.app (iOS 18 Simulator)
+        run: |
+          mkdir -p App/Resources/GameData
+          if [ -d "data" ]; then
+            cp -f data/*.json App/Resources/GameData/ 2>/dev/null || true
+          fi
+          if ! command -v xcodegen >/dev/null 2>&1; then
+            brew install xcodegen
+          fi
+          xcodegen generate
+          xcodebuild \
+            -project FishingIOSApp.xcodeproj \
+            -scheme FishingIOSApp \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build
+          APP_PATH="build/DerivedData/Build/Products/Debug-iphonesimulator/FishingIOSApp.app"
+          ls -la "$APP_PATH"
+          ls -la "$APP_PATH/GameData"
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" FishingIOSApp-iOS18-Simulator.app.zip
+          ls -lh FishingIOSApp-iOS18-Simulator.app.zip
+
+      - name: Upload FishingIOSApp.app Simulator Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FishingIOSApp-iOS18-Simulator
+          path: FishingIOSApp-iOS18-Simulator.app.zip
+          if-no-files-found: error

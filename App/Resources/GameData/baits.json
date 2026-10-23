@@ -1,0 +1,773 @@
+{
+  "metadata": {
+    "dataset": "baits",
+    "source_class": "Lcom/evados/fishing/database/generators/BaitGenerator;",
+    "ormlite_model": "Lcom/evados/fishing/database/objects/base/Bait;",
+    "sqlite_table": "baits",
+    "localization_resource": "0x7f030005 (array/baits)",
+    "extraction_method": "DalvikVM bytecode execution of BaitGenerator.<init> and generate(0..39) + resources.arsc multi-locale array extraction",
+    "record_count": 40
+  },
+  "records": [
+    {
+      "id": 1,
+      "index_0based": 0,
+      "name": "червь",
+      "names_i18n": {
+        "ru": "червь",
+        "en": "earthworm",
+        "de": "Wurm",
+        "es": "gusano",
+        "pt": "minhoca"
+      },
+      "stockAmount": 30,
+      "price": 30,
+      "is_online_or_special": false,
+      "image": 2131230950,
+      "image_res_hex": "0x7f0800e6",
+      "image_res_name": "bait_1",
+      "image_apk_path": "res/AK.png"
+    },
+    {
+      "id": 2,
+      "index_0based": 1,
+      "name": "хлеб",
+      "names_i18n": {
+        "ru": "хлеб",
+        "en": "bread",
+        "de": "Brot",
+        "es": "pan",
+        "pt": "pão"
+      },
+      "stockAmount": 40,
+      "price": 50,
+      "is_online_or_special": false,
+      "image": 2131230961,
+      "image_res_hex": "0x7f0800f1",
+      "image_res_name": "bait_2",
+      "image_apk_path": "res/ts1.png"
+    },
+    {
+      "id": 3,
+      "index_0based": 2,
+      "name": "мотыль",
+      "names_i18n": {
+        "ru": "мотыль",
+        "en": "bloodworm",
+        "de": "Zuckmückenlarve",
+        "es": "larva",
+        "pt": "larva"
+      },
+      "stockAmount": 25,
+      "price": 70,
+      "is_online_or_special": false,
+      "image": 2131230972,
+      "image_res_hex": "0x7f0800fc",
+      "image_res_name": "bait_3",
+      "image_apk_path": "res/PN.png"
+    },
+    {
+      "id": 4,
+      "index_0based": 3,
+      "name": "бойл",
+      "names_i18n": {
+        "ru": "бойл",
+        "en": "boilie",
+        "de": "Boilies",
+        "es": "boilie",
+        "pt": "boilie"
+      },
+      "stockAmount": 15,
+      "price": 100,
+      "is_online_or_special": false,
+      "image": 2131230983,
+      "image_res_hex": "0x7f080107",
+      "image_res_name": "bait_4",
+      "image_apk_path": "res/x7.png"
+    },
+    {
+      "id": 5,
+      "index_0based": 4,
+      "name": "кусочки сыра",
+      "names_i18n": {
+        "ru": "кусочки сыра",
+        "en": "cheese pieces",
+        "de": "Käsestücke",
+        "es": "pedazo de queso",
+        "pt": "pedaços de queijo"
+      },
+      "stockAmount": 20,
+      "price": 100,
+      "is_online_or_special": false,
+      "image": 2131230985,
+      "image_res_hex": "0x7f080109",
+      "image_res_name": "bait_5",
+      "image_apk_path": "res/2G.png"
+    },
+    {
+      "id": 6,
+      "index_0based": 5,
+      "name": "кукуруза",
+      "names_i18n": {
+        "ru": "кукуруза",
+        "en": "corn",
+        "de": "Mais",
+        "es": "maiz",
+        "pt": "milho"
+      },
+      "stockAmount": 40,
+      "price": 80,
+      "is_online_or_special": false,
+      "image": 2131230986,
+      "image_res_hex": "0x7f08010a",
+      "image_res_name": "bait_6",
+      "image_apk_path": "res/Zg1.png"
+    },
+    {
+      "id": 7,
+      "index_0based": 6,
+      "name": "геркулес",
+      "names_i18n": {
+        "ru": "геркулес",
+        "en": "oatmeal",
+        "de": "Haferflocken",
+        "es": "avena",
+        "pt": "aveia"
+      },
+      "stockAmount": 50,
+      "price": 150,
+      "is_online_or_special": false,
+      "image": 2131230987,
+      "image_res_hex": "0x7f08010b",
+      "image_res_name": "bait_7",
+      "image_apk_path": "res/L0.png"
+    },
+    {
+      "id": 8,
+      "index_0based": 7,
+      "name": "картошка",
+      "names_i18n": {
+        "ru": "картошка",
+        "en": "potato",
+        "de": "Kartoffel",
+        "es": "pan",
+        "pt": "batata"
+      },
+      "stockAmount": 20,
+      "price": 150,
+      "is_online_or_special": false,
+      "image": 2131230988,
+      "image_res_hex": "0x7f08010c",
+      "image_res_name": "bait_8",
+      "image_apk_path": "res/EB.png"
+    },
+    {
+      "id": 9,
+      "index_0based": 8,
+      "name": "манка",
+      "names_i18n": {
+        "ru": "манка",
+        "en": "semolina",
+        "de": "Grieß",
+        "es": "sémola",
+        "pt": "semolina"
+      },
+      "stockAmount": 50,
+      "price": 100,
+      "is_online_or_special": false,
+      "image": 2131230989,
+      "image_res_hex": "0x7f08010d",
+      "image_res_name": "bait_9",
+      "image_apk_path": "res/H8.png"
+    },
+    {
+      "id": 10,
+      "index_0based": 9,
+      "name": "тесто",
+      "names_i18n": {
+        "ru": "тесто",
+        "en": "dough",
+        "de": "Teig",
+        "es": "masa",
+        "pt": "massa"
+      },
+      "stockAmount": 30,
+      "price": 50,
+      "is_online_or_special": false,
+      "image": 2131230951,
+      "image_res_hex": "0x7f0800e7",
+      "image_res_name": "bait_10",
+      "image_apk_path": "res/C8.png"
+    },
+    {
+      "id": 11,
+      "index_0based": 10,
+      "name": "перловка",
+      "names_i18n": {
+        "ru": "перловка",
+        "en": "pearl barley",
+        "de": "Graupe",
+        "es": "cebada perlada",
+        "pt": "cevadinha"
+      },
+      "stockAmount": 50,
+      "price": 150,
+      "is_online_or_special": false,
+      "image": 2131230952,
+      "image_res_hex": "0x7f0800e8",
+      "image_res_name": "bait_11",
+      "image_apk_path": "res/Vc.png"
+    },
+    {
+      "id": 12,
+      "index_0based": 11,
+      "name": "опарыш",
+      "names_i18n": {
+        "ru": "опарыш",
+        "en": "maggot",
+        "de": "Made",
+        "es": "cresas",
+        "pt": "verme"
+      },
+      "stockAmount": 25,
+      "price": 80,
+      "is_online_or_special": false,
+      "image": 2131230953,
+      "image_res_hex": "0x7f0800e9",
+      "image_res_name": "bait_12",
+      "image_apk_path": "res/mY.png"
+    },
+    {
+      "id": 13,
+      "index_0based": 12,
+      "name": "макароны",
+      "names_i18n": {
+        "ru": "макароны",
+        "en": "pasta",
+        "de": "Nudeln",
+        "es": "macarrones",
+        "pt": "macarrão"
+      },
+      "stockAmount": 30,
+      "price": 150,
+      "is_online_or_special": false,
+      "image": 2131230954,
+      "image_res_hex": "0x7f0800ea",
+      "image_res_name": "bait_13",
+      "image_apk_path": "res/N_1.png"
+    },
+    {
+      "id": 14,
+      "index_0based": 13,
+      "name": "кузнечик",
+      "names_i18n": {
+        "ru": "кузнечик",
+        "en": "grasshopper",
+        "de": "Heuschrecke",
+        "es": "saltamontes",
+        "pt": "grilo"
+      },
+      "stockAmount": 15,
+      "price": 200,
+      "is_online_or_special": false,
+      "image": 2131230955,
+      "image_res_hex": "0x7f0800eb",
+      "image_res_name": "bait_14",
+      "image_apk_path": "res/Fp.png"
+    },
+    {
+      "id": 15,
+      "index_0based": 14,
+      "name": "помидоры",
+      "names_i18n": {
+        "ru": "помидоры",
+        "en": "tomatoes",
+        "de": "Tomaten",
+        "es": "tomates",
+        "pt": "tomates"
+      },
+      "stockAmount": 10,
+      "price": 200,
+      "is_online_or_special": false,
+      "image": 2131230956,
+      "image_res_hex": "0x7f0800ec",
+      "image_res_name": "bait_15",
+      "image_apk_path": "res/vw1.png"
+    },
+    {
+      "id": 16,
+      "index_0based": 15,
+      "name": "личинка короеда",
+      "names_i18n": {
+        "ru": "личинка короеда",
+        "en": "bark beetle larva",
+        "de": "Borkenkäferlarve",
+        "es": "larva de carcoma",
+        "pt": "larva de bóstrico"
+      },
+      "stockAmount": 20,
+      "price": 120,
+      "is_online_or_special": false,
+      "image": 2131230957,
+      "image_res_hex": "0x7f0800ed",
+      "image_res_name": "bait_16",
+      "image_apk_path": "res/TG.png"
+    },
+    {
+      "id": 17,
+      "index_0based": 16,
+      "name": "горошек",
+      "names_i18n": {
+        "ru": "горошек",
+        "en": "pea",
+        "de": "Erbsen",
+        "es": "guisantes",
+        "pt": "ervilha"
+      },
+      "stockAmount": 40,
+      "price": 130,
+      "is_online_or_special": false,
+      "image": 2131230958,
+      "image_res_hex": "0x7f0800ee",
+      "image_res_name": "bait_17",
+      "image_apk_path": "res/VM.png"
+    },
+    {
+      "id": 18,
+      "index_0based": 17,
+      "name": "жук",
+      "names_i18n": {
+        "ru": "жук",
+        "en": "beetle",
+        "de": "Käfer",
+        "es": "escarabajos",
+        "pt": "besouro"
+      },
+      "stockAmount": 15,
+      "price": 140,
+      "is_online_or_special": false,
+      "image": 2131230959,
+      "image_res_hex": "0x7f0800ef",
+      "image_res_name": "bait_18",
+      "image_apk_path": "res/Gn1.png"
+    },
+    {
+      "id": 19,
+      "index_0based": 18,
+      "name": "раковая шейка",
+      "names_i18n": {
+        "ru": "раковая шейка",
+        "en": "crayfish tail",
+        "de": "Krebsbauch",
+        "es": "cola de cangrejo",
+        "pt": "rabo de lagosta"
+      },
+      "stockAmount": 10,
+      "price": 700,
+      "is_online_or_special": false,
+      "image": 2131230960,
+      "image_res_hex": "0x7f0800f0",
+      "image_res_name": "bait_19",
+      "image_apk_path": "res/BC1.png"
+    },
+    {
+      "id": 20,
+      "index_0based": 19,
+      "name": "крабовое мясо",
+      "names_i18n": {
+        "ru": "крабовое мясо",
+        "en": "crab meat",
+        "de": "Krabbenfleisch",
+        "es": "carne de cangrejo",
+        "pt": "carne de caranguejo"
+      },
+      "stockAmount": 15,
+      "price": 500,
+      "is_online_or_special": false,
+      "image": 2131230962,
+      "image_res_hex": "0x7f0800f2",
+      "image_res_name": "bait_20",
+      "image_apk_path": "res/55.png"
+    },
+    {
+      "id": 21,
+      "index_0based": 20,
+      "name": "муха",
+      "names_i18n": {
+        "ru": "муха",
+        "en": "fly",
+        "de": "Fliege",
+        "es": "mosca",
+        "pt": "mosca"
+      },
+      "stockAmount": 15,
+      "price": 400,
+      "is_online_or_special": false,
+      "image": 2131230963,
+      "image_res_hex": "0x7f0800f3",
+      "image_res_name": "bait_21",
+      "image_apk_path": "res/rS.png"
+    },
+    {
+      "id": 22,
+      "index_0based": 21,
+      "name": "зелень",
+      "names_i18n": {
+        "ru": "зелень",
+        "en": "green",
+        "de": "Kraut",
+        "es": "verdura",
+        "pt": "verduras"
+      },
+      "stockAmount": 25,
+      "price": 200,
+      "is_online_or_special": false,
+      "image": 2131230964,
+      "image_res_hex": "0x7f0800f4",
+      "image_res_name": "bait_22",
+      "image_apk_path": "res/sx.png"
+    },
+    {
+      "id": 23,
+      "index_0based": 22,
+      "name": "хирономида",
+      "names_i18n": {
+        "ru": "хирономида",
+        "en": "chironomid",
+        "de": "Zuckmücke",
+        "es": "quironómido",
+        "pt": "quironomídeos"
+      },
+      "stockAmount": 20,
+      "price": 450,
+      "is_online_or_special": false,
+      "image": 2131230965,
+      "image_res_hex": "0x7f0800f5",
+      "image_res_name": "bait_23",
+      "image_apk_path": "res/RG.png"
+    },
+    {
+      "id": 24,
+      "index_0based": 23,
+      "name": "икра",
+      "names_i18n": {
+        "ru": "икра",
+        "en": "caviar",
+        "de": "Laich",
+        "es": "caviar",
+        "pt": "caviar"
+      },
+      "stockAmount": 15,
+      "price": 400,
+      "is_online_or_special": false,
+      "image": 2131230966,
+      "image_res_hex": "0x7f0800f6",
+      "image_res_name": "bait_24",
+      "image_apk_path": "res/N1.png"
+    },
+    {
+      "id": 25,
+      "index_0based": 24,
+      "name": "ручейник",
+      "names_i18n": {
+        "ru": "ручейник",
+        "en": "caddisfly",
+        "de": "Köcherfliege",
+        "es": "tricóptero",
+        "pt": "mosca-de-água"
+      },
+      "stockAmount": 30,
+      "price": 250,
+      "is_online_or_special": false,
+      "image": 2131230967,
+      "image_res_hex": "0x7f0800f7",
+      "image_res_name": "bait_25",
+      "image_apk_path": "res/BM.png"
+    },
+    {
+      "id": 26,
+      "index_0based": 25,
+      "name": "поденка",
+      "names_i18n": {
+        "ru": "поденка",
+        "en": "mayfly",
+        "de": "Eintagsfliege",
+        "es": "cachipolla",
+        "pt": "efêmera"
+      },
+      "stockAmount": 20,
+      "price": 150,
+      "is_online_or_special": false,
+      "image": 2131230968,
+      "image_res_hex": "0x7f0800f8",
+      "image_res_name": "bait_26",
+      "image_apk_path": "res/1k.png"
+    },
+    {
+      "id": 27,
+      "index_0based": 26,
+      "name": "кусочки рыбы",
+      "names_i18n": {
+        "ru": "кусочки рыбы",
+        "en": "fish pieces",
+        "de": "Fischstücke",
+        "es": "trozo de pescado",
+        "pt": "pedaços de peixe"
+      },
+      "stockAmount": 20,
+      "price": 600,
+      "is_online_or_special": false,
+      "image": 2131230969,
+      "image_res_hex": "0x7f0800f9",
+      "image_res_name": "bait_27",
+      "image_apk_path": "res/1-.png"
+    },
+    {
+      "id": 28,
+      "index_0based": 27,
+      "name": "лягушка",
+      "names_i18n": {
+        "ru": "лягушка",
+        "en": "frog",
+        "de": "Frosch",
+        "es": "rana",
+        "pt": "rã"
+      },
+      "stockAmount": 20,
+      "price": 500,
+      "is_online_or_special": false,
+      "image": 2131230970,
+      "image_res_hex": "0x7f0800fa",
+      "image_res_name": "bait_28",
+      "image_apk_path": "res/CF.png"
+    },
+    {
+      "id": 29,
+      "index_0based": 28,
+      "name": "капуста",
+      "names_i18n": {
+        "ru": "капуста",
+        "en": "cabbage",
+        "de": "Kohl",
+        "es": "col",
+        "pt": "repolho"
+      },
+      "stockAmount": 25,
+      "price": 300,
+      "is_online_or_special": false,
+      "image": 2131230971,
+      "image_res_hex": "0x7f0800fb",
+      "image_res_name": "bait_29",
+      "image_apk_path": "res/_H.png"
+    },
+    {
+      "id": 30,
+      "index_0based": 29,
+      "name": "макуха",
+      "names_i18n": {
+        "ru": "макуха",
+        "en": "press cake",
+        "de": "Preßkuchen",
+        "es": "torta de prensa",
+        "pt": "torta de prensa"
+      },
+      "stockAmount": 40,
+      "price": 800,
+      "is_online_or_special": false,
+      "image": 2131230973,
+      "image_res_hex": "0x7f0800fd",
+      "image_res_name": "bait_30",
+      "image_apk_path": "res/pp.png"
+    },
+    {
+      "id": 31,
+      "index_0based": 30,
+      "name": "мясо",
+      "names_i18n": {
+        "ru": "мясо",
+        "en": "meat",
+        "de": "Fleisch",
+        "es": "carne",
+        "pt": "carne"
+      },
+      "stockAmount": 15,
+      "price": 500,
+      "is_online_or_special": false,
+      "image": 2131230974,
+      "image_res_hex": "0x7f0800fe",
+      "image_res_name": "bait_31",
+      "image_apk_path": "res/Qb.png"
+    },
+    {
+      "id": 32,
+      "index_0based": 31,
+      "name": "моллюск",
+      "names_i18n": {
+        "ru": "моллюск",
+        "en": "shellfish",
+        "de": "Muschel",
+        "es": "molusco",
+        "pt": "molusco"
+      },
+      "stockAmount": 15,
+      "price": 800,
+      "is_online_or_special": false,
+      "image": 2131230975,
+      "image_res_hex": "0x7f0800ff",
+      "image_res_name": "bait_32",
+      "image_apk_path": "res/4D.png"
+    },
+    {
+      "id": 33,
+      "index_0based": 32,
+      "name": "живец",
+      "names_i18n": {
+        "ru": "живец",
+        "en": "bait fish",
+        "de": "Köderfisch",
+        "es": "cebo vivo",
+        "pt": "peixe de isca"
+      },
+      "stockAmount": 20,
+      "price": 300,
+      "is_online_or_special": false,
+      "image": 2131230976,
+      "image_res_hex": "0x7f080100",
+      "image_res_name": "bait_33",
+      "image_apk_path": "res/7K1.png"
+    },
+    {
+      "id": 34,
+      "index_0based": 33,
+      "name": "пескожил",
+      "names_i18n": {
+        "ru": "пескожил",
+        "en": "lugworm",
+        "de": "Wattwurm",
+        "es": "gusano de arena",
+        "pt": "arenicola marina"
+      },
+      "stockAmount": 25,
+      "price": 400,
+      "is_online_or_special": false,
+      "image": 2131230977,
+      "image_res_hex": "0x7f080101",
+      "image_res_name": "bait_34",
+      "image_apk_path": "res/f5.png"
+    },
+    {
+      "id": 35,
+      "index_0based": 34,
+      "name": "бокоплав",
+      "names_i18n": {
+        "ru": "бокоплав",
+        "en": "amphipoda",
+        "de": "Flohkrebs",
+        "es": "anfípodo",
+        "pt": "amphipoda"
+      },
+      "stockAmount": 30,
+      "price": 360,
+      "is_online_or_special": false,
+      "image": 2131230978,
+      "image_res_hex": "0x7f080102",
+      "image_res_name": "bait_35",
+      "image_apk_path": "res/xb.png"
+    },
+    {
+      "id": 36,
+      "index_0based": 35,
+      "name": "кальмар",
+      "names_i18n": {
+        "ru": "кальмар",
+        "en": "squid",
+        "de": "Kalmare",
+        "es": "calamar",
+        "pt": "lula"
+      },
+      "stockAmount": 40,
+      "price": 670,
+      "is_online_or_special": false,
+      "image": 2131230979,
+      "image_res_hex": "0x7f080103",
+      "image_res_name": "bait_36",
+      "image_apk_path": "res/Ie.png"
+    },
+    {
+      "id": 37,
+      "index_0based": 36,
+      "name": "морской таракан",
+      "names_i18n": {
+        "ru": "морской таракан",
+        "en": "saduria",
+        "de": "Assel",
+        "es": "cucaracha de mar",
+        "pt": "saduria"
+      },
+      "stockAmount": 15,
+      "price": 240,
+      "is_online_or_special": false,
+      "image": 2131230980,
+      "image_res_hex": "0x7f080104",
+      "image_res_name": "bait_37",
+      "image_apk_path": "res/Hs.png"
+    },
+    {
+      "id": 38,
+      "index_0based": 37,
+      "name": "мидия",
+      "names_i18n": {
+        "ru": "мидия",
+        "en": "mussel",
+        "de": "Miesmuschel",
+        "es": "almeja",
+        "pt": "mexilhão"
+      },
+      "stockAmount": 20,
+      "price": 190,
+      "is_online_or_special": false,
+      "image": 2131230981,
+      "image_res_hex": "0x7f080105",
+      "image_res_name": "bait_38",
+      "image_apk_path": "res/Tt.png"
+    },
+    {
+      "id": 39,
+      "index_0based": 38,
+      "name": "морской гребешок",
+      "names_i18n": {
+        "ru": "морской гребешок",
+        "en": "scallop",
+        "de": "Kammuschel",
+        "es": "vieira de mar",
+        "pt": "vieira"
+      },
+      "stockAmount": 35,
+      "price": 200,
+      "is_online_or_special": false,
+      "image": 2131230982,
+      "image_res_hex": "0x7f080106",
+      "image_res_name": "bait_39",
+      "image_apk_path": "res/qY.png"
+    },
+    {
+      "id": 40,
+      "index_0based": 39,
+      "name": "креветка",
+      "names_i18n": {
+        "ru": "креветка",
+        "en": "shrimp",
+        "de": "Garnele",
+        "es": "langostino",
+        "pt": "camarão"
+      },
+      "stockAmount": 50,
+      "price": 300,
+      "is_online_or_special": false,
+      "image": 2131230984,
+      "image_res_hex": "0x7f080108",
+      "image_res_name": "bait_40",
+      "image_apk_path": "res/Ul.png"
+    }
+  ]
+}

@@ -1,0 +1,517 @@
+{
+  "metadata": {
+    "dataset": "achievements",
+    "source_class": "Lcom/evados/fishing/database/generators/AchievementGenerator;",
+    "ormlite_model": "Lcom/evados/fishing/database/objects/base/Achievement;",
+    "sqlite_table": "achievements",
+    "supplementary_source": "LD0/d;.m:[[I (3-step thresholds), 0x7f030000 (array/achievements), 0x7f030001 (array/achievs_desc)",
+    "extraction_method": "DalvikVM bytecode execution of AchievementGenerator.<init> and generate(0..13) + LD0/d;.l() + resources.arsc",
+    "record_count": 14
+  },
+  "records": [
+    {
+      "id": 1,
+      "index_0based": 0,
+      "title_ru": "Завсегдатай",
+      "titles_i18n": {
+        "ru": "Завсегдатай",
+        "en": "Fishing everyday",
+        "de": "Angeln Alltag",
+        "es": "Pesca todos los días",
+        "pt": "Pesca todos os dias"
+      },
+      "descriptions_i18n": {
+        "ru": "заходи порыбачить каждый день",
+        "en": "come to fish every day",
+        "de": "komm jeden Tag zum Fischen",
+        "es": "ven a pescar todos los días",
+        "pt": "vem pescar todos os dias"
+      },
+      "image": 2131231372,
+      "image_res_hex": "0x7f08028c",
+      "image_res_name": "md_achiv_1",
+      "image_apk_path": "res/3Z.png",
+      "score": 0,
+      "level": 0,
+      "nag": 0,
+      "nagsize": 200,
+      "reward_currency": "coins_offline",
+      "reward_base_amount": 200,
+      "step_thresholds_d0d_m": [
+        7,
+        15,
+        30
+      ],
+      "date": 0,
+      "md5": "434d4bf76dd2a7e21f547b528a1dd22c"
+    },
+    {
+      "id": 2,
+      "index_0based": 1,
+      "title_ru": "Большой улов",
+      "titles_i18n": {
+        "ru": "Большой улов",
+        "en": "Big catch",
+        "de": "Großer Fang",
+        "es": "Gran captura",
+        "pt": "Grande captura"
+      },
+      "descriptions_i18n": {
+        "ru": "поймай много рыб",
+        "en": "catch a lot of fish",
+        "de": "Fang viel Fisch",
+        "es": "atrapa muchos peces",
+        "pt": "pegar um monte de peixe"
+      },
+      "image": 2131231378,
+      "image_res_hex": "0x7f080292",
+      "image_res_name": "md_achiv_2",
+      "image_apk_path": "res/tJ.png",
+      "score": 0,
+      "level": 0,
+      "nag": 0,
+      "nagsize": 700,
+      "reward_currency": "coins_offline",
+      "reward_base_amount": 700,
+      "step_thresholds_d0d_m": [
+        1000,
+        100000,
+        500000
+      ],
+      "date": 0,
+      "md5": "aac57cbfb4a2b0ff62bb41fc1c542baa"
+    },
+    {
+      "id": 3,
+      "index_0based": 2,
+      "title_ru": "Хулиган",
+      "titles_i18n": {
+        "ru": "Хулиган",
+        "en": "Hooligan",
+        "de": "Rowdy",
+        "es": "Matón",
+        "pt": "Destruidor"
+      },
+      "descriptions_i18n": {
+        "ru": "ломает много уд",
+        "en": "breaks many fishing rods",
+        "de": "bricht viele Angelruten",
+        "es": "rompe muchas cañas de pescar",
+        "pt": "quebra muitas varas de pesca"
+      },
+      "image": 2131231379,
+      "image_res_hex": "0x7f080293",
+      "image_res_name": "md_achiv_3",
+      "image_apk_path": "res/Bv.png",
+      "score": 0,
+      "level": 0,
+      "nag": 0,
+      "nagsize": -500,
+      "reward_currency": "pearls_online",
+      "reward_base_amount": 500,
+      "step_thresholds_d0d_m": [
+        30,
+        150,
+        300
+      ],
+      "date": 0,
+      "md5": "78547eb0f1d885c2ba477f022a31d4db"
+    },
+    {
+      "id": 4,
+      "index_0based": 3,
+      "title_ru": "Любитель заданий",
+      "titles_i18n": {
+        "ru": "Любитель заданий",
+        "en": "Task lover",
+        "de": "Aufgabenliebhaber",
+        "es": "Amante de las misiones",
+        "pt": "Eu amo tarefas"
+      },
+      "descriptions_i18n": {
+        "ru": "выполняй задания",
+        "en": "perform tasks",
+        "de": "Aufgaben ausführen",
+        "es": "realizar tareas",
+        "pt": "realizar tarefas"
+      },
+      "image": 2131231380,
+      "image_res_hex": "0x7f080294",
+      "image_res_name": "md_achiv_4",
+      "image_apk_path": "res/hf.png",
+      "score": 0,
+      "level": 0,
+      "nag": 0,
+      "nagsize": 550,
+      "reward_currency": "coins_offline",
+      "reward_base_amount": 550,
+      "step_thresholds_d0d_m": [
+        20,
+        100,
+        200
+      ],
+      "date": 0,
+      "md5": "cc776323a9f2f0bb89d7eab11f869aec"
+    },
+    {
+      "id": 5,
+      "index_0based": 4,
+      "title_ru": "Временщик",
+      "titles_i18n": {
+        "ru": "Временщик",
+        "en": "Fish on time",
+        "de": "Fisch pünktlich",
+        "es": "Pescar a tiempo",
+        "pt": "Peixe na hora certa"
+      },
+      "descriptions_i18n": {
+        "ru": "участвуй в турнирах с регистрацией",
+        "en": "participate in tournaments with registration",
+        "de": "Teilnahme an Turniere mit Registrierung",
+        "es": "participar en torneos con registro",
+        "pt": "participar de torneios com inscrição"
+      },
+      "image": 2131231381,
+      "image_res_hex": "0x7f080295",
+      "image_res_name": "md_achiv_5",
+      "image_apk_path": "res/qw.png",
+      "score": 0,
+      "level": 0,
+      "nag": 0,
+      "nagsize": 450,
+      "reward_currency": "coins_offline",
+      "reward_base_amount": 450,
+      "step_thresholds_d0d_m": [
+        20,
+        100,
+        200
+      ],
+      "date": 0,
+      "md5": "e6c57045bb9061613dcb8180f6e01f05"
+    },
+    {
+      "id": 6,
+      "index_0based": 5,
+      "title_ru": "Инди-рыбак",
+      "titles_i18n": {
+        "ru": "Инди-рыбак",
+        "en": "Individual fisherman",
+        "de": "Einzelner Fischer",
+        "es": "Pescador individual",
+        "pt": "Pescador individual"
+      },
+      "descriptions_i18n": {
+        "ru": "создавай индивидуальные турниры",
+        "en": "create individual tournaments",
+        "de": "Erstelle individuelle Turniere",
+        "es": "crear torneos individuales",
+        "pt": "criar torneios individuais"
+      },
+      "image": 2131231382,
+      "image_res_hex": "0x7f080296",
+      "image_res_name": "md_achiv_6",
+      "image_apk_path": "res/cK.png",
+      "score": 0,
+      "level": 0,
+      "nag": 0,
+      "nagsize": 350,
+      "reward_currency": "coins_offline",
+      "reward_base_amount": 350,
+      "step_thresholds_d0d_m": [
+        10,
+        50,
+        100
+      ],
+      "date": 0,
+      "md5": "bbf68f68b5bf010a30f97271e496d901"
+    },
+    {
+      "id": 7,
+      "index_0based": 6,
+      "title_ru": "Люблю 25",
+      "titles_i18n": {
+        "ru": "Люблю 25",
+        "en": "I love 25",
+        "de": "Ich liebe 25",
+        "es": "Me encanta 25",
+        "pt": "Eu amo 25"
+      },
+      "descriptions_i18n": {
+        "ru": "лови рыб со знаком 25",
+        "en": "catch fish with the sign 25",
+        "de": "Fang Fische mit dem Zeichen 25",
+        "es": "atrapa peces con el signo 25",
+        "pt": "pegar peixe com o sinal 25"
+      },
+      "image": 2131231383,
+      "image_res_hex": "0x7f080297",
+      "image_res_name": "md_achiv_7",
+      "image_apk_path": "res/9M.png",
+      "score": 0,
+      "level": 0,
+      "nag": 0,
+      "nagsize": 650,
+      "reward_currency": "coins_offline",
+      "reward_base_amount": 650,
+      "step_thresholds_d0d_m": [
+        50,
+        400,
+        1000
+      ],
+      "date": 0,
+      "md5": "810edbe11dfbdfdb6b8e78ad6896bfe4"
+    },
+    {
+      "id": 8,
+      "index_0based": 7,
+      "title_ru": "Красавчик",
+      "titles_i18n": {
+        "ru": "Красавчик",
+        "en": "Handsome",
+        "de": "Schön",
+        "es": "Hermoso",
+        "pt": "Bonito"
+      },
+      "descriptions_i18n": {
+        "ru": "одинаковые цифры - красивый вес",
+        "en": "same numbers - beautiful weight",
+        "de": "gleiche Zahlen - schönes Gewicht",
+        "es": "los mismos números - hermoso peso",
+        "pt": "mesmos números - peso bonito"
+      },
+      "image": 2131231384,
+      "image_res_hex": "0x7f080298",
+      "image_res_name": "md_achiv_8",
+      "image_apk_path": "res/iz.png",
+      "score": 0,
+      "level": 0,
+      "nag": 0,
+      "nagsize": 750,
+      "reward_currency": "coins_offline",
+      "reward_base_amount": 750,
+      "step_thresholds_d0d_m": [
+        20,
+        100,
+        200
+      ],
+      "date": 0,
+      "md5": "31315c20286cb00ac642f79e16728f90"
+    },
+    {
+      "id": 9,
+      "index_0based": 8,
+      "title_ru": "Максималист",
+      "titles_i18n": {
+        "ru": "Максималист",
+        "en": "Maximalist",
+        "de": "Maximalist",
+        "es": "Maximalista",
+        "pt": "Maximalista"
+      },
+      "descriptions_i18n": {
+        "ru": "поймай крупную рыбу",
+        "en": "catch a big fish",
+        "de": "Fang einen großen Fisch",
+        "es": "atrapa un pez grande",
+        "pt": "pegar um peixe grande"
+      },
+      "image": 2131231385,
+      "image_res_hex": "0x7f080299",
+      "image_res_name": "md_achiv_9",
+      "image_apk_path": "res/cv.png",
+      "score": 0,
+      "level": 0,
+      "nag": 0,
+      "nagsize": 800,
+      "reward_currency": "coins_offline",
+      "reward_base_amount": 800,
+      "step_thresholds_d0d_m": [
+        100000,
+        1000000,
+        2000000
+      ],
+      "date": 0,
+      "md5": "a4db4ee578da8de9f72ab32cfd27790f"
+    },
+    {
+      "id": 10,
+      "index_0based": 9,
+      "title_ru": "Богач",
+      "titles_i18n": {
+        "ru": "Богач",
+        "en": "Rich",
+        "de": "Reich",
+        "es": "Rico",
+        "pt": "Rico"
+      },
+      "descriptions_i18n": {
+        "ru": "заработай кучу денег",
+        "en": "earn a lot of money",
+        "de": "Verdiene viel Geld",
+        "es": "gana mucho dinero",
+        "pt": "ganhar muito dinheiro"
+      },
+      "image": 2131231373,
+      "image_res_hex": "0x7f08028d",
+      "image_res_name": "md_achiv_10",
+      "image_apk_path": "res/l7.png",
+      "score": 0,
+      "level": 0,
+      "nag": 0,
+      "nagsize": 500,
+      "reward_currency": "coins_offline",
+      "reward_base_amount": 500,
+      "step_thresholds_d0d_m": [
+        500000,
+        5000000,
+        50000000
+      ],
+      "date": 0,
+      "md5": "45dd9416ece422ec2e6c81318ac153cc"
+    },
+    {
+      "id": 11,
+      "index_0based": 10,
+      "title_ru": "Транжира",
+      "titles_i18n": {
+        "ru": "Транжира",
+        "en": "Big spender",
+        "de": "Verschwender",
+        "es": "Derrochador",
+        "pt": "Grande gastador"
+      },
+      "descriptions_i18n": {
+        "ru": "выбрасывай снасти",
+        "en": "throw out the tackles",
+        "de": "wirf die Tackles hinaus",
+        "es": "tirar los tackles",
+        "pt": "jogue fora os tackles"
+      },
+      "image": 2131231374,
+      "image_res_hex": "0x7f08028e",
+      "image_res_name": "md_achiv_11",
+      "image_apk_path": "res/mS.png",
+      "score": 0,
+      "level": 0,
+      "nag": 0,
+      "nagsize": -700,
+      "reward_currency": "pearls_online",
+      "reward_base_amount": 700,
+      "step_thresholds_d0d_m": [
+        30,
+        150,
+        300
+      ],
+      "date": 0,
+      "md5": "e34cc9fa641913608b8a6bdbac66293d"
+    },
+    {
+      "id": 12,
+      "index_0based": 11,
+      "title_ru": "Редкий улов",
+      "titles_i18n": {
+        "ru": "Редкий улов",
+        "en": "Rare catch",
+        "de": "Seltener Fang",
+        "es": "Captura rara",
+        "pt": "Captura rara"
+      },
+      "descriptions_i18n": {
+        "ru": "поймай крокодила или клад",
+        "en": "catch crocodile or treasure",
+        "de": "Fang Krokodil oder Schatz",
+        "es": "atrapa cocodrilo o tesoro",
+        "pt": "pegar crocodilo ou tesouro"
+      },
+      "image": 2131231375,
+      "image_res_hex": "0x7f08028f",
+      "image_res_name": "md_achiv_12",
+      "image_apk_path": "res/AC1.png",
+      "score": 0,
+      "level": 0,
+      "nag": 0,
+      "nagsize": 1000,
+      "reward_currency": "coins_offline",
+      "reward_base_amount": 1000,
+      "step_thresholds_d0d_m": [
+        30,
+        150,
+        300
+      ],
+      "date": 0,
+      "md5": "d2ec573f21df9d4d8aa61dc0ca41119a"
+    },
+    {
+      "id": 13,
+      "index_0based": 12,
+      "title_ru": "Купонщик",
+      "titles_i18n": {
+        "ru": "Купонщик",
+        "en": "I like coupons",
+        "de": "Ich mag Kupons",
+        "es": "Me gusta cupones",
+        "pt": "Eu gosto de cupons"
+      },
+      "descriptions_i18n": {
+        "ru": "купи много купонов",
+        "en": "buy a lot of coupons",
+        "de": "kaufe eine Menge Coupons",
+        "es": "compre muchos cupones",
+        "pt": "compre um monte de cupons"
+      },
+      "image": 2131231376,
+      "image_res_hex": "0x7f080290",
+      "image_res_name": "md_achiv_13",
+      "image_apk_path": "res/n7.png",
+      "score": 0,
+      "level": 0,
+      "nag": 0,
+      "nagsize": 300,
+      "reward_currency": "coins_offline",
+      "reward_base_amount": 300,
+      "step_thresholds_d0d_m": [
+        50,
+        200,
+        500
+      ],
+      "date": 0,
+      "md5": "cb1de7e18b30e02f3018d493b574f731"
+    },
+    {
+      "id": 14,
+      "index_0based": 13,
+      "title_ru": "Путешественник",
+      "titles_i18n": {
+        "ru": "Путешественник",
+        "en": "Traveler",
+        "de": "Reisender",
+        "es": "Viajero",
+        "pt": "Viajante"
+      },
+      "descriptions_i18n": {
+        "ru": "открой все водоемы",
+        "en": "open all the ponds",
+        "de": "öffne alle Teiche",
+        "es": "abra todos los estanques",
+        "pt": "abra todas as lagoas"
+      },
+      "image": 2131231377,
+      "image_res_hex": "0x7f080291",
+      "image_res_name": "md_achiv_14",
+      "image_apk_path": "res/0w.png",
+      "score": 0,
+      "level": 0,
+      "nag": 0,
+      "nagsize": 400,
+      "reward_currency": "coins_offline",
+      "reward_base_amount": 400,
+      "step_thresholds_d0d_m": [
+        6,
+        12,
+        17
+      ],
+      "date": 0,
+      "md5": "18edc24314eb477438b408fcdc7a931f"
+    }
+  ]
+}

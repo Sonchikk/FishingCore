@@ -1,0 +1,5398 @@
+{
+  "metadata": {
+    "dataset": "fishes",
+    "source_class": "Lcom/evados/fishing/database/generators/FishGenerator;",
+    "ormlite_model": "Lcom/evados/fishing/database/objects/base/Fish;",
+    "sqlite_table": "fishes",
+    "localization_resource": "0x7f03000b (array/fishes)",
+    "extraction_method": "DalvikVM bytecode execution of FishGenerator.<init> and generate(0..140) + resources.arsc multi-locale array extraction",
+    "record_count": 141
+  },
+  "records": [
+    {
+      "id": 1,
+      "index_0based": 0,
+      "name": "Карась",
+      "names_i18n": {
+        "ru": "Карась",
+        "en": "Prussian carp",
+        "de": "Karausche",
+        "es": "Carasio",
+        "pt": "Carpa prussiana"
+      },
+      "unitWeight": 500,
+      "unitPrice": 55,
+      "behavior_raw": "3,6,2,4",
+      "strength": 3,
+      "stamina": 6,
+      "intelligence": 2,
+      "aggression": 4,
+      "behavior_sum": 15,
+      "image": 2131231046,
+      "image_res_hex": "0x7f080146",
+      "image_res_name": "fish_1",
+      "image_apk_path": "res/hP.png",
+      "xp_divisor_grams_d0d_a": 123,
+      "legacy_123_unitPrice_d0d_h": 55,
+      "legacy_123_unitWeight_d0d_i": 500,
+      "md5": "dbff86161e6c460dd3537ed7d7a492d2",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 0,
+          "pond_ui_index": 0,
+          "pond_name_ru": "кедровый остров",
+          "min_weight_grams": 50,
+          "max_weight_grams": 4687
+        },
+        {
+          "pond_data_id": 1,
+          "pond_ui_index": 1,
+          "pond_name_ru": "речной брод",
+          "min_weight_grams": 50,
+          "max_weight_grams": 4980
+        },
+        {
+          "pond_data_id": 3,
+          "pond_ui_index": 4,
+          "pond_name_ru": "водохранилище",
+          "min_weight_grams": 50,
+          "max_weight_grams": 5234
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "index_0based": 1,
+      "name": "Карась золотой",
+      "names_i18n": {
+        "ru": "Карась золотой",
+        "en": "Crucian carp",
+        "de": "Gemeine Karausche",
+        "es": "Pez dorado",
+        "pt": "Carpa cruciana"
+      },
+      "unitWeight": 500,
+      "unitPrice": 77,
+      "behavior_raw": "3,7,3,4",
+      "strength": 3,
+      "stamina": 7,
+      "intelligence": 3,
+      "aggression": 4,
+      "behavior_sum": 17,
+      "image": 2131231099,
+      "image_res_hex": "0x7f08017b",
+      "image_res_name": "fish_2",
+      "image_apk_path": "res/Rm.png",
+      "xp_divisor_grams_d0d_a": 103,
+      "legacy_123_unitPrice_d0d_h": 77,
+      "legacy_123_unitWeight_d0d_i": 500,
+      "md5": "9ccb20db4aa87af3db4db8ea3ab95f17",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 0,
+          "pond_ui_index": 0,
+          "pond_name_ru": "кедровый остров",
+          "min_weight_grams": 60,
+          "max_weight_grams": 5244
+        },
+        {
+          "pond_data_id": 4,
+          "pond_ui_index": 6,
+          "pond_name_ru": "хвойное озеро",
+          "min_weight_grams": 60,
+          "max_weight_grams": 5465
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "index_0based": 2,
+      "name": "Белоглазка",
+      "names_i18n": {
+        "ru": "Белоглазка",
+        "en": "White-eye bream",
+        "de": "Donaubrachsen",
+        "es": "Sapa",
+        "pt": "Ballerus sapa"
+      },
+      "unitWeight": 400,
+      "unitPrice": 66,
+      "behavior_raw": "2,5,4,3",
+      "strength": 2,
+      "stamina": 5,
+      "intelligence": 4,
+      "aggression": 3,
+      "behavior_sum": 14,
+      "image": 2131231110,
+      "image_res_hex": "0x7f080186",
+      "image_res_name": "fish_3",
+      "image_apk_path": "res/7J.png",
+      "xp_divisor_grams_d0d_a": 84,
+      "legacy_123_unitPrice_d0d_h": 66,
+      "legacy_123_unitWeight_d0d_i": 400,
+      "md5": "cd25191dea7688a5cafe52c0c74e1b66",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 1,
+          "pond_ui_index": 1,
+          "pond_name_ru": "речной брод",
+          "min_weight_grams": 50,
+          "max_weight_grams": 1220
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "index_0based": 3,
+      "name": "Плотва",
+      "names_i18n": {
+        "ru": "Плотва",
+        "en": "Roach",
+        "de": "Rotauge",
+        "es": "Rutilo",
+        "pt": "Pardelha-dos-alpes"
+      },
+      "unitWeight": 550,
+      "unitPrice": 65,
+      "behavior_raw": "3,5,3,4",
+      "strength": 3,
+      "stamina": 5,
+      "intelligence": 3,
+      "aggression": 4,
+      "behavior_sum": 15,
+      "image": 2131231121,
+      "image_res_hex": "0x7f080191",
+      "image_res_name": "fish_4",
+      "image_apk_path": "res/sN1.png",
+      "xp_divisor_grams_d0d_a": 108,
+      "legacy_123_unitPrice_d0d_h": 65,
+      "legacy_123_unitWeight_d0d_i": 550,
+      "md5": "9ddda58b9ef5e9611874b63a41ba287f",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 0,
+          "pond_ui_index": 0,
+          "pond_name_ru": "кедровый остров",
+          "min_weight_grams": 50,
+          "max_weight_grams": 2193
+        },
+        {
+          "pond_data_id": 1,
+          "pond_ui_index": 1,
+          "pond_name_ru": "речной брод",
+          "min_weight_grams": 50,
+          "max_weight_grams": 1889
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "index_0based": 4,
+      "name": "Красноперка",
+      "names_i18n": {
+        "ru": "Красноперка",
+        "en": "Common rudd",
+        "de": "Rotfeder",
+        "es": "Gardí",
+        "pt": "Scardinius erythrophthalmus"
+      },
+      "unitWeight": 480,
+      "unitPrice": 91,
+      "behavior_raw": "4,5,4,5",
+      "strength": 4,
+      "stamina": 5,
+      "intelligence": 4,
+      "aggression": 5,
+      "behavior_sum": 18,
+      "image": 2131231132,
+      "image_res_hex": "0x7f08019c",
+      "image_res_name": "fish_5",
+      "image_apk_path": "res/PJ.png",
+      "xp_divisor_grams_d0d_a": 71,
+      "legacy_123_unitPrice_d0d_h": 91,
+      "legacy_123_unitWeight_d0d_i": 480,
+      "md5": "3783dd8ecf11f9ef2860f1e564bee266",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 0,
+          "pond_ui_index": 0,
+          "pond_name_ru": "кедровый остров",
+          "min_weight_grams": 90,
+          "max_weight_grams": 2088
+        },
+        {
+          "pond_data_id": 2,
+          "pond_ui_index": 2,
+          "pond_name_ru": "лесной перекат",
+          "min_weight_grams": 90,
+          "max_weight_grams": 2252
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "index_0based": 5,
+      "name": "Густера",
+      "names_i18n": {
+        "ru": "Густера",
+        "en": "White bream",
+        "de": "Güster",
+        "es": "Brema blanca",
+        "pt": "Blicca bjoerkna"
+      },
+      "unitWeight": 300,
+      "unitPrice": 32,
+      "behavior_raw": "2,4,2,3",
+      "strength": 2,
+      "stamina": 4,
+      "intelligence": 2,
+      "aggression": 3,
+      "behavior_sum": 11,
+      "image": 2131231143,
+      "image_res_hex": "0x7f0801a7",
+      "image_res_name": "fish_6",
+      "image_apk_path": "res/Ty.png",
+      "xp_divisor_grams_d0d_a": 55,
+      "legacy_123_unitPrice_d0d_h": 32,
+      "legacy_123_unitWeight_d0d_i": 300,
+      "md5": "bd3d1cd349fed361ee13af6668b6f16a",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 2,
+          "pond_ui_index": 2,
+          "pond_name_ru": "лесной перекат",
+          "min_weight_grams": 60,
+          "max_weight_grams": 1373
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "index_0based": 6,
+      "name": "Вобла",
+      "names_i18n": {
+        "ru": "Вобла",
+        "en": "Caspian roach",
+        "de": "Plötze",
+        "es": "Rutilo del Caspio",
+        "pt": "Vobla"
+      },
+      "unitWeight": 850,
+      "unitPrice": 187,
+      "behavior_raw": "4,6,5,6",
+      "strength": 4,
+      "stamina": 6,
+      "intelligence": 5,
+      "aggression": 6,
+      "behavior_sum": 21,
+      "image": 2131231154,
+      "image_res_hex": "0x7f0801b2",
+      "image_res_name": "fish_7",
+      "image_apk_path": "res/vg.png",
+      "xp_divisor_grams_d0d_a": 217,
+      "legacy_123_unitPrice_d0d_h": 187,
+      "legacy_123_unitWeight_d0d_i": 850,
+      "md5": "bed6df2fd13310d847a2c28580f04ac0",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 1,
+          "pond_ui_index": 1,
+          "pond_name_ru": "речной брод",
+          "min_weight_grams": 90,
+          "max_weight_grams": 1675
+        },
+        {
+          "pond_data_id": 3,
+          "pond_ui_index": 4,
+          "pond_name_ru": "водохранилище",
+          "min_weight_grams": 90,
+          "max_weight_grams": 2246
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "index_0based": 7,
+      "name": "Голавль",
+      "names_i18n": {
+        "ru": "Голавль",
+        "en": "European chub",
+        "de": "Döbel",
+        "es": "Bagre",
+        "pt": "Squalius sephalus"
+      },
+      "unitWeight": 2000,
+      "unitPrice": 306,
+      "behavior_raw": "7,8,6,8",
+      "strength": 7,
+      "stamina": 8,
+      "intelligence": 6,
+      "aggression": 8,
+      "behavior_sum": 29,
+      "image": 2131231165,
+      "image_res_hex": "0x7f0801bd",
+      "image_res_name": "fish_8",
+      "image_apk_path": "res/Ye.png",
+      "xp_divisor_grams_d0d_a": 146,
+      "legacy_123_unitPrice_d0d_h": 306,
+      "legacy_123_unitWeight_d0d_i": 2000,
+      "md5": "28df39c7e9253faf95da648359610e17",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 0,
+          "pond_ui_index": 0,
+          "pond_name_ru": "кедровый остров",
+          "min_weight_grams": 240,
+          "max_weight_grams": 5870
+        },
+        {
+          "pond_data_id": 2,
+          "pond_ui_index": 2,
+          "pond_name_ru": "лесной перекат",
+          "min_weight_grams": 240,
+          "max_weight_grams": 8096
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "index_0based": 8,
+      "name": "Берш",
+      "names_i18n": {
+        "ru": "Берш",
+        "en": "Volga pikeperch",
+        "de": "Eiszander",
+        "es": "Sander",
+        "pt": "Zander de Volga"
+      },
+      "unitWeight": 550,
+      "unitPrice": 152,
+      "behavior_raw": "5,6,5,7",
+      "strength": 5,
+      "stamina": 6,
+      "intelligence": 5,
+      "aggression": 7,
+      "behavior_sum": 23,
+      "image": 2131231176,
+      "image_res_hex": "0x7f0801c8",
+      "image_res_name": "fish_9",
+      "image_apk_path": "res/G_.png",
+      "xp_divisor_grams_d0d_a": 166,
+      "legacy_123_unitPrice_d0d_h": 152,
+      "legacy_123_unitWeight_d0d_i": 550,
+      "md5": "d454dcc1af82ee4bfca4daf7ddda0acd",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 2,
+          "pond_ui_index": 2,
+          "pond_name_ru": "лесной перекат",
+          "min_weight_grams": 120,
+          "max_weight_grams": 1649
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "index_0based": 9,
+      "name": "Вьюн",
+      "names_i18n": {
+        "ru": "Вьюн",
+        "en": "Misgurnus",
+        "de": "Schlammpeitzger",
+        "es": "Dojo",
+        "pt": "Missgurnus fossilis"
+      },
+      "unitWeight": 60,
+      "unitPrice": 5,
+      "behavior_raw": "1,8,3,2",
+      "strength": 1,
+      "stamina": 8,
+      "intelligence": 3,
+      "aggression": 2,
+      "behavior_sum": 14,
+      "image": 2131231047,
+      "image_res_hex": "0x7f080147",
+      "image_res_name": "fish_10",
+      "image_apk_path": "res/du.png",
+      "xp_divisor_grams_d0d_a": 11,
+      "legacy_123_unitPrice_d0d_h": 5,
+      "legacy_123_unitWeight_d0d_i": 60,
+      "md5": "12fcfa227ac24d64ec8c72c490b0eefa",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 1,
+          "pond_ui_index": 1,
+          "pond_name_ru": "речной брод",
+          "min_weight_grams": 10,
+          "max_weight_grams": 201
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "index_0based": 10,
+      "name": "Белый амур",
+      "names_i18n": {
+        "ru": "Белый амур",
+        "en": "Grass carp",
+        "de": "Graskarpfen",
+        "es": "Carpa china",
+        "pt": "Carpa capim"
+      },
+      "unitWeight": 4500,
+      "unitPrice": 501,
+      "behavior_raw": "8,9,4,5",
+      "strength": 8,
+      "stamina": 9,
+      "intelligence": 4,
+      "aggression": 5,
+      "behavior_sum": 26,
+      "image": 2131231058,
+      "image_res_hex": "0x7f080152",
+      "image_res_name": "fish_11",
+      "image_apk_path": "res/eC.png",
+      "xp_divisor_grams_d0d_a": 267,
+      "legacy_123_unitPrice_d0d_h": 501,
+      "legacy_123_unitWeight_d0d_i": 4500,
+      "md5": "7a885e032718417b2495028dbd4cfcb2",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 3,
+          "pond_ui_index": 4,
+          "pond_name_ru": "водохранилище",
+          "min_weight_grams": 500,
+          "max_weight_grams": 37375
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "index_0based": 11,
+      "name": "Белуга",
+      "names_i18n": {
+        "ru": "Белуга",
+        "en": "Great sturgeon",
+        "de": "Hausen",
+        "es": "Esturión beluga",
+        "pt": "Esturjão-beluga"
+      },
+      "unitWeight": 30000,
+      "unitPrice": 1001,
+      "behavior_raw": "10,10,7,9",
+      "strength": 10,
+      "stamina": 10,
+      "intelligence": 7,
+      "aggression": 9,
+      "behavior_sum": 36,
+      "image": 2131231069,
+      "image_res_hex": "0x7f08015d",
+      "image_res_name": "fish_12",
+      "image_apk_path": "res/Z9.png",
+      "xp_divisor_grams_d0d_a": 1343,
+      "legacy_123_unitPrice_d0d_h": 1001,
+      "legacy_123_unitWeight_d0d_i": 30000,
+      "md5": "2bb5b39cf98a86aff6fbf8b2b119f85e",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 6,
+          "pond_ui_index": 10,
+          "pond_name_ru": "байкаловое русло",
+          "min_weight_grams": 14000,
+          "max_weight_grams": 1640680
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "index_0based": 12,
+      "name": "Голец арктический",
+      "names_i18n": {
+        "ru": "Голец арктический",
+        "en": "Arctic char",
+        "de": "Seesaibling",
+        "es": "Trucha alpina",
+        "pt": "Truta do ártico"
+      },
+      "unitWeight": 5000,
+      "unitPrice": 505,
+      "behavior_raw": "7,8,5,7",
+      "strength": 7,
+      "stamina": 8,
+      "intelligence": 5,
+      "aggression": 7,
+      "behavior_sum": 27,
+      "image": 2131231080,
+      "image_res_hex": "0x7f080168",
+      "image_res_name": "fish_13",
+      "image_apk_path": "res/-l.png",
+      "xp_divisor_grams_d0d_a": 272,
+      "legacy_123_unitPrice_d0d_h": 505,
+      "legacy_123_unitWeight_d0d_i": 5000,
+      "md5": "fc369aceb213a14a290b473d30adf4b8",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 4,
+          "pond_ui_index": 6,
+          "pond_name_ru": "хвойное озеро",
+          "min_weight_grams": 350,
+          "max_weight_grams": 15247
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "index_0based": 13,
+      "name": "Горбуша",
+      "names_i18n": {
+        "ru": "Горбуша",
+        "en": "Pink salmon",
+        "de": "Buckellachs",
+        "es": "Salmón rosado",
+        "pt": "Salmão-rosa"
+      },
+      "unitWeight": 3200,
+      "unitPrice": 654,
+      "behavior_raw": "6,7,4,8",
+      "strength": 6,
+      "stamina": 7,
+      "intelligence": 4,
+      "aggression": 8,
+      "behavior_sum": 25,
+      "image": 2131231091,
+      "image_res_hex": "0x7f080173",
+      "image_res_name": "fish_14",
+      "image_apk_path": "res/PM.png",
+      "xp_divisor_grams_d0d_a": 195,
+      "legacy_123_unitPrice_d0d_h": 654,
+      "legacy_123_unitWeight_d0d_i": 3200,
+      "md5": "697f2a2672f8a487b1bc01a290bc9e60",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 4,
+          "pond_ui_index": 6,
+          "pond_name_ru": "хвойное озеро",
+          "min_weight_grams": 300,
+          "max_weight_grams": 5864
+        },
+        {
+          "pond_data_id": 14,
+          "pond_ui_index": 5,
+          "pond_name_ru": "протока",
+          "min_weight_grams": 300,
+          "max_weight_grams": 5648
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "index_0based": 14,
+      "name": "Елец",
+      "names_i18n": {
+        "ru": "Елец",
+        "en": "Common dace",
+        "de": "Hasel",
+        "es": "Leucisco",
+        "pt": "Leucisco comum"
+      },
+      "unitWeight": 140,
+      "unitPrice": 22,
+      "behavior_raw": "2,4,4,3",
+      "strength": 2,
+      "stamina": 4,
+      "intelligence": 4,
+      "aggression": 3,
+      "behavior_sum": 13,
+      "image": 2131231094,
+      "image_res_hex": "0x7f080176",
+      "image_res_name": "fish_15",
+      "image_apk_path": "res/Pd1.png",
+      "xp_divisor_grams_d0d_a": 44,
+      "legacy_123_unitPrice_d0d_h": 22,
+      "legacy_123_unitWeight_d0d_i": 140,
+      "md5": "c1707d07cee23772f7b873ee37f26089",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 0,
+          "pond_ui_index": 0,
+          "pond_name_ru": "кедровый остров",
+          "min_weight_grams": 32,
+          "max_weight_grams": 422
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "index_0based": 15,
+      "name": "Ерш",
+      "names_i18n": {
+        "ru": "Ерш",
+        "en": "Ruffe",
+        "de": "Kaulbarsch",
+        "es": "Acerina",
+        "pt": "Acerina Eurasiana"
+      },
+      "unitWeight": 50,
+      "unitPrice": 5,
+      "behavior_raw": "1,3,2,6",
+      "strength": 1,
+      "stamina": 3,
+      "intelligence": 2,
+      "aggression": 6,
+      "behavior_sum": 12,
+      "image": 2131231095,
+      "image_res_hex": "0x7f080177",
+      "image_res_name": "fish_16",
+      "image_apk_path": "res/rE.png",
+      "xp_divisor_grams_d0d_a": 15,
+      "legacy_123_unitPrice_d0d_h": 5,
+      "legacy_123_unitWeight_d0d_i": 50,
+      "md5": "92d4c75665477027853a65e0534d9d78",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 0,
+          "pond_ui_index": 0,
+          "pond_name_ru": "кедровый остров",
+          "min_weight_grams": 10,
+          "max_weight_grams": 323
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "index_0based": 16,
+      "name": "Ерш носарь",
+      "names_i18n": {
+        "ru": "Ерш носарь",
+        "en": "Donets ruffe",
+        "de": "Don-Kaulbarsch",
+        "es": "Acerina del Don",
+        "pt": "Gymnocephalus acerina"
+      },
+      "unitWeight": 70,
+      "unitPrice": 12,
+      "behavior_raw": "2,3,3,7",
+      "strength": 2,
+      "stamina": 3,
+      "intelligence": 3,
+      "aggression": 7,
+      "behavior_sum": 15,
+      "image": 2131231096,
+      "image_res_hex": "0x7f080178",
+      "image_res_name": "fish_17",
+      "image_apk_path": "res/GY1.png",
+      "xp_divisor_grams_d0d_a": 12,
+      "legacy_123_unitPrice_d0d_h": 12,
+      "legacy_123_unitWeight_d0d_i": 70,
+      "md5": "2246547376c716fd23256b5d0a094d8e",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 1,
+          "pond_ui_index": 1,
+          "pond_name_ru": "речной брод",
+          "min_weight_grams": 10,
+          "max_weight_grams": 226
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "index_0based": 17,
+      "name": "Жерех",
+      "names_i18n": {
+        "ru": "Жерех",
+        "en": "Asp",
+        "de": "Rapfen",
+        "es": "Aspio",
+        "pt": "Aspius aspius"
+      },
+      "unitWeight": 4600,
+      "unitPrice": 404,
+      "behavior_raw": "8,7,6,9",
+      "strength": 8,
+      "stamina": 7,
+      "intelligence": 6,
+      "aggression": 9,
+      "behavior_sum": 30,
+      "image": 2131231097,
+      "image_res_hex": "0x7f080179",
+      "image_res_name": "fish_18",
+      "image_apk_path": "res/Os.png",
+      "xp_divisor_grams_d0d_a": 152,
+      "legacy_123_unitPrice_d0d_h": 404,
+      "legacy_123_unitWeight_d0d_i": 4600,
+      "md5": "1c36f8f217173a232179668ca89b693b",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 1,
+          "pond_ui_index": 1,
+          "pond_name_ru": "речной брод",
+          "min_weight_grams": 400,
+          "max_weight_grams": 13562
+        },
+        {
+          "pond_data_id": 2,
+          "pond_ui_index": 2,
+          "pond_name_ru": "лесной перекат",
+          "min_weight_grams": 400,
+          "max_weight_grams": 16678
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "index_0based": 18,
+      "name": "Карп",
+      "names_i18n": {
+        "ru": "Карп",
+        "en": "Carp",
+        "de": "Karpfen",
+        "es": "Carpa europea",
+        "pt": "Carpa húngara"
+      },
+      "unitWeight": 3200,
+      "unitPrice": 303,
+      "behavior_raw": "7,9,5,6",
+      "strength": 7,
+      "stamina": 9,
+      "intelligence": 5,
+      "aggression": 6,
+      "behavior_sum": 27,
+      "image": 2131231098,
+      "image_res_hex": "0x7f08017a",
+      "image_res_name": "fish_19",
+      "image_apk_path": "res/N_.png",
+      "xp_divisor_grams_d0d_a": 315,
+      "legacy_123_unitPrice_d0d_h": 303,
+      "legacy_123_unitWeight_d0d_i": 3200,
+      "md5": "fc38c88f6f7d25ecf7a64532588b1871",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 0,
+          "pond_ui_index": 0,
+          "pond_name_ru": "кедровый остров",
+          "min_weight_grams": 300,
+          "max_weight_grams": 16056
+        },
+        {
+          "pond_data_id": 3,
+          "pond_ui_index": 4,
+          "pond_name_ru": "водохранилище",
+          "min_weight_grams": 300,
+          "max_weight_grams": 30236
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "index_0based": 19,
+      "name": "Карп голый",
+      "names_i18n": {
+        "ru": "Карп голый",
+        "en": "Leather carp",
+        "de": "Karpfenkönig",
+        "es": "Carpa de cuero",
+        "pt": "Cyprinus nudus"
+      },
+      "unitWeight": 6400,
+      "unitPrice": 606,
+      "behavior_raw": "8,9,5,6",
+      "strength": 8,
+      "stamina": 9,
+      "intelligence": 5,
+      "aggression": 6,
+      "behavior_sum": 28,
+      "image": 2131231100,
+      "image_res_hex": "0x7f08017c",
+      "image_res_name": "fish_20",
+      "image_apk_path": "res/ng1.png",
+      "xp_divisor_grams_d0d_a": 255,
+      "legacy_123_unitPrice_d0d_h": 606,
+      "legacy_123_unitWeight_d0d_i": 6400,
+      "md5": "dc42cef7e999f0a851d39a31d0faccfd",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 1,
+          "pond_ui_index": 1,
+          "pond_name_ru": "речной брод",
+          "min_weight_grams": 300,
+          "max_weight_grams": 15056
+        },
+        {
+          "pond_data_id": 3,
+          "pond_ui_index": 4,
+          "pond_name_ru": "водохранилище",
+          "min_weight_grams": 300,
+          "max_weight_grams": 35423
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "index_0based": 20,
+      "name": "Карп зеркальный",
+      "names_i18n": {
+        "ru": "Карп зеркальный",
+        "en": "Mirror carp",
+        "de": "Spiegelkarpfen",
+        "es": "Carpa de espejo",
+        "pt": "Carpa espelho"
+      },
+      "unitWeight": 4700,
+      "unitPrice": 808,
+      "behavior_raw": "7,9,5,6",
+      "strength": 7,
+      "stamina": 9,
+      "intelligence": 5,
+      "aggression": 6,
+      "behavior_sum": 27,
+      "image": 2131231101,
+      "image_res_hex": "0x7f08017d",
+      "image_res_name": "fish_21",
+      "image_apk_path": "res/M-.png",
+      "xp_divisor_grams_d0d_a": 193,
+      "legacy_123_unitPrice_d0d_h": 808,
+      "legacy_123_unitWeight_d0d_i": 4700,
+      "md5": "eba763399e8ef5a90a7f547d7c38f451",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 3,
+          "pond_ui_index": 4,
+          "pond_name_ru": "водохранилище",
+          "min_weight_grams": 350,
+          "max_weight_grams": 35457
+        },
+        {
+          "pond_data_id": 4,
+          "pond_ui_index": 6,
+          "pond_name_ru": "хвойное озеро",
+          "min_weight_grams": 350,
+          "max_weight_grams": 38244
+        }
+      ]
+    },
+    {
+      "id": 22,
+      "index_0based": 21,
+      "name": "Кижуч",
+      "names_i18n": {
+        "ru": "Кижуч",
+        "en": "Coho salmon",
+        "de": "Silberlachs",
+        "es": "Salmón plateado",
+        "pt": "Salmão prateado"
+      },
+      "unitWeight": 4000,
+      "unitPrice": 421,
+      "behavior_raw": "6,7,4,7",
+      "strength": 6,
+      "stamina": 7,
+      "intelligence": 4,
+      "aggression": 7,
+      "behavior_sum": 24,
+      "image": 2131231102,
+      "image_res_hex": "0x7f08017e",
+      "image_res_name": "fish_22",
+      "image_apk_path": "res/X0.png",
+      "xp_divisor_grams_d0d_a": 105,
+      "legacy_123_unitPrice_d0d_h": 421,
+      "legacy_123_unitWeight_d0d_i": 4000,
+      "md5": "4096ff6c66bd70c65e3fa57983b645d7",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 4,
+          "pond_ui_index": 6,
+          "pond_name_ru": "хвойное озеро",
+          "min_weight_grams": 340,
+          "max_weight_grams": 14193
+        }
+      ]
+    },
+    {
+      "id": 23,
+      "index_0based": 22,
+      "name": "Рыбец",
+      "names_i18n": {
+        "ru": "Рыбец",
+        "en": "Vimba bream",
+        "de": "Zährte",
+        "es": "Vimba",
+        "pt": "Vimba vimba"
+      },
+      "unitWeight": 780,
+      "unitPrice": 301,
+      "behavior_raw": "4,5,4,5",
+      "strength": 4,
+      "stamina": 5,
+      "intelligence": 4,
+      "aggression": 5,
+      "behavior_sum": 18,
+      "image": 2131231103,
+      "image_res_hex": "0x7f08017f",
+      "image_res_name": "fish_23",
+      "image_apk_path": "res/I0.png",
+      "xp_divisor_grams_d0d_a": 143,
+      "legacy_123_unitPrice_d0d_h": 301,
+      "legacy_123_unitWeight_d0d_i": 780,
+      "md5": "69f2bc4099cb96e018cbce17b73434b2",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 2,
+          "pond_ui_index": 2,
+          "pond_name_ru": "лесной перекат",
+          "min_weight_grams": 210,
+          "max_weight_grams": 3340
+        }
+      ]
+    },
+    {
+      "id": 24,
+      "index_0based": 23,
+      "name": "Лещ",
+      "names_i18n": {
+        "ru": "Лещ",
+        "en": "Common bream",
+        "de": "Brasse",
+        "es": "Brema",
+        "pt": "Brema"
+      },
+      "unitWeight": 3300,
+      "unitPrice": 551,
+      "behavior_raw": "5,7,5,4",
+      "strength": 5,
+      "stamina": 7,
+      "intelligence": 5,
+      "aggression": 4,
+      "behavior_sum": 21,
+      "image": 2131231104,
+      "image_res_hex": "0x7f080180",
+      "image_res_name": "fish_24",
+      "image_apk_path": "res/Wi.png",
+      "xp_divisor_grams_d0d_a": 378,
+      "legacy_123_unitPrice_d0d_h": 551,
+      "legacy_123_unitWeight_d0d_i": 3300,
+      "md5": "480bda3566ad5c1f54dc60118782a616",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 3,
+          "pond_ui_index": 4,
+          "pond_name_ru": "водохранилище",
+          "min_weight_grams": 1020,
+          "max_weight_grams": 9357
+        },
+        {
+          "pond_data_id": 13,
+          "pond_ui_index": 3,
+          "pond_name_ru": "северный берег",
+          "min_weight_grams": 1015,
+          "max_weight_grams": 8948
+        }
+      ]
+    },
+    {
+      "id": 25,
+      "index_0based": 24,
+      "name": "Линь",
+      "names_i18n": {
+        "ru": "Линь",
+        "en": "Tench",
+        "de": "Schleie",
+        "es": "Tenca",
+        "pt": "Tenca"
+      },
+      "unitWeight": 2500,
+      "unitPrice": 404,
+      "behavior_raw": "6,8,4,3",
+      "strength": 6,
+      "stamina": 8,
+      "intelligence": 4,
+      "aggression": 3,
+      "behavior_sum": 21,
+      "image": 2131231105,
+      "image_res_hex": "0x7f080181",
+      "image_res_name": "fish_25",
+      "image_apk_path": "res/ZW.png",
+      "xp_divisor_grams_d0d_a": 288,
+      "legacy_123_unitPrice_d0d_h": 404,
+      "legacy_123_unitWeight_d0d_i": 2500,
+      "md5": "1457861eb74a4b163fb136f9c3cb5702",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 2,
+          "pond_ui_index": 2,
+          "pond_name_ru": "лесной перекат",
+          "min_weight_grams": 330,
+          "max_weight_grams": 8374
+        }
+      ]
+    },
+    {
+      "id": 26,
+      "index_0based": 25,
+      "name": "Налим",
+      "names_i18n": {
+        "ru": "Налим",
+        "en": "Burbot",
+        "de": "Quappe",
+        "es": "Lota",
+        "pt": "Lota-do-rio"
+      },
+      "unitWeight": 7700,
+      "unitPrice": 1103,
+      "behavior_raw": "7,8,6,7",
+      "strength": 7,
+      "stamina": 8,
+      "intelligence": 6,
+      "aggression": 7,
+      "behavior_sum": 28,
+      "image": 2131231106,
+      "image_res_hex": "0x7f080182",
+      "image_res_name": "fish_26",
+      "image_apk_path": "res/L5.png",
+      "xp_divisor_grams_d0d_a": 87,
+      "legacy_123_unitPrice_d0d_h": 1103,
+      "legacy_123_unitWeight_d0d_i": 7700,
+      "md5": "4884203933c57775a4d9dff422720444",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 3,
+          "pond_ui_index": 4,
+          "pond_name_ru": "водохранилище",
+          "min_weight_grams": 750,
+          "max_weight_grams": 14648
+        },
+        {
+          "pond_data_id": 4,
+          "pond_ui_index": 6,
+          "pond_name_ru": "хвойное озеро",
+          "min_weight_grams": 750,
+          "max_weight_grams": 24386
+        }
+      ]
+    },
+    {
+      "id": 27,
+      "index_0based": 26,
+      "name": "Озерная форель",
+      "names_i18n": {
+        "ru": "Озерная форель",
+        "en": "Brown trout",
+        "de": "Seeforelle",
+        "es": "Trucha",
+        "pt": "Truta-de-lago"
+      },
+      "unitWeight": 3100,
+      "unitPrice": 453,
+      "behavior_raw": "6,7,5,8",
+      "strength": 6,
+      "stamina": 7,
+      "intelligence": 5,
+      "aggression": 8,
+      "behavior_sum": 26,
+      "image": 2131231107,
+      "image_res_hex": "0x7f080183",
+      "image_res_name": "fish_27",
+      "image_apk_path": "res/vd.png",
+      "xp_divisor_grams_d0d_a": 234,
+      "legacy_123_unitPrice_d0d_h": 453,
+      "legacy_123_unitWeight_d0d_i": 3100,
+      "md5": "e10d97472a5e3cce666d2041fd4c0467",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 5,
+          "pond_ui_index": 8,
+          "pond_name_ru": "горный рыбхоз",
+          "min_weight_grams": 270,
+          "max_weight_grams": 8272
+        }
+      ]
+    },
+    {
+      "id": 28,
+      "index_0based": 27,
+      "name": "Окунь",
+      "names_i18n": {
+        "ru": "Окунь",
+        "en": "Perch",
+        "de": "Barsch",
+        "es": "Perca de río",
+        "pt": "Perca"
+      },
+      "unitWeight": 780,
+      "unitPrice": 109,
+      "behavior_raw": "5,6,4,8",
+      "strength": 5,
+      "stamina": 6,
+      "intelligence": 4,
+      "aggression": 8,
+      "behavior_sum": 23,
+      "image": 2131231108,
+      "image_res_hex": "0x7f080184",
+      "image_res_name": "fish_28",
+      "image_apk_path": "res/po1.png",
+      "xp_divisor_grams_d0d_a": 203,
+      "legacy_123_unitPrice_d0d_h": 109,
+      "legacy_123_unitWeight_d0d_i": 780,
+      "md5": "581049dda9d016fda2461aa21818bd9e",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 0,
+          "pond_ui_index": 0,
+          "pond_name_ru": "кедровый остров",
+          "min_weight_grams": 50,
+          "max_weight_grams": 5027
+        },
+        {
+          "pond_data_id": 1,
+          "pond_ui_index": 1,
+          "pond_name_ru": "речной брод",
+          "min_weight_grams": 50,
+          "max_weight_grams": 2027
+        }
+      ]
+    },
+    {
+      "id": 29,
+      "index_0based": 28,
+      "name": "Осетр",
+      "names_i18n": {
+        "ru": "Осетр",
+        "en": "Sturgeon",
+        "de": "Stör",
+        "es": "Esturión",
+        "pt": "Esturjão"
+      },
+      "unitWeight": 10000,
+      "unitPrice": 1056,
+      "behavior_raw": "9,10,6,6",
+      "strength": 9,
+      "stamina": 10,
+      "intelligence": 6,
+      "aggression": 6,
+      "behavior_sum": 31,
+      "image": 2131231109,
+      "image_res_hex": "0x7f080185",
+      "image_res_name": "fish_29",
+      "image_apk_path": "res/Yj.png",
+      "xp_divisor_grams_d0d_a": 745,
+      "legacy_123_unitPrice_d0d_h": 1056,
+      "legacy_123_unitWeight_d0d_i": 10000,
+      "md5": "0ec0d76a45aad62897078b65ce98c9ab",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 5,
+          "pond_ui_index": 8,
+          "pond_name_ru": "горный рыбхоз",
+          "min_weight_grams": 1000,
+          "max_weight_grams": 80709
+        },
+        {
+          "pond_data_id": 6,
+          "pond_ui_index": 10,
+          "pond_name_ru": "байкаловое русло",
+          "min_weight_grams": 1000,
+          "max_weight_grams": 115759
+        }
+      ]
+    },
+    {
+      "id": 30,
+      "index_0based": 29,
+      "name": "Пескарь",
+      "names_i18n": {
+        "ru": "Пескарь",
+        "en": "Gudgeon",
+        "de": "Gründling",
+        "es": "Gobio",
+        "pt": "Góbio"
+      },
+      "unitWeight": 45,
+      "unitPrice": 11,
+      "behavior_raw": "1,2,2,1",
+      "strength": 1,
+      "stamina": 2,
+      "intelligence": 2,
+      "aggression": 1,
+      "behavior_sum": 6,
+      "image": 2131231111,
+      "image_res_hex": "0x7f080187",
+      "image_res_name": "fish_30",
+      "image_apk_path": "res/OP.png",
+      "xp_divisor_grams_d0d_a": 24,
+      "legacy_123_unitPrice_d0d_h": 11,
+      "legacy_123_unitWeight_d0d_i": 45,
+      "md5": "b4f4a5f29e2517c5756affaca3cb37c1",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 1,
+          "pond_ui_index": 1,
+          "pond_name_ru": "речной брод",
+          "min_weight_grams": 10,
+          "max_weight_grams": 217
+        }
+      ]
+    },
+    {
+      "id": 31,
+      "index_0based": 30,
+      "name": "Подлещик",
+      "names_i18n": {
+        "ru": "Подлещик",
+        "en": "Young bream",
+        "de": "Brachse",
+        "es": "Brenia",
+        "pt": "Brema pequena"
+      },
+      "unitWeight": 500,
+      "unitPrice": 135,
+      "behavior_raw": "2,4,3,3",
+      "strength": 2,
+      "stamina": 4,
+      "intelligence": 3,
+      "aggression": 3,
+      "behavior_sum": 12,
+      "image": 2131231112,
+      "image_res_hex": "0x7f080188",
+      "image_res_name": "fish_31",
+      "image_apk_path": "res/CD.png",
+      "xp_divisor_grams_d0d_a": 88,
+      "legacy_123_unitPrice_d0d_h": 135,
+      "legacy_123_unitWeight_d0d_i": 500,
+      "md5": "ac26daa2fafcfa250f00f2e45af16c88",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 1,
+          "pond_ui_index": 1,
+          "pond_name_ru": "речной брод",
+          "min_weight_grams": 100,
+          "max_weight_grams": 997
+        },
+        {
+          "pond_data_id": 2,
+          "pond_ui_index": 2,
+          "pond_name_ru": "лесной перекат",
+          "min_weight_grams": 100,
+          "max_weight_grams": 998
+        }
+      ]
+    },
+    {
+      "id": 32,
+      "index_0based": 31,
+      "name": "Радужная форель",
+      "names_i18n": {
+        "ru": "Радужная форель",
+        "en": "Rainbow trout",
+        "de": "Regenbogenforelle",
+        "es": "Trucha arcoíris",
+        "pt": "Truta-arco-íris"
+      },
+      "unitWeight": 2500,
+      "unitPrice": 456,
+      "behavior_raw": "6,7,5,8",
+      "strength": 6,
+      "stamina": 7,
+      "intelligence": 5,
+      "aggression": 8,
+      "behavior_sum": 26,
+      "image": 2131231113,
+      "image_res_hex": "0x7f080189",
+      "image_res_name": "fish_32",
+      "image_apk_path": "res/f6.png",
+      "xp_divisor_grams_d0d_a": 177,
+      "legacy_123_unitPrice_d0d_h": 456,
+      "legacy_123_unitWeight_d0d_i": 2500,
+      "md5": "146bcd047075e4e6458b206801588506",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 4,
+          "pond_ui_index": 6,
+          "pond_name_ru": "хвойное озеро",
+          "min_weight_grams": 240,
+          "max_weight_grams": 10246
+        }
+      ]
+    },
+    {
+      "id": 33,
+      "index_0based": 32,
+      "name": "Рак",
+      "names_i18n": {
+        "ru": "Рак",
+        "en": "Crayfish",
+        "de": "Krebs",
+        "es": "Cangrejo",
+        "pt": "Lagosta"
+      },
+      "unitWeight": 200,
+      "unitPrice": 103,
+      "behavior_raw": "3,6,5,6",
+      "strength": 3,
+      "stamina": 6,
+      "intelligence": 5,
+      "aggression": 6,
+      "behavior_sum": 20,
+      "image": 2131231114,
+      "image_res_hex": "0x7f08018a",
+      "image_res_name": "fish_33",
+      "image_apk_path": "res/0f.png",
+      "xp_divisor_grams_d0d_a": 54,
+      "legacy_123_unitPrice_d0d_h": 103,
+      "legacy_123_unitWeight_d0d_i": 200,
+      "md5": "bbf68f68b5bf010a30f97271e496d901",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 0,
+          "pond_ui_index": 0,
+          "pond_name_ru": "кедровый остров",
+          "min_weight_grams": 20,
+          "max_weight_grams": 567
+        }
+      ]
+    },
+    {
+      "id": 34,
+      "index_0based": 33,
+      "name": "Ротан",
+      "names_i18n": {
+        "ru": "Ротан",
+        "en": "Chinese sleeper",
+        "de": "Amurgrundel",
+        "es": "Pez cama china",
+        "pt": "Perccottus glenii"
+      },
+      "unitWeight": 300,
+      "unitPrice": 111,
+      "behavior_raw": "4,5,3,9",
+      "strength": 4,
+      "stamina": 5,
+      "intelligence": 3,
+      "aggression": 9,
+      "behavior_sum": 21,
+      "image": 2131231115,
+      "image_res_hex": "0x7f08018b",
+      "image_res_name": "fish_34",
+      "image_apk_path": "res/zm.png",
+      "xp_divisor_grams_d0d_a": 40,
+      "legacy_123_unitPrice_d0d_h": 111,
+      "legacy_123_unitWeight_d0d_i": 300,
+      "md5": "5f00940a6b75099d68556470f398bcec",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 0,
+          "pond_ui_index": 0,
+          "pond_name_ru": "кедровый остров",
+          "min_weight_grams": 15,
+          "max_weight_grams": 712
+        },
+        {
+          "pond_data_id": 1,
+          "pond_ui_index": 1,
+          "pond_name_ru": "речной брод",
+          "min_weight_grams": 15,
+          "max_weight_grams": 782
+        }
+      ]
+    },
+    {
+      "id": 35,
+      "index_0based": 34,
+      "name": "Сазан",
+      "names_i18n": {
+        "ru": "Сазан",
+        "en": "Common carp",
+        "de": "Flußkarpfen",
+        "es": "Sazán",
+        "pt": "Carpa-comum"
+      },
+      "unitWeight": 6900,
+      "unitPrice": 777,
+      "behavior_raw": "8,9,6,7",
+      "strength": 8,
+      "stamina": 9,
+      "intelligence": 6,
+      "aggression": 7,
+      "behavior_sum": 30,
+      "image": 2131231116,
+      "image_res_hex": "0x7f08018c",
+      "image_res_name": "fish_35",
+      "image_apk_path": "res/1f.png",
+      "xp_divisor_grams_d0d_a": 499,
+      "legacy_123_unitPrice_d0d_h": 777,
+      "legacy_123_unitWeight_d0d_i": 6900,
+      "md5": "96590e837750e3d74e83b0a7ad70f47f",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 3,
+          "pond_ui_index": 4,
+          "pond_name_ru": "водохранилище",
+          "min_weight_grams": 400,
+          "max_weight_grams": 38198
+        },
+        {
+          "pond_data_id": 4,
+          "pond_ui_index": 6,
+          "pond_name_ru": "хвойное озеро",
+          "min_weight_grams": 400,
+          "max_weight_grams": 43328
+        }
+      ]
+    },
+    {
+      "id": 36,
+      "index_0based": 35,
+      "name": "Севанская форель",
+      "names_i18n": {
+        "ru": "Севанская форель",
+        "en": "Sevan trout",
+        "de": "Sewan-Forelle",
+        "es": "Trucha del lago Sevan",
+        "pt": "Truta-do-lago-sevan"
+      },
+      "unitWeight": 2400,
+      "unitPrice": 792,
+      "behavior_raw": "6,7,5,8",
+      "strength": 6,
+      "stamina": 7,
+      "intelligence": 5,
+      "aggression": 8,
+      "behavior_sum": 26,
+      "image": 2131231117,
+      "image_res_hex": "0x7f08018d",
+      "image_res_name": "fish_36",
+      "image_apk_path": "res/m_.png",
+      "xp_divisor_grams_d0d_a": 99,
+      "legacy_123_unitPrice_d0d_h": 792,
+      "legacy_123_unitWeight_d0d_i": 2400,
+      "md5": "65c67bf86b8d97eecca09c64603c9591",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 4,
+          "pond_ui_index": 6,
+          "pond_name_ru": "хвойное озеро",
+          "min_weight_grams": 300,
+          "max_weight_grams": 16456
+        }
+      ]
+    },
+    {
+      "id": 37,
+      "index_0based": 36,
+      "name": "Севрюга",
+      "names_i18n": {
+        "ru": "Севрюга",
+        "en": "Starry sturgeon",
+        "de": "Sternhausen",
+        "es": "Esturión estrellado",
+        "pt": "Esturjão-estrelado"
+      },
+      "unitWeight": 5000,
+      "unitPrice": 1022,
+      "behavior_raw": "7,8,5,6",
+      "strength": 7,
+      "stamina": 8,
+      "intelligence": 5,
+      "aggression": 6,
+      "behavior_sum": 26,
+      "image": 2131231118,
+      "image_res_hex": "0x7f08018e",
+      "image_res_name": "fish_37",
+      "image_apk_path": "res/tu.png",
+      "xp_divisor_grams_d0d_a": 890,
+      "legacy_123_unitPrice_d0d_h": 1022,
+      "legacy_123_unitWeight_d0d_i": 5000,
+      "md5": "cb44f80369229e548f58b0e03bbe71b6",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 5,
+          "pond_ui_index": 8,
+          "pond_name_ru": "горный рыбхоз",
+          "min_weight_grams": 770,
+          "max_weight_grams": 65687
+        }
+      ]
+    },
+    {
+      "id": 38,
+      "index_0based": 37,
+      "name": "Сом",
+      "names_i18n": {
+        "ru": "Сом",
+        "en": "Catfish",
+        "de": "Wels",
+        "es": "Siluro",
+        "pt": "Bagre"
+      },
+      "unitWeight": 25000,
+      "unitPrice": 1333,
+      "behavior_raw": "10,10,8,9",
+      "strength": 10,
+      "stamina": 10,
+      "intelligence": 8,
+      "aggression": 9,
+      "behavior_sum": 37,
+      "image": 2131231119,
+      "image_res_hex": "0x7f08018f",
+      "image_res_name": "fish_38",
+      "image_apk_path": "res/AI.png",
+      "xp_divisor_grams_d0d_a": 1280,
+      "legacy_123_unitPrice_d0d_h": 1333,
+      "legacy_123_unitWeight_d0d_i": 25000,
+      "md5": "0f07c16ae09a9b97ba7ac991e47b0907",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 4,
+          "pond_ui_index": 6,
+          "pond_name_ru": "хвойное озеро",
+          "min_weight_grams": 1240,
+          "max_weight_grams": 244027
+        },
+        {
+          "pond_data_id": 6,
+          "pond_ui_index": 10,
+          "pond_name_ru": "байкаловое русло",
+          "min_weight_grams": 1240,
+          "max_weight_grams": 456353
+        }
+      ]
+    },
+    {
+      "id": 39,
+      "index_0based": 38,
+      "name": "Амурский сом",
+      "names_i18n": {
+        "ru": "Амурский сом",
+        "en": "Amur catfish",
+        "de": "Amur-Wels",
+        "es": "Siluro de Amur",
+        "pt": "Silurus asotus"
+      },
+      "unitWeight": 2000,
+      "unitPrice": 701,
+      "behavior_raw": "7,8,5,7",
+      "strength": 7,
+      "stamina": 8,
+      "intelligence": 5,
+      "aggression": 7,
+      "behavior_sum": 27,
+      "image": 2131231120,
+      "image_res_hex": "0x7f080190",
+      "image_res_name": "fish_39",
+      "image_apk_path": "res/Ov.png",
+      "xp_divisor_grams_d0d_a": 430,
+      "legacy_123_unitPrice_d0d_h": 701,
+      "legacy_123_unitWeight_d0d_i": 2000,
+      "md5": "f79dd9fc5f7e1b4a0636cd15a9dfb03b",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 5,
+          "pond_ui_index": 8,
+          "pond_name_ru": "горный рыбхоз",
+          "min_weight_grams": 600,
+          "max_weight_grams": 12341
+        }
+      ]
+    },
+    {
+      "id": 40,
+      "index_0based": 39,
+      "name": "Стерлядь",
+      "names_i18n": {
+        "ru": "Стерлядь",
+        "en": "Sterlet",
+        "de": "Sterlet",
+        "es": "Esturión esterlete",
+        "pt": "Sterlet"
+      },
+      "unitWeight": 5500,
+      "unitPrice": 1040,
+      "behavior_raw": "6,7,5,5",
+      "strength": 6,
+      "stamina": 7,
+      "intelligence": 5,
+      "aggression": 5,
+      "behavior_sum": 23,
+      "image": 2131231122,
+      "image_res_hex": "0x7f080192",
+      "image_res_name": "fish_40",
+      "image_apk_path": "res/_t.png",
+      "xp_divisor_grams_d0d_a": 344,
+      "legacy_123_unitPrice_d0d_h": 1040,
+      "legacy_123_unitWeight_d0d_i": 5500,
+      "md5": "40f928c491e883fb5067e94c8b42fee7",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 5,
+          "pond_ui_index": 8,
+          "pond_name_ru": "горный рыбхоз",
+          "min_weight_grams": 570,
+          "max_weight_grams": 16193
+        }
+      ]
+    },
+    {
+      "id": 41,
+      "index_0based": 40,
+      "name": "Судак",
+      "names_i18n": {
+        "ru": "Судак",
+        "en": "Zander",
+        "de": "Zander",
+        "es": "Lucioperca",
+        "pt": "Zander"
+      },
+      "unitWeight": 6000,
+      "unitPrice": 508,
+      "behavior_raw": "7,8,6,9",
+      "strength": 7,
+      "stamina": 8,
+      "intelligence": 6,
+      "aggression": 9,
+      "behavior_sum": 30,
+      "image": 2131231123,
+      "image_res_hex": "0x7f080193",
+      "image_res_name": "fish_41",
+      "image_apk_path": "res/po.png",
+      "xp_divisor_grams_d0d_a": 505,
+      "legacy_123_unitPrice_d0d_h": 508,
+      "legacy_123_unitWeight_d0d_i": 6000,
+      "md5": "4bf5a885bf644ee38de9c36f7033263f",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 3,
+          "pond_ui_index": 4,
+          "pond_name_ru": "водохранилище",
+          "min_weight_grams": 250,
+          "max_weight_grams": 20341
+        }
+      ]
+    },
+    {
+      "id": 42,
+      "index_0based": 41,
+      "name": "Таймень",
+      "names_i18n": {
+        "ru": "Таймень",
+        "en": "Taimen",
+        "de": "Taimen",
+        "es": "Hucho taimen",
+        "pt": "Hucho taimen"
+      },
+      "unitWeight": 8000,
+      "unitPrice": 1108,
+      "behavior_raw": "8,9,7,9",
+      "strength": 8,
+      "stamina": 9,
+      "intelligence": 7,
+      "aggression": 9,
+      "behavior_sum": 33,
+      "image": 2131231124,
+      "image_res_hex": "0x7f080194",
+      "image_res_name": "fish_42",
+      "image_apk_path": "res/Ap.png",
+      "xp_divisor_grams_d0d_a": 689,
+      "legacy_123_unitPrice_d0d_h": 1108,
+      "legacy_123_unitWeight_d0d_i": 8000,
+      "md5": "a53515797f2fb1e848e183bfbd62ca35",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 5,
+          "pond_ui_index": 8,
+          "pond_name_ru": "горный рыбхоз",
+          "min_weight_grams": 896,
+          "max_weight_grams": 81934
+        }
+      ]
+    },
+    {
+      "id": 43,
+      "index_0based": 42,
+      "name": "Тарань",
+      "names_i18n": {
+        "ru": "Тарань",
+        "en": "Taran",
+        "de": "Taran",
+        "es": "Rutilo del mar Negro",
+        "pt": "Rutilus heckelii"
+      },
+      "unitWeight": 660,
+      "unitPrice": 213,
+      "behavior_raw": "3,5,4,4",
+      "strength": 3,
+      "stamina": 5,
+      "intelligence": 4,
+      "aggression": 4,
+      "behavior_sum": 16,
+      "image": 2131231125,
+      "image_res_hex": "0x7f080195",
+      "image_res_name": "fish_43",
+      "image_apk_path": "res/8-.png",
+      "xp_divisor_grams_d0d_a": 125,
+      "legacy_123_unitPrice_d0d_h": 213,
+      "legacy_123_unitWeight_d0d_i": 660,
+      "md5": "c25c60924c8a74787e267ad30d4a4a8b",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 3,
+          "pond_ui_index": 4,
+          "pond_name_ru": "водохранилище",
+          "min_weight_grams": 100,
+          "max_weight_grams": 2036
+        }
+      ]
+    },
+    {
+      "id": 44,
+      "index_0based": 43,
+      "name": "Толстолобик",
+      "names_i18n": {
+        "ru": "Толстолобик",
+        "en": "Bighead carp",
+        "de": "Silberkarpfen",
+        "es": "Carpa cabezona",
+        "pt": "Carpa-cabeçuda"
+      },
+      "unitWeight": 4700,
+      "unitPrice": 505,
+      "behavior_raw": "7,8,4,5",
+      "strength": 7,
+      "stamina": 8,
+      "intelligence": 4,
+      "aggression": 5,
+      "behavior_sum": 24,
+      "image": 2131231126,
+      "image_res_hex": "0x7f080196",
+      "image_res_name": "fish_44",
+      "image_apk_path": "res/sk.png",
+      "xp_divisor_grams_d0d_a": 789,
+      "legacy_123_unitPrice_d0d_h": 505,
+      "legacy_123_unitWeight_d0d_i": 4700,
+      "md5": "47d304756b5f175b27865d0b6646dfb8",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 3,
+          "pond_ui_index": 4,
+          "pond_name_ru": "водохранилище",
+          "min_weight_grams": 460,
+          "max_weight_grams": 42165
+        }
+      ]
+    },
+    {
+      "id": 45,
+      "index_0based": 44,
+      "name": "Угорь",
+      "names_i18n": {
+        "ru": "Угорь",
+        "en": "Eel",
+        "de": "Aal",
+        "es": "Anguila",
+        "pt": "Enguia"
+      },
+      "unitWeight": 2300,
+      "unitPrice": 809,
+      "behavior_raw": "6,9,5,7",
+      "strength": 6,
+      "stamina": 9,
+      "intelligence": 5,
+      "aggression": 7,
+      "behavior_sum": 27,
+      "image": 2131231127,
+      "image_res_hex": "0x7f080197",
+      "image_res_name": "fish_45",
+      "image_apk_path": "res/Uq.png",
+      "xp_divisor_grams_d0d_a": 590,
+      "legacy_123_unitPrice_d0d_h": 809,
+      "legacy_123_unitWeight_d0d_i": 2300,
+      "md5": "5c6ceaa406092fe2f784e74a9d514453",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 4,
+          "pond_ui_index": 6,
+          "pond_name_ru": "хвойное озеро",
+          "min_weight_grams": 645,
+          "max_weight_grams": 9567
+        },
+        {
+          "pond_data_id": 14,
+          "pond_ui_index": 5,
+          "pond_name_ru": "протока",
+          "min_weight_grams": 620,
+          "max_weight_grams": 8946
+        }
+      ]
+    },
+    {
+      "id": 46,
+      "index_0based": 45,
+      "name": "Уклейка",
+      "names_i18n": {
+        "ru": "Уклейка",
+        "en": "Common bleak",
+        "de": "Laube",
+        "es": "Alburno",
+        "pt": "Alburno"
+      },
+      "unitWeight": 160,
+      "unitPrice": 51,
+      "behavior_raw": "2,3,3,4",
+      "strength": 2,
+      "stamina": 3,
+      "intelligence": 3,
+      "aggression": 4,
+      "behavior_sum": 12,
+      "image": 2131231128,
+      "image_res_hex": "0x7f080198",
+      "image_res_name": "fish_46",
+      "image_apk_path": "res/rK.png",
+      "xp_divisor_grams_d0d_a": 34,
+      "legacy_123_unitPrice_d0d_h": 51,
+      "legacy_123_unitWeight_d0d_i": 160,
+      "md5": "62e69818a163abd28d2c32548ee39977",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 2,
+          "pond_ui_index": 2,
+          "pond_name_ru": "лесной перекат",
+          "min_weight_grams": 10,
+          "max_weight_grams": 156
+        }
+      ]
+    },
+    {
+      "id": 47,
+      "index_0based": 46,
+      "name": "Усач",
+      "names_i18n": {
+        "ru": "Усач",
+        "en": "Common barbel",
+        "de": "Barbe",
+        "es": "Barbo común",
+        "pt": "Barbo"
+      },
+      "unitWeight": 2100,
+      "unitPrice": 411,
+      "behavior_raw": "7,8,5,7",
+      "strength": 7,
+      "stamina": 8,
+      "intelligence": 5,
+      "aggression": 7,
+      "behavior_sum": 27,
+      "image": 2131231129,
+      "image_res_hex": "0x7f080199",
+      "image_res_name": "fish_47",
+      "image_apk_path": "res/tA.png",
+      "xp_divisor_grams_d0d_a": 178,
+      "legacy_123_unitPrice_d0d_h": 411,
+      "legacy_123_unitWeight_d0d_i": 2100,
+      "md5": "8534fc6f8de38762f23af52a8981cbe6",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 2,
+          "pond_ui_index": 2,
+          "pond_name_ru": "лесной перекат",
+          "min_weight_grams": 260,
+          "max_weight_grams": 16234
+        }
+      ]
+    },
+    {
+      "id": 48,
+      "index_0based": 47,
+      "name": "Хариус",
+      "names_i18n": {
+        "ru": "Хариус",
+        "en": "Grayling",
+        "de": "Äsche",
+        "es": "Tímalos",
+        "pt": "Tímalo"
+      },
+      "unitWeight": 300,
+      "unitPrice": 303,
+      "behavior_raw": "5,6,5,7",
+      "strength": 5,
+      "stamina": 6,
+      "intelligence": 5,
+      "aggression": 7,
+      "behavior_sum": 23,
+      "image": 2131231130,
+      "image_res_hex": "0x7f08019a",
+      "image_res_name": "fish_48",
+      "image_apk_path": "res/WN.png",
+      "xp_divisor_grams_d0d_a": 76,
+      "legacy_123_unitPrice_d0d_h": 303,
+      "legacy_123_unitWeight_d0d_i": 300,
+      "md5": "b85ffd355850b61bedecc1207e1ea7aa",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 4,
+          "pond_ui_index": 6,
+          "pond_name_ru": "хвойное озеро",
+          "min_weight_grams": 40,
+          "max_weight_grams": 1512
+        }
+      ]
+    },
+    {
+      "id": 49,
+      "index_0based": 48,
+      "name": "Черепаха",
+      "names_i18n": {
+        "ru": "Черепаха",
+        "en": "Turtle",
+        "de": "Schildkröte",
+        "es": "Tortuga",
+        "pt": "Tartaruga"
+      },
+      "unitWeight": 2000,
+      "unitPrice": 677,
+      "behavior_raw": "6,9,7,3",
+      "strength": 6,
+      "stamina": 9,
+      "intelligence": 7,
+      "aggression": 3,
+      "behavior_sum": 25,
+      "image": 2131231131,
+      "image_res_hex": "0x7f08019b",
+      "image_res_name": "fish_49",
+      "image_apk_path": "res/h1.png",
+      "xp_divisor_grams_d0d_a": 144,
+      "legacy_123_unitPrice_d0d_h": 677,
+      "legacy_123_unitWeight_d0d_i": 2000,
+      "md5": "b48f852a367621e1506e0c2f55fcfa10",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 6,
+          "pond_ui_index": 10,
+          "pond_name_ru": "байкаловое русло",
+          "min_weight_grams": 320,
+          "max_weight_grams": 16751
+        }
+      ]
+    },
+    {
+      "id": 50,
+      "index_0based": 49,
+      "name": "Черный амур",
+      "names_i18n": {
+        "ru": "Черный амур",
+        "en": "Black carp",
+        "de": "Schwarzer Amur",
+        "es": "Carpa negra",
+        "pt": "Carpa negra"
+      },
+      "unitWeight": 2600,
+      "unitPrice": 1023,
+      "behavior_raw": "7,8,5,6",
+      "strength": 7,
+      "stamina": 8,
+      "intelligence": 5,
+      "aggression": 6,
+      "behavior_sum": 26,
+      "image": 2131231133,
+      "image_res_hex": "0x7f08019d",
+      "image_res_name": "fish_50",
+      "image_apk_path": "res/hN.png",
+      "xp_divisor_grams_d0d_a": 238,
+      "legacy_123_unitPrice_d0d_h": 1023,
+      "legacy_123_unitWeight_d0d_i": 2600,
+      "md5": "f11b9935449ee979abadfb4c51c64ba2",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 5,
+          "pond_ui_index": 8,
+          "pond_name_ru": "горный рыбхоз",
+          "min_weight_grams": 540,
+          "max_weight_grams": 26870
+        },
+        {
+          "pond_data_id": 6,
+          "pond_ui_index": 10,
+          "pond_name_ru": "байкаловое русло",
+          "min_weight_grams": 540,
+          "max_weight_grams": 29392
+        }
+      ]
+    },
+    {
+      "id": 51,
+      "index_0based": 50,
+      "name": "Чехонь",
+      "names_i18n": {
+        "ru": "Чехонь",
+        "en": "Sabrefish",
+        "de": "Sichling",
+        "es": "Peleco",
+        "pt": "Pelecus cultratus"
+      },
+      "unitWeight": 650,
+      "unitPrice": 245,
+      "behavior_raw": "4,5,4,5",
+      "strength": 4,
+      "stamina": 5,
+      "intelligence": 4,
+      "aggression": 5,
+      "behavior_sum": 18,
+      "image": 2131231134,
+      "image_res_hex": "0x7f08019e",
+      "image_res_name": "fish_51",
+      "image_apk_path": "res/99.png",
+      "xp_divisor_grams_d0d_a": 201,
+      "legacy_123_unitPrice_d0d_h": 245,
+      "legacy_123_unitWeight_d0d_i": 650,
+      "md5": "559a8888675155d7c56f4703662272e1",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 2,
+          "pond_ui_index": 2,
+          "pond_name_ru": "лесной перекат",
+          "min_weight_grams": 100,
+          "max_weight_grams": 2012
+        }
+      ]
+    },
+    {
+      "id": 52,
+      "index_0based": 51,
+      "name": "Щука",
+      "names_i18n": {
+        "ru": "Щука",
+        "en": "Northern pike",
+        "de": "Hecht",
+        "es": "Lucio",
+        "pt": "Lúcio"
+      },
+      "unitWeight": 4500,
+      "unitPrice": 353,
+      "behavior_raw": "9,8,8,10",
+      "strength": 9,
+      "stamina": 8,
+      "intelligence": 8,
+      "aggression": 10,
+      "behavior_sum": 35,
+      "image": 2131231135,
+      "image_res_hex": "0x7f08019f",
+      "image_res_name": "fish_52",
+      "image_apk_path": "res/Fi1.png",
+      "xp_divisor_grams_d0d_a": 333,
+      "legacy_123_unitPrice_d0d_h": 353,
+      "legacy_123_unitWeight_d0d_i": 4500,
+      "md5": "730373d5353481b64744533741e478ce",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 0,
+          "pond_ui_index": 0,
+          "pond_name_ru": "кедровый остров",
+          "min_weight_grams": 350,
+          "max_weight_grams": 21757
+        },
+        {
+          "pond_data_id": 13,
+          "pond_ui_index": 3,
+          "pond_name_ru": "северный берег",
+          "min_weight_grams": 420,
+          "max_weight_grams": 24138
+        }
+      ]
+    },
+    {
+      "id": 53,
+      "index_0based": 52,
+      "name": "Язь",
+      "names_i18n": {
+        "ru": "Язь",
+        "en": "Ide",
+        "de": "Aland",
+        "es": "Cachuelo",
+        "pt": "Escalo-prateado"
+      },
+      "unitWeight": 2300,
+      "unitPrice": 259,
+      "behavior_raw": "6,7,5,6",
+      "strength": 6,
+      "stamina": 7,
+      "intelligence": 5,
+      "aggression": 6,
+      "behavior_sum": 24,
+      "image": 2131231136,
+      "image_res_hex": "0x7f0801a0",
+      "image_res_name": "fish_53",
+      "image_apk_path": "res/NF1.png",
+      "xp_divisor_grams_d0d_a": 400,
+      "legacy_123_unitPrice_d0d_h": 259,
+      "legacy_123_unitWeight_d0d_i": 2300,
+      "md5": "731a0b4fb0e02c8eeca3465975991e2d",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 2,
+          "pond_ui_index": 2,
+          "pond_name_ru": "лесной перекат",
+          "min_weight_grams": 270,
+          "max_weight_grams": 8411
+        },
+        {
+          "pond_data_id": 13,
+          "pond_ui_index": 3,
+          "pond_name_ru": "северный берег",
+          "min_weight_grams": 310,
+          "max_weight_grams": 8744
+        }
+      ]
+    },
+    {
+      "id": 54,
+      "index_0based": 53,
+      "name": "Гигантский карп",
+      "names_i18n": {
+        "ru": "Гигантский карп",
+        "en": "Giant carp",
+        "de": "Riesenkarpfen",
+        "es": "Carpa gigante",
+        "pt": "Carpa gigante"
+      },
+      "unitWeight": 20000,
+      "unitPrice": 1503,
+      "behavior_raw": "9,10,6,7",
+      "strength": 9,
+      "stamina": 10,
+      "intelligence": 6,
+      "aggression": 7,
+      "behavior_sum": 32,
+      "image": 2131231137,
+      "image_res_hex": "0x7f0801a1",
+      "image_res_name": "fish_54",
+      "image_apk_path": "res/gS.png",
+      "xp_divisor_grams_d0d_a": 1108,
+      "legacy_123_unitPrice_d0d_h": 1503,
+      "legacy_123_unitWeight_d0d_i": 20000,
+      "md5": "909f0a061dd2a60de26edafc95e65120",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 6,
+          "pond_ui_index": 10,
+          "pond_name_ru": "байкаловое русло",
+          "min_weight_grams": 40000,
+          "max_weight_grams": 304839
+        }
+      ]
+    },
+    {
+      "id": 55,
+      "index_0based": 54,
+      "name": "Глубинная щука",
+      "names_i18n": {
+        "ru": "Глубинная щука",
+        "en": "Deep-water pike",
+        "de": "Tiefenhecht",
+        "es": "Lucio de agua profunda",
+        "pt": "Lúcio de águas profundas"
+      },
+      "unitWeight": 15000,
+      "unitPrice": 1096,
+      "behavior_raw": "10,9,9,10",
+      "strength": 10,
+      "stamina": 9,
+      "intelligence": 9,
+      "aggression": 10,
+      "behavior_sum": 38,
+      "image": 2131231138,
+      "image_res_hex": "0x7f0801a2",
+      "image_res_name": "fish_55",
+      "image_apk_path": "res/ZC.png",
+      "xp_divisor_grams_d0d_a": 607,
+      "legacy_123_unitPrice_d0d_h": 1096,
+      "legacy_123_unitWeight_d0d_i": 15000,
+      "md5": "dc3a50a4b300d9faff55c7be5b362c69",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 6,
+          "pond_ui_index": 10,
+          "pond_name_ru": "байкаловое русло",
+          "min_weight_grams": 10000,
+          "max_weight_grams": 71134
+        }
+      ]
+    },
+    {
+      "id": 56,
+      "index_0based": 55,
+      "name": "Амурская щука",
+      "names_i18n": {
+        "ru": "Амурская щука",
+        "en": "Amur pike",
+        "de": "Amur-Hecht",
+        "es": "Lucio del Pacífico",
+        "pt": "Lúcio do rio Amur"
+      },
+      "unitWeight": 4000,
+      "unitPrice": 744,
+      "behavior_raw": "8,7,7,9",
+      "strength": 8,
+      "stamina": 7,
+      "intelligence": 7,
+      "aggression": 9,
+      "behavior_sum": 31,
+      "image": 2131231139,
+      "image_res_hex": "0x7f0801a3",
+      "image_res_name": "fish_56",
+      "image_apk_path": "res/Zo.png",
+      "xp_divisor_grams_d0d_a": 292,
+      "legacy_123_unitPrice_d0d_h": 744,
+      "legacy_123_unitWeight_d0d_i": 4000,
+      "md5": "41462a6c8ad054b8f1e1a950a56a20ef",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 5,
+          "pond_ui_index": 8,
+          "pond_name_ru": "горный рыбхоз",
+          "min_weight_grams": 431,
+          "max_weight_grams": 21403
+        }
+      ]
+    },
+    {
+      "id": 57,
+      "index_0based": 56,
+      "name": "Ауха",
+      "names_i18n": {
+        "ru": "Ауха",
+        "en": "Chinese perch",
+        "de": "Dorschbarsch",
+        "es": "Pez mandarín",
+        "pt": "Siniperca chuatsi"
+      },
+      "unitWeight": 1500,
+      "unitPrice": 1702,
+      "behavior_raw": "6,6,5,8",
+      "strength": 6,
+      "stamina": 6,
+      "intelligence": 5,
+      "aggression": 8,
+      "behavior_sum": 25,
+      "image": 2131231140,
+      "image_res_hex": "0x7f0801a4",
+      "image_res_name": "fish_57",
+      "image_apk_path": "res/G3.png",
+      "xp_divisor_grams_d0d_a": 60,
+      "legacy_123_unitPrice_d0d_h": 1702,
+      "legacy_123_unitWeight_d0d_i": 1500,
+      "md5": "49548379806b5be8d74cc4237116d756",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 6,
+          "pond_ui_index": 10,
+          "pond_name_ru": "байкаловое русло",
+          "min_weight_grams": 470,
+          "max_weight_grams": 9073
+        }
+      ]
+    },
+    {
+      "id": 58,
+      "index_0based": 57,
+      "name": "Сом солдатова",
+      "names_i18n": {
+        "ru": "Сом солдатова",
+        "en": "Silurus soldatovi",
+        "de": "Silurus soldatovi",
+        "es": "Siluro de Amur",
+        "pt": "Bagre de soldatov"
+      },
+      "unitWeight": 40000,
+      "unitPrice": 2078,
+      "behavior_raw": "10,10,9,9",
+      "strength": 10,
+      "stamina": 10,
+      "intelligence": 9,
+      "aggression": 9,
+      "behavior_sum": 38,
+      "image": 2131231141,
+      "image_res_hex": "0x7f0801a5",
+      "image_res_name": "fish_58",
+      "image_apk_path": "res/kJ.png",
+      "xp_divisor_grams_d0d_a": 775,
+      "legacy_123_unitPrice_d0d_h": 2078,
+      "legacy_123_unitWeight_d0d_i": 40000,
+      "md5": "5c6a5e9e560d5b09fae449a57bf00ae7",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 6,
+          "pond_ui_index": 10,
+          "pond_name_ru": "байкаловое русло",
+          "min_weight_grams": 2000,
+          "max_weight_grams": 312469
+        }
+      ]
+    },
+    {
+      "id": 59,
+      "index_0based": 58,
+      "name": "Краб",
+      "names_i18n": {
+        "ru": "Краб",
+        "en": "Crab",
+        "de": "Krabbe",
+        "es": "Cangrejo",
+        "pt": "Caranguejo"
+      },
+      "unitWeight": 450,
+      "unitPrice": 857,
+      "behavior_raw": "4,6,5,6",
+      "strength": 4,
+      "stamina": 6,
+      "intelligence": 5,
+      "aggression": 6,
+      "behavior_sum": 21,
+      "image": 2131231142,
+      "image_res_hex": "0x7f0801a6",
+      "image_res_name": "fish_59",
+      "image_apk_path": "res/eE.png",
+      "xp_divisor_grams_d0d_a": 48,
+      "legacy_123_unitPrice_d0d_h": 857,
+      "legacy_123_unitWeight_d0d_i": 450,
+      "md5": "d6f198c9c083e1606875d9bc88597f25",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 6,
+          "pond_ui_index": 10,
+          "pond_name_ru": "байкаловое русло",
+          "min_weight_grams": 140,
+          "max_weight_grams": 846
+        }
+      ]
+    },
+    {
+      "id": 60,
+      "index_0based": 59,
+      "name": "Бестер",
+      "names_i18n": {
+        "ru": "Бестер",
+        "en": "Bester",
+        "de": "Bester",
+        "es": "Bester",
+        "pt": "Bester"
+      },
+      "unitWeight": 4600,
+      "unitPrice": 1054,
+      "behavior_raw": "7,8,5,6",
+      "strength": 7,
+      "stamina": 8,
+      "intelligence": 5,
+      "aggression": 6,
+      "behavior_sum": 26,
+      "image": 2131231144,
+      "image_res_hex": "0x7f0801a8",
+      "image_res_name": "fish_60",
+      "image_apk_path": "res/6X.png",
+      "xp_divisor_grams_d0d_a": 203,
+      "legacy_123_unitPrice_d0d_h": 1054,
+      "legacy_123_unitWeight_d0d_i": 4600,
+      "md5": "cc2a1e10ddfb19e83d1d152a821f1a23",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 5,
+          "pond_ui_index": 8,
+          "pond_name_ru": "горный рыбхоз",
+          "min_weight_grams": 750,
+          "max_weight_grams": 30056
+        }
+      ]
+    },
+    {
+      "id": 61,
+      "index_0based": 60,
+      "name": "Лосось",
+      "names_i18n": {
+        "ru": "Лосось",
+        "en": "Salmon",
+        "de": "Lachs",
+        "es": "Salmón",
+        "pt": "Salmão"
+      },
+      "unitWeight": 4050,
+      "unitPrice": 1142,
+      "behavior_raw": "7,8,5,8",
+      "strength": 7,
+      "stamina": 8,
+      "intelligence": 5,
+      "aggression": 8,
+      "behavior_sum": 28,
+      "image": 2131231145,
+      "image_res_hex": "0x7f0801a9",
+      "image_res_name": "fish_61",
+      "image_apk_path": "res/O7.png",
+      "xp_divisor_grams_d0d_a": 162,
+      "legacy_123_unitPrice_d0d_h": 1142,
+      "legacy_123_unitWeight_d0d_i": 4050,
+      "md5": "566b8bd91a0161558d866675f9551e52",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 5,
+          "pond_ui_index": 8,
+          "pond_name_ru": "горный рыбхоз",
+          "min_weight_grams": 630,
+          "max_weight_grams": 38527
+        }
+      ]
+    },
+    {
+      "id": 62,
+      "index_0based": 61,
+      "name": "Морская лисица",
+      "names_i18n": {
+        "ru": "Морская лисица",
+        "en": "Thornback ray",
+        "de": "Nagelroche",
+        "es": "Raja clavata",
+        "pt": "Raia-lenga"
+      },
+      "unitWeight": 4356,
+      "unitPrice": 1002,
+      "behavior_raw": "6,7,6,7",
+      "strength": 6,
+      "stamina": 7,
+      "intelligence": 6,
+      "aggression": 7,
+      "behavior_sum": 26,
+      "image": 2131231146,
+      "image_res_hex": "0x7f0801aa",
+      "image_res_name": "fish_62",
+      "image_apk_path": "res/ZU.png",
+      "xp_divisor_grams_d0d_a": 188,
+      "legacy_123_unitPrice_d0d_h": 1002,
+      "legacy_123_unitWeight_d0d_i": 4356,
+      "md5": "73009190b942e967693595cfb10b7da2",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 7,
+          "pond_ui_index": 11,
+          "pond_name_ru": "у горы",
+          "min_weight_grams": 400,
+          "max_weight_grams": 18000
+        }
+      ]
+    },
+    {
+      "id": 63,
+      "index_0based": 62,
+      "name": "Морской черт",
+      "names_i18n": {
+        "ru": "Морской черт",
+        "en": "Angler",
+        "de": "Seeteufel",
+        "es": "Rape común",
+        "pt": "Peixe-pescador"
+      },
+      "unitWeight": 10345,
+      "unitPrice": 1678,
+      "behavior_raw": "8,9,7,9",
+      "strength": 8,
+      "stamina": 9,
+      "intelligence": 7,
+      "aggression": 9,
+      "behavior_sum": 33,
+      "image": 2131231147,
+      "image_res_hex": "0x7f0801ab",
+      "image_res_name": "fish_63",
+      "image_apk_path": "res/Fg1.png",
+      "xp_divisor_grams_d0d_a": 377,
+      "legacy_123_unitPrice_d0d_h": 1678,
+      "legacy_123_unitWeight_d0d_i": 10345,
+      "md5": "c07eb8d98166e40b967ac2465af80771",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 7,
+          "pond_ui_index": 11,
+          "pond_name_ru": "у горы",
+          "min_weight_grams": 1500,
+          "max_weight_grams": 55000
+        }
+      ]
+    },
+    {
+      "id": 64,
+      "index_0based": 63,
+      "name": "Морской окунь",
+      "names_i18n": {
+        "ru": "Морской окунь",
+        "en": "Rockfish",
+        "de": "Rotbarsch",
+        "es": "Gallineta",
+        "pt": "Cantarilho"
+      },
+      "unitWeight": 2678,
+      "unitPrice": 679,
+      "behavior_raw": "6,7,5,8",
+      "strength": 6,
+      "stamina": 7,
+      "intelligence": 5,
+      "aggression": 8,
+      "behavior_sum": 26,
+      "image": 2131231148,
+      "image_res_hex": "0x7f0801ac",
+      "image_res_name": "fish_64",
+      "image_apk_path": "res/nr.png",
+      "xp_divisor_grams_d0d_a": 74,
+      "legacy_123_unitPrice_d0d_h": 679,
+      "legacy_123_unitWeight_d0d_i": 2678,
+      "md5": "24a74a6a827a03d583cab0fca32f7331",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 7,
+          "pond_ui_index": 11,
+          "pond_name_ru": "у горы",
+          "min_weight_grams": 1000,
+          "max_weight_grams": 5000
+        }
+      ]
+    },
+    {
+      "id": 65,
+      "index_0based": 64,
+      "name": "Омар европейский",
+      "names_i18n": {
+        "ru": "Омар европейский",
+        "en": "European lobster",
+        "de": "Europäischer Hummer",
+        "es": "Bogavante",
+        "pt": "Lavagante"
+      },
+      "unitWeight": 4000,
+      "unitPrice": 2005,
+      "behavior_raw": "5,8,6,6",
+      "strength": 5,
+      "stamina": 8,
+      "intelligence": 6,
+      "aggression": 6,
+      "behavior_sum": 25,
+      "image": 2131231149,
+      "image_res_hex": "0x7f0801ad",
+      "image_res_name": "fish_65",
+      "image_apk_path": "res/k3.png",
+      "xp_divisor_grams_d0d_a": 85,
+      "legacy_123_unitPrice_d0d_h": 2005,
+      "legacy_123_unitWeight_d0d_i": 4000,
+      "md5": "7e361934a76d20adf0b5fca323df502e",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 7,
+          "pond_ui_index": 11,
+          "pond_name_ru": "у горы",
+          "min_weight_grams": 150,
+          "max_weight_grams": 11000
+        }
+      ]
+    },
+    {
+      "id": 66,
+      "index_0based": 65,
+      "name": "Горбыль светлый",
+      "names_i18n": {
+        "ru": "Горбыль светлый",
+        "en": "Atlantic croaker",
+        "de": "Umberfisch",
+        "es": "Verrugato",
+        "pt": "Calafate"
+      },
+      "unitWeight": 7890,
+      "unitPrice": 3123,
+      "behavior_raw": "7,8,5,7",
+      "strength": 7,
+      "stamina": 8,
+      "intelligence": 5,
+      "aggression": 7,
+      "behavior_sum": 27,
+      "image": 2131231150,
+      "image_res_hex": "0x7f0801ae",
+      "image_res_name": "fish_66",
+      "image_apk_path": "res/Z0.png",
+      "xp_divisor_grams_d0d_a": 198,
+      "legacy_123_unitPrice_d0d_h": 3123,
+      "legacy_123_unitWeight_d0d_i": 7890,
+      "md5": "ded239bae8e6cadf5e8b16614a9148f7",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 7,
+          "pond_ui_index": 11,
+          "pond_name_ru": "у горы",
+          "min_weight_grams": 500,
+          "max_weight_grams": 30000
+        }
+      ]
+    },
+    {
+      "id": 67,
+      "index_0based": 66,
+      "name": "Кошачья акула",
+      "names_i18n": {
+        "ru": "Кошачья акула",
+        "en": "Small-spotted catshark",
+        "de": "Kleingefleckte Katzenhai",
+        "es": "Pintarroja",
+        "pt": "Pata-roxa"
+      },
+      "unitWeight": 500,
+      "unitPrice": 2400,
+      "behavior_raw": "7,7,6,9",
+      "strength": 7,
+      "stamina": 7,
+      "intelligence": 6,
+      "aggression": 9,
+      "behavior_sum": 29,
+      "image": 2131231151,
+      "image_res_hex": "0x7f0801af",
+      "image_res_name": "fish_67",
+      "image_apk_path": "res/pW.png",
+      "xp_divisor_grams_d0d_a": 15,
+      "legacy_123_unitPrice_d0d_h": 2400,
+      "legacy_123_unitWeight_d0d_i": 500,
+      "md5": "180e10ae3cbc08a889482058c8126f6e",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 7,
+          "pond_ui_index": 11,
+          "pond_name_ru": "у горы",
+          "min_weight_grams": 150,
+          "max_weight_grams": 1400
+        }
+      ]
+    },
+    {
+      "id": 68,
+      "index_0based": 67,
+      "name": "Катран",
+      "names_i18n": {
+        "ru": "Катран",
+        "en": "Spiny dogfish",
+        "de": "Dornhai",
+        "es": "Mielga",
+        "pt": "Galhudo-malhado"
+      },
+      "unitWeight": 7678,
+      "unitPrice": 2800,
+      "behavior_raw": "8,8,6,9",
+      "strength": 8,
+      "stamina": 8,
+      "intelligence": 6,
+      "aggression": 9,
+      "behavior_sum": 31,
+      "image": 2131231152,
+      "image_res_hex": "0x7f0801b0",
+      "image_res_name": "fish_68",
+      "image_apk_path": "res/-m.png",
+      "xp_divisor_grams_d0d_a": 93,
+      "legacy_123_unitPrice_d0d_h": 2800,
+      "legacy_123_unitWeight_d0d_i": 7678,
+      "md5": "b12700c0bab15dea45700c9cba0f253a",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 7,
+          "pond_ui_index": 11,
+          "pond_name_ru": "у горы",
+          "min_weight_grams": 3000,
+          "max_weight_grams": 14000
+        }
+      ]
+    },
+    {
+      "id": 69,
+      "index_0based": 68,
+      "name": "Морской угорь",
+      "names_i18n": {
+        "ru": "Морской угорь",
+        "en": "Conger",
+        "de": "Meeraal",
+        "es": "Anguila de mar",
+        "pt": "Congro"
+      },
+      "unitWeight": 14589,
+      "unitPrice": 1465,
+      "behavior_raw": "7,9,6,8",
+      "strength": 7,
+      "stamina": 9,
+      "intelligence": 6,
+      "aggression": 8,
+      "behavior_sum": 30,
+      "image": 2131231153,
+      "image_res_hex": "0x7f0801b1",
+      "image_res_name": "fish_69",
+      "image_apk_path": "res/Ck1.png",
+      "xp_divisor_grams_d0d_a": 545,
+      "legacy_123_unitPrice_d0d_h": 1465,
+      "legacy_123_unitWeight_d0d_i": 14589,
+      "md5": "7cbe0cb563983ff15e71da1b64efbdf8",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 7,
+          "pond_ui_index": 11,
+          "pond_name_ru": "у горы",
+          "min_weight_grams": 2000,
+          "max_weight_grams": 65000
+        }
+      ]
+    },
+    {
+      "id": 70,
+      "index_0based": 69,
+      "name": "Морской петух",
+      "names_i18n": {
+        "ru": "Морской петух",
+        "en": "Sea robin",
+        "de": "Knurrhahn",
+        "es": "Rubio",
+        "pt": "Triglidae"
+      },
+      "unitWeight": 2560,
+      "unitPrice": 2450,
+      "behavior_raw": "5,6,5,7",
+      "strength": 5,
+      "stamina": 6,
+      "intelligence": 5,
+      "aggression": 7,
+      "behavior_sum": 23,
+      "image": 2131231155,
+      "image_res_hex": "0x7f0801b3",
+      "image_res_name": "fish_70",
+      "image_apk_path": "res/2i.png",
+      "xp_divisor_grams_d0d_a": 60,
+      "legacy_123_unitPrice_d0d_h": 2450,
+      "legacy_123_unitWeight_d0d_i": 2560,
+      "md5": "810ef42bb8b9409069399c04fe541b16",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 7,
+          "pond_ui_index": 11,
+          "pond_name_ru": "у горы",
+          "min_weight_grams": 250,
+          "max_weight_grams": 6000
+        }
+      ]
+    },
+    {
+      "id": 71,
+      "index_0based": 70,
+      "name": "Клад",
+      "names_i18n": {
+        "ru": "Клад",
+        "en": "Treasure",
+        "de": "Schatz",
+        "es": "Tesoro",
+        "pt": "Tesouro"
+      },
+      "unitWeight": 256000,
+      "unitPrice": 81678,
+      "behavior_raw": "1,10,10,1",
+      "strength": 1,
+      "stamina": 10,
+      "intelligence": 10,
+      "aggression": 1,
+      "behavior_sum": 22,
+      "image": 2131231156,
+      "image_res_hex": "0x7f0801b4",
+      "image_res_name": "fish_71",
+      "image_apk_path": "res/Z_.png",
+      "xp_divisor_grams_d0d_a": 2345,
+      "legacy_123_unitPrice_d0d_h": 81678,
+      "legacy_123_unitWeight_d0d_i": 256000,
+      "md5": "7359ad1cdd2709812c36f908a2e93092",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 8,
+          "pond_ui_index": 12,
+          "pond_name_ru": "пиратская бухта",
+          "min_weight_grams": 250000,
+          "max_weight_grams": 300000
+        }
+      ]
+    },
+    {
+      "id": 72,
+      "index_0based": 71,
+      "name": "Рыба-меч",
+      "names_i18n": {
+        "ru": "Рыба-меч",
+        "en": "Swordfish",
+        "de": "Schwertfisch",
+        "es": "Pez espada",
+        "pt": "Espadarte"
+      },
+      "unitWeight": 56000,
+      "unitPrice": 4044,
+      "behavior_raw": "10,9,7,10",
+      "strength": 10,
+      "stamina": 9,
+      "intelligence": 7,
+      "aggression": 10,
+      "behavior_sum": 36,
+      "image": 2131231157,
+      "image_res_hex": "0x7f0801b5",
+      "image_res_name": "fish_72",
+      "image_apk_path": "res/ud1.png",
+      "xp_divisor_grams_d0d_a": 3089,
+      "legacy_123_unitPrice_d0d_h": 4044,
+      "legacy_123_unitWeight_d0d_i": 56000,
+      "md5": "b1c064b3d0b20470c6170a6276403dd0",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 8,
+          "pond_ui_index": 12,
+          "pond_name_ru": "пиратская бухта",
+          "min_weight_grams": 25000,
+          "max_weight_grams": 500000
+        }
+      ]
+    },
+    {
+      "id": 73,
+      "index_0based": 72,
+      "name": "Пеламида",
+      "names_i18n": {
+        "ru": "Пеламида",
+        "en": "Atlantic bonito",
+        "de": "Pelarnide",
+        "es": "Bonito del Atlántico",
+        "pt": "Sarrajão"
+      },
+      "unitWeight": 4356,
+      "unitPrice": 2000,
+      "behavior_raw": "6,7,5,8",
+      "strength": 6,
+      "stamina": 7,
+      "intelligence": 5,
+      "aggression": 8,
+      "behavior_sum": 26,
+      "image": 2131231158,
+      "image_res_hex": "0x7f0801b6",
+      "image_res_name": "fish_73",
+      "image_apk_path": "res/AC2.png",
+      "xp_divisor_grams_d0d_a": 81,
+      "legacy_123_unitPrice_d0d_h": 2000,
+      "legacy_123_unitWeight_d0d_i": 4356,
+      "md5": "901b5aa9bd6870a7a2b8b18b428618af",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 8,
+          "pond_ui_index": 12,
+          "pond_name_ru": "пиратская бухта",
+          "min_weight_grams": 1000,
+          "max_weight_grams": 7000
+        }
+      ]
+    },
+    {
+      "id": 74,
+      "index_0based": 73,
+      "name": "Пелингас",
+      "names_i18n": {
+        "ru": "Пелингас",
+        "en": "Haarder",
+        "de": "Harder",
+        "es": "Lisa so-iny",
+        "pt": "Tainha-lábio-vermelho"
+      },
+      "unitWeight": 2400,
+      "unitPrice": 1089,
+      "behavior_raw": "5,6,4,5",
+      "strength": 5,
+      "stamina": 6,
+      "intelligence": 4,
+      "aggression": 5,
+      "behavior_sum": 20,
+      "image": 2131231159,
+      "image_res_hex": "0x7f0801b7",
+      "image_res_name": "fish_74",
+      "image_apk_path": "res/dV.png",
+      "xp_divisor_grams_d0d_a": 67,
+      "legacy_123_unitPrice_d0d_h": 1089,
+      "legacy_123_unitWeight_d0d_i": 2400,
+      "md5": "0d3414446e87425a40a164632b6b69ed",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 8,
+          "pond_ui_index": 12,
+          "pond_name_ru": "пиратская бухта",
+          "min_weight_grams": 200,
+          "max_weight_grams": 5000
+        }
+      ]
+    },
+    {
+      "id": 75,
+      "index_0based": 74,
+      "name": "Сайда",
+      "names_i18n": {
+        "ru": "Сайда",
+        "en": "Pollock",
+        "de": "Seelachs",
+        "es": "Carbonero",
+        "pt": "Escamudo"
+      },
+      "unitWeight": 4400,
+      "unitPrice": 3100,
+      "behavior_raw": "6,7,5,7",
+      "strength": 6,
+      "stamina": 7,
+      "intelligence": 5,
+      "aggression": 7,
+      "behavior_sum": 25,
+      "image": 2131231160,
+      "image_res_hex": "0x7f0801b8",
+      "image_res_name": "fish_75",
+      "image_apk_path": "res/wA.png",
+      "xp_divisor_grams_d0d_a": 110,
+      "legacy_123_unitPrice_d0d_h": 3100,
+      "legacy_123_unitWeight_d0d_i": 4400,
+      "md5": "921d70ab33a77f53217abb7d5a6b09fb",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 8,
+          "pond_ui_index": 12,
+          "pond_name_ru": "пиратская бухта",
+          "min_weight_grams": 500,
+          "max_weight_grams": 11000
+        }
+      ]
+    },
+    {
+      "id": 76,
+      "index_0based": 75,
+      "name": "Скумбрия атлантическая",
+      "names_i18n": {
+        "ru": "Скумбрия атлантическая",
+        "en": "Atlantic mackerel",
+        "de": "Atlantische Makrele",
+        "es": "Xarda",
+        "pt": "Sarda"
+      },
+      "unitWeight": 1650,
+      "unitPrice": 1234,
+      "behavior_raw": "5,6,4,8",
+      "strength": 5,
+      "stamina": 6,
+      "intelligence": 4,
+      "aggression": 8,
+      "behavior_sum": 23,
+      "image": 2131231161,
+      "image_res_hex": "0x7f0801b9",
+      "image_res_name": "fish_76",
+      "image_apk_path": "res/m1.png",
+      "xp_divisor_grams_d0d_a": 23,
+      "legacy_123_unitPrice_d0d_h": 1234,
+      "legacy_123_unitWeight_d0d_i": 1650,
+      "md5": "edef90a44ada4a283330d538415c2f40",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 8,
+          "pond_ui_index": 12,
+          "pond_name_ru": "пиратская бухта",
+          "min_weight_grams": 250,
+          "max_weight_grams": 3500
+        }
+      ]
+    },
+    {
+      "id": 77,
+      "index_0based": 76,
+      "name": "Тунец",
+      "names_i18n": {
+        "ru": "Тунец",
+        "en": "Tuna",
+        "de": "Thun",
+        "es": "Atún",
+        "pt": "Atum"
+      },
+      "unitWeight": 27000,
+      "unitPrice": 3089,
+      "behavior_raw": "9,10,6,8",
+      "strength": 9,
+      "stamina": 10,
+      "intelligence": 6,
+      "aggression": 8,
+      "behavior_sum": 33,
+      "image": 2131231162,
+      "image_res_hex": "0x7f0801ba",
+      "image_res_name": "fish_77",
+      "image_apk_path": "res/wc1.png",
+      "xp_divisor_grams_d0d_a": 2678,
+      "legacy_123_unitPrice_d0d_h": 3089,
+      "legacy_123_unitWeight_d0d_i": 27000,
+      "md5": "79fc64430b82d5582e379fbda2ac9c09",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 8,
+          "pond_ui_index": 12,
+          "pond_name_ru": "пиратская бухта",
+          "min_weight_grams": 10000,
+          "max_weight_grams": 680000
+        }
+      ]
+    },
+    {
+      "id": 78,
+      "index_0based": 77,
+      "name": "Черный палтус",
+      "names_i18n": {
+        "ru": "Черный палтус",
+        "en": "Atlantic halibut",
+        "de": "Schwarzer Heilbutt",
+        "es": "Halibut negro",
+        "pt": "Alabote"
+      },
+      "unitWeight": 9800,
+      "unitPrice": 1090,
+      "behavior_raw": "7,8,5,6",
+      "strength": 7,
+      "stamina": 8,
+      "intelligence": 5,
+      "aggression": 6,
+      "behavior_sum": 26,
+      "image": 2131231163,
+      "image_res_hex": "0x7f0801bb",
+      "image_res_name": "fish_78",
+      "image_apk_path": "res/jz.png",
+      "xp_divisor_grams_d0d_a": 2500,
+      "legacy_123_unitPrice_d0d_h": 1090,
+      "legacy_123_unitWeight_d0d_i": 9800,
+      "md5": "885f349b3d14541afffc76cac922c614",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 8,
+          "pond_ui_index": 12,
+          "pond_name_ru": "пиратская бухта",
+          "min_weight_grams": 1000,
+          "max_weight_grams": 310000
+        }
+      ]
+    },
+    {
+      "id": 79,
+      "index_0based": 78,
+      "name": "Камбала морская",
+      "names_i18n": {
+        "ru": "Камбала морская",
+        "en": "European plaice",
+        "de": "Goldbutt",
+        "es": "Solla",
+        "pt": "Solha europeia"
+      },
+      "unitWeight": 2340,
+      "unitPrice": 789,
+      "behavior_raw": "4,5,4,4",
+      "strength": 4,
+      "stamina": 5,
+      "intelligence": 4,
+      "aggression": 4,
+      "behavior_sum": 17,
+      "image": 2131231164,
+      "image_res_hex": "0x7f0801bc",
+      "image_res_name": "fish_79",
+      "image_apk_path": "res/s8.png",
+      "xp_divisor_grams_d0d_a": 43,
+      "legacy_123_unitPrice_d0d_h": 789,
+      "legacy_123_unitWeight_d0d_i": 2340,
+      "md5": "00d4b6c29b02470956b3bc9f5a59d660",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 8,
+          "pond_ui_index": 12,
+          "pond_name_ru": "пиратская бухта",
+          "min_weight_grams": 500,
+          "max_weight_grams": 5000
+        }
+      ]
+    },
+    {
+      "id": 80,
+      "index_0based": 79,
+      "name": "Марлин",
+      "names_i18n": {
+        "ru": "Марлин",
+        "en": "Marlin",
+        "de": "Marlin",
+        "es": "Marlín",
+        "pt": "Marlim"
+      },
+      "unitWeight": 35000,
+      "unitPrice": 4065,
+      "behavior_raw": "10,10,8,10",
+      "strength": 10,
+      "stamina": 10,
+      "intelligence": 8,
+      "aggression": 10,
+      "behavior_sum": 38,
+      "image": 2131231166,
+      "image_res_hex": "0x7f0801be",
+      "image_res_name": "fish_80",
+      "image_apk_path": "res/aX1.png",
+      "xp_divisor_grams_d0d_a": 1640,
+      "legacy_123_unitPrice_d0d_h": 4065,
+      "legacy_123_unitWeight_d0d_i": 35000,
+      "md5": "f6fb43deb0f37e3e928a5e5f9612f72d",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 8,
+          "pond_ui_index": 12,
+          "pond_name_ru": "пиратская бухта",
+          "min_weight_grams": 15000,
+          "max_weight_grams": 220000
+        }
+      ]
+    },
+    {
+      "id": 81,
+      "index_0based": 80,
+      "name": "Тарпон",
+      "names_i18n": {
+        "ru": "Тарпон",
+        "en": "Tarpon",
+        "de": "Tarpun",
+        "es": "Tarpón",
+        "pt": "Tarpon"
+      },
+      "unitWeight": 25670,
+      "unitPrice": 2890,
+      "behavior_raw": "8,9,6,9",
+      "strength": 8,
+      "stamina": 9,
+      "intelligence": 6,
+      "aggression": 9,
+      "behavior_sum": 32,
+      "image": 2131231167,
+      "image_res_hex": "0x7f0801bf",
+      "image_res_name": "fish_81",
+      "image_apk_path": "res/An.png",
+      "xp_divisor_grams_d0d_a": 878,
+      "legacy_123_unitPrice_d0d_h": 2890,
+      "legacy_123_unitWeight_d0d_i": 25670,
+      "md5": "25f3870781840fb43c05064e85c104bd",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 8,
+          "pond_ui_index": 12,
+          "pond_name_ru": "пиратская бухта",
+          "min_weight_grams": 5000,
+          "max_weight_grams": 130000
+        }
+      ]
+    },
+    {
+      "id": 82,
+      "index_0based": 81,
+      "name": "Тунец желтоперый",
+      "names_i18n": {
+        "ru": "Тунец желтоперый",
+        "en": "Yellowfin tuna",
+        "de": "Gelbflossen-Thun",
+        "es": "Atún de aleta amarilla",
+        "pt": "Albacora"
+      },
+      "unitWeight": 2000,
+      "unitPrice": 110,
+      "behavior_raw": "7,8,5,7",
+      "strength": 7,
+      "stamina": 8,
+      "intelligence": 5,
+      "aggression": 7,
+      "behavior_sum": 27,
+      "image": 2131231168,
+      "image_res_hex": "0x7f0801c0",
+      "image_res_name": "fish_82",
+      "image_apk_path": "res/Fi.png",
+      "xp_divisor_grams_d0d_a": 1005,
+      "legacy_123_unitPrice_d0d_h": 110,
+      "legacy_123_unitWeight_d0d_i": 2000,
+      "md5": "ba06b3d0f82b1557de1b10bc5cced160",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 9,
+          "pond_ui_index": 14,
+          "pond_name_ru": "просторы океана",
+          "min_weight_grams": 5200,
+          "max_weight_grams": 205678
+        }
+      ]
+    },
+    {
+      "id": 83,
+      "index_0based": 82,
+      "name": "Полосатик малый",
+      "names_i18n": {
+        "ru": "Полосатик малый",
+        "en": "Common minke whale",
+        "de": "Finnwal",
+        "es": "Ballena enana",
+        "pt": "Baleia-anã"
+      },
+      "unitWeight": 190000,
+      "unitPrice": 1045,
+      "behavior_raw": "10,10,7,5",
+      "strength": 10,
+      "stamina": 10,
+      "intelligence": 7,
+      "aggression": 5,
+      "behavior_sum": 32,
+      "image": 2131231169,
+      "image_res_hex": "0x7f0801c1",
+      "image_res_name": "fish_83",
+      "image_apk_path": "res/AN.png",
+      "xp_divisor_grams_d0d_a": 15678,
+      "legacy_123_unitPrice_d0d_h": 1045,
+      "legacy_123_unitWeight_d0d_i": 190000,
+      "md5": "5bbe5ad3940a663bd36915d8adbdfb10",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 9,
+          "pond_ui_index": 14,
+          "pond_name_ru": "просторы океана",
+          "min_weight_grams": 50789,
+          "max_weight_grams": 2111000
+        }
+      ]
+    },
+    {
+      "id": 84,
+      "index_0based": 83,
+      "name": "Марлин черный",
+      "names_i18n": {
+        "ru": "Марлин черный",
+        "en": "Black marlin",
+        "de": "Schwarzer Marlin",
+        "es": "Marlín negro",
+        "pt": "Marlim-preto"
+      },
+      "unitWeight": 50000,
+      "unitPrice": 1567,
+      "behavior_raw": "10,10,8,10",
+      "strength": 10,
+      "stamina": 10,
+      "intelligence": 8,
+      "aggression": 10,
+      "behavior_sum": 38,
+      "image": 2131231170,
+      "image_res_hex": "0x7f0801c2",
+      "image_res_name": "fish_84",
+      "image_apk_path": "res/BZ.png",
+      "xp_divisor_grams_d0d_a": 2345,
+      "legacy_123_unitPrice_d0d_h": 1567,
+      "legacy_123_unitWeight_d0d_i": 50000,
+      "md5": "92efc127b5892ac55cb3942aaa59fe69",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 9,
+          "pond_ui_index": 14,
+          "pond_name_ru": "просторы океана",
+          "min_weight_grams": 13456,
+          "max_weight_grams": 910500
+        }
+      ]
+    },
+    {
+      "id": 85,
+      "index_0based": 84,
+      "name": "Кальмар гигантский",
+      "names_i18n": {
+        "ru": "Кальмар гигантский",
+        "en": "Giant squid",
+        "de": "Riesenkalmar",
+        "es": "Calamar gigante",
+        "pt": "Lula-gigante"
+      },
+      "unitWeight": 30000,
+      "unitPrice": 1023,
+      "behavior_raw": "8,9,7,8",
+      "strength": 8,
+      "stamina": 9,
+      "intelligence": 7,
+      "aggression": 8,
+      "behavior_sum": 32,
+      "image": 2131231171,
+      "image_res_hex": "0x7f0801c3",
+      "image_res_name": "fish_85",
+      "image_apk_path": "res/-0.png",
+      "xp_divisor_grams_d0d_a": 1456,
+      "legacy_123_unitPrice_d0d_h": 1023,
+      "legacy_123_unitWeight_d0d_i": 30000,
+      "md5": "dedb390fc0d279c69b197fc530fd248c",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 9,
+          "pond_ui_index": 14,
+          "pond_name_ru": "просторы океана",
+          "min_weight_grams": 11345,
+          "max_weight_grams": 1007000
+        }
+      ]
+    },
+    {
+      "id": 86,
+      "index_0based": 85,
+      "name": "Кашалот",
+      "names_i18n": {
+        "ru": "Кашалот",
+        "en": "Sperm whale",
+        "de": "Pottwal",
+        "es": "Cachalote",
+        "pt": "Cachalote"
+      },
+      "unitWeight": 200000,
+      "unitPrice": 4078,
+      "behavior_raw": "10,10,9,7",
+      "strength": 10,
+      "stamina": 10,
+      "intelligence": 9,
+      "aggression": 7,
+      "behavior_sum": 36,
+      "image": 2131231172,
+      "image_res_hex": "0x7f0801c4",
+      "image_res_name": "fish_86",
+      "image_apk_path": "res/yb.png",
+      "xp_divisor_grams_d0d_a": 10789,
+      "legacy_123_unitPrice_d0d_h": 4078,
+      "legacy_123_unitWeight_d0d_i": 200000,
+      "md5": "67bd1a0a380ea93c6623b1303be00d82",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 9,
+          "pond_ui_index": 14,
+          "pond_name_ru": "просторы океана",
+          "min_weight_grams": 159675,
+          "max_weight_grams": 2170000
+        }
+      ]
+    },
+    {
+      "id": 87,
+      "index_0based": 86,
+      "name": "Косатка",
+      "names_i18n": {
+        "ru": "Косатка",
+        "en": "Orca",
+        "de": "Schwertwal",
+        "es": "Orca",
+        "pt": "Orca"
+      },
+      "unitWeight": 150000,
+      "unitPrice": 3456,
+      "behavior_raw": "10,10,10,10",
+      "strength": 10,
+      "stamina": 10,
+      "intelligence": 10,
+      "aggression": 10,
+      "behavior_sum": 40,
+      "image": 2131231173,
+      "image_res_hex": "0x7f0801c5",
+      "image_res_name": "fish_87",
+      "image_apk_path": "res/qD.png",
+      "xp_divisor_grams_d0d_a": 7890,
+      "legacy_123_unitPrice_d0d_h": 3456,
+      "legacy_123_unitWeight_d0d_i": 150000,
+      "md5": "2570f7a5656760d7272a1ea6133e22aa",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 9,
+          "pond_ui_index": 14,
+          "pond_name_ru": "просторы океана",
+          "min_weight_grams": 75400,
+          "max_weight_grams": 2150000
+        }
+      ]
+    },
+    {
+      "id": 88,
+      "index_0based": 87,
+      "name": "Веслонос",
+      "names_i18n": {
+        "ru": "Веслонос",
+        "en": "Paddlefish",
+        "de": "Löffelstör",
+        "es": "Pez espátula",
+        "pt": "Peixe-espátula"
+      },
+      "unitWeight": 8000,
+      "unitPrice": 234,
+      "behavior_raw": "6,7,4,5",
+      "strength": 6,
+      "stamina": 7,
+      "intelligence": 4,
+      "aggression": 5,
+      "behavior_sum": 22,
+      "image": 2131231174,
+      "image_res_hex": "0x7f0801c6",
+      "image_res_name": "fish_88",
+      "image_apk_path": "res/In1.png",
+      "xp_divisor_grams_d0d_a": 2349,
+      "legacy_123_unitPrice_d0d_h": 234,
+      "legacy_123_unitWeight_d0d_i": 8000,
+      "md5": "b590cbb7a1ce9b2f5bff709473e91fb0",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 9,
+          "pond_ui_index": 14,
+          "pond_name_ru": "просторы океана",
+          "min_weight_grams": 16070,
+          "max_weight_grams": 610400
+        }
+      ]
+    },
+    {
+      "id": 89,
+      "index_0based": 88,
+      "name": "Акула полярная",
+      "names_i18n": {
+        "ru": "Акула полярная",
+        "en": "Greenland shark",
+        "de": "Grönlandhai",
+        "es": "Tiburón boreal",
+        "pt": "Tubarão-da-groenlândia"
+      },
+      "unitWeight": 10000,
+      "unitPrice": 134,
+      "behavior_raw": "9,9,7,9",
+      "strength": 9,
+      "stamina": 9,
+      "intelligence": 7,
+      "aggression": 9,
+      "behavior_sum": 34,
+      "image": 2131231175,
+      "image_res_hex": "0x7f0801c7",
+      "image_res_name": "fish_89",
+      "image_apk_path": "res/u0.png",
+      "xp_divisor_grams_d0d_a": 1367,
+      "legacy_123_unitPrice_d0d_h": 134,
+      "legacy_123_unitWeight_d0d_i": 10000,
+      "md5": "9ada92d632c5a4e720a7662a499165b5",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 9,
+          "pond_ui_index": 14,
+          "pond_name_ru": "просторы океана",
+          "min_weight_grams": 23456,
+          "max_weight_grams": 1245067
+        }
+      ]
+    },
+    {
+      "id": 90,
+      "index_0based": 89,
+      "name": "Тунец южный голубой",
+      "names_i18n": {
+        "ru": "Тунец южный голубой",
+        "en": "Southern bluefin tuna",
+        "de": "Südlicher Blauflossen-Thunfisch",
+        "es": "Atún de aleta azul",
+        "pt": "Atum azul do sul"
+      },
+      "unitWeight": 9000,
+      "unitPrice": 410,
+      "behavior_raw": "8,9,6,8",
+      "strength": 8,
+      "stamina": 9,
+      "intelligence": 6,
+      "aggression": 8,
+      "behavior_sum": 31,
+      "image": 2131231177,
+      "image_res_hex": "0x7f0801c9",
+      "image_res_name": "fish_90",
+      "image_apk_path": "res/Wn.png",
+      "xp_divisor_grams_d0d_a": 1144,
+      "legacy_123_unitPrice_d0d_h": 410,
+      "legacy_123_unitWeight_d0d_i": 9000,
+      "md5": "2323bbf68b04e2251e54370be9dc7d14",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 10,
+          "pond_ui_index": 13,
+          "pond_name_ru": "тропические воды",
+          "min_weight_grams": 9800,
+          "max_weight_grams": 240000
+        }
+      ]
+    },
+    {
+      "id": 91,
+      "index_0based": 90,
+      "name": "Мелкозубый пилорыл",
+      "names_i18n": {
+        "ru": "Мелкозубый пилорыл",
+        "en": "Largetooth sawfish",
+        "de": "Leichhardts Sägerochen",
+        "es": "Pez sierra de dientes cortos",
+        "pt": "Araguaguá"
+      },
+      "unitWeight": 35000,
+      "unitPrice": 1510,
+      "behavior_raw": "9,10,6,8",
+      "strength": 9,
+      "stamina": 10,
+      "intelligence": 6,
+      "aggression": 8,
+      "behavior_sum": 33,
+      "image": 2131231178,
+      "image_res_hex": "0x7f0801ca",
+      "image_res_name": "fish_91",
+      "image_apk_path": "res/QU.png",
+      "xp_divisor_grams_d0d_a": 2050,
+      "legacy_123_unitPrice_d0d_h": 1510,
+      "legacy_123_unitWeight_d0d_i": 35000,
+      "md5": "ed0ecfea6c9407143c2ec2975ae45114",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 10,
+          "pond_ui_index": 13,
+          "pond_name_ru": "тропические воды",
+          "min_weight_grams": 19540,
+          "max_weight_grams": 590000
+        }
+      ]
+    },
+    {
+      "id": 92,
+      "index_0based": 91,
+      "name": "Пагр розовый",
+      "names_i18n": {
+        "ru": "Пагр розовый",
+        "en": "Silver seabream",
+        "de": "Schnapper",
+        "es": "Pargo japonés",
+        "pt": "Madai"
+      },
+      "unitWeight": 7000,
+      "unitPrice": 990,
+      "behavior_raw": "6,7,5,6",
+      "strength": 6,
+      "stamina": 7,
+      "intelligence": 5,
+      "aggression": 6,
+      "behavior_sum": 24,
+      "image": 2131231179,
+      "image_res_hex": "0x7f0801cb",
+      "image_res_name": "fish_92",
+      "image_apk_path": "res/Bi.png",
+      "xp_divisor_grams_d0d_a": 177,
+      "legacy_123_unitPrice_d0d_h": 990,
+      "legacy_123_unitWeight_d0d_i": 7000,
+      "md5": "5267737e7385079082568b3cd3c4b6e0",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 10,
+          "pond_ui_index": 13,
+          "pond_name_ru": "тропические воды",
+          "min_weight_grams": 5414,
+          "max_weight_grams": 17154
+        }
+      ]
+    },
+    {
+      "id": 93,
+      "index_0based": 92,
+      "name": "Сериола полосатая",
+      "names_i18n": {
+        "ru": "Сериола полосатая",
+        "en": "Yellowtail amberjack",
+        "de": "Gelbschwanzmakrele",
+        "es": "Hamachi",
+        "pt": "Seriola quinqueradiata"
+      },
+      "unitWeight": 12000,
+      "unitPrice": 1092,
+      "behavior_raw": "7,8,6,7",
+      "strength": 7,
+      "stamina": 8,
+      "intelligence": 6,
+      "aggression": 7,
+      "behavior_sum": 28,
+      "image": 2131231180,
+      "image_res_hex": "0x7f0801cc",
+      "image_res_name": "fish_93",
+      "image_apk_path": "res/HC.png",
+      "xp_divisor_grams_d0d_a": 655,
+      "legacy_123_unitPrice_d0d_h": 1092,
+      "legacy_123_unitWeight_d0d_i": 12000,
+      "md5": "76bead2ebfb5def09f1c8da15c49f840",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 10,
+          "pond_ui_index": 13,
+          "pond_name_ru": "тропические воды",
+          "min_weight_grams": 10000,
+          "max_weight_grams": 95700
+        }
+      ]
+    },
+    {
+      "id": 94,
+      "index_0based": 93,
+      "name": "Каранкс золотой",
+      "names_i18n": {
+        "ru": "Каранкс золотой",
+        "en": "Golden trevally",
+        "de": "Goldmakrele",
+        "es": "Caranx dorado",
+        "pt": "Xaréu-dourado"
+      },
+      "unitWeight": 1400,
+      "unitPrice": 610,
+      "behavior_raw": "6,7,5,8",
+      "strength": 6,
+      "stamina": 7,
+      "intelligence": 5,
+      "aggression": 8,
+      "behavior_sum": 26,
+      "image": 2131231181,
+      "image_res_hex": "0x7f0801cd",
+      "image_res_name": "fish_94",
+      "image_apk_path": "res/bZ.png",
+      "xp_divisor_grams_d0d_a": 144,
+      "legacy_123_unitPrice_d0d_h": 610,
+      "legacy_123_unitWeight_d0d_i": 1400,
+      "md5": "b61a228a3500bd5e39e6f72183ed15dd",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 10,
+          "pond_ui_index": 13,
+          "pond_name_ru": "тропические воды",
+          "min_weight_grams": 900,
+          "max_weight_grams": 14512
+        }
+      ]
+    },
+    {
+      "id": 95,
+      "index_0based": 94,
+      "name": "Каранкс черный",
+      "names_i18n": {
+        "ru": "Каранкс черный",
+        "en": "Black trevally",
+        "de": "Schwarze Makrele",
+        "es": "Caranx negro",
+        "pt": "Xaréu-preto"
+      },
+      "unitWeight": 2200,
+      "unitPrice": 910,
+      "behavior_raw": "7,8,6,9",
+      "strength": 7,
+      "stamina": 8,
+      "intelligence": 6,
+      "aggression": 9,
+      "behavior_sum": 30,
+      "image": 2131231182,
+      "image_res_hex": "0x7f0801ce",
+      "image_res_name": "fish_95",
+      "image_apk_path": "res/qq.png",
+      "xp_divisor_grams_d0d_a": 154,
+      "legacy_123_unitPrice_d0d_h": 910,
+      "legacy_123_unitWeight_d0d_i": 2200,
+      "md5": "69464b68426e9824168c8be73db9b782",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 10,
+          "pond_ui_index": 13,
+          "pond_name_ru": "тропические воды",
+          "min_weight_grams": 1650,
+          "max_weight_grams": 17455
+        }
+      ]
+    },
+    {
+      "id": 96,
+      "index_0based": 95,
+      "name": "Парусник",
+      "names_i18n": {
+        "ru": "Парусник",
+        "en": "Sailfish",
+        "de": "Fächerfisch",
+        "es": "Pez vela",
+        "pt": "Peixe-vela"
+      },
+      "unitWeight": 15000,
+      "unitPrice": 1400,
+      "behavior_raw": "9,9,7,10",
+      "strength": 9,
+      "stamina": 9,
+      "intelligence": 7,
+      "aggression": 10,
+      "behavior_sum": 35,
+      "image": 2131231183,
+      "image_res_hex": "0x7f0801cf",
+      "image_res_name": "fish_96",
+      "image_apk_path": "res/sh.png",
+      "xp_divisor_grams_d0d_a": 615,
+      "legacy_123_unitPrice_d0d_h": 1400,
+      "legacy_123_unitWeight_d0d_i": 15000,
+      "md5": "8c8ca596e4b1327344c7b6d20bd7fb25",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 10,
+          "pond_ui_index": 13,
+          "pond_name_ru": "тропические воды",
+          "min_weight_grams": 12070,
+          "max_weight_grams": 99500
+        }
+      ]
+    },
+    {
+      "id": 97,
+      "index_0based": 96,
+      "name": "Групер гигантский",
+      "names_i18n": {
+        "ru": "Групер гигантский",
+        "en": "Giant grouper",
+        "de": "Riesenzackenbarsch",
+        "es": "Mero gigante",
+        "pt": "Mero"
+      },
+      "unitWeight": 22000,
+      "unitPrice": 1120,
+      "behavior_raw": "9,10,6,8",
+      "strength": 9,
+      "stamina": 10,
+      "intelligence": 6,
+      "aggression": 8,
+      "behavior_sum": 33,
+      "image": 2131231184,
+      "image_res_hex": "0x7f0801d0",
+      "image_res_name": "fish_97",
+      "image_apk_path": "res/ng.png",
+      "xp_divisor_grams_d0d_a": 1785,
+      "legacy_123_unitPrice_d0d_h": 1120,
+      "legacy_123_unitWeight_d0d_i": 22000,
+      "md5": "dc2344af093965d89f0dc7a4758f5fc0",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 10,
+          "pond_ui_index": 13,
+          "pond_name_ru": "тропические воды",
+          "min_weight_grams": 17000,
+          "max_weight_grams": 394500
+        }
+      ]
+    },
+    {
+      "id": 98,
+      "index_0based": 97,
+      "name": "Акула-мако",
+      "names_i18n": {
+        "ru": "Акула-мако",
+        "en": "Shortfin mako shark",
+        "de": "Kurzflossen-Mako",
+        "es": "Tiburón mako",
+        "pt": "Tubarão-mako"
+      },
+      "unitWeight": 25000,
+      "unitPrice": 910,
+      "behavior_raw": "10,9,8,10",
+      "strength": 10,
+      "stamina": 9,
+      "intelligence": 8,
+      "aggression": 10,
+      "behavior_sum": 37,
+      "image": 2131231185,
+      "image_res_hex": "0x7f0801d1",
+      "image_res_name": "fish_98",
+      "image_apk_path": "res/e91.png",
+      "xp_divisor_grams_d0d_a": 1447,
+      "legacy_123_unitPrice_d0d_h": 910,
+      "legacy_123_unitWeight_d0d_i": 25000,
+      "md5": "c9c81d9de4a60ee92b20fba6cdf4153b",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 10,
+          "pond_ui_index": 13,
+          "pond_name_ru": "тропические воды",
+          "min_weight_grams": 21000,
+          "max_weight_grams": 550000
+        }
+      ]
+    },
+    {
+      "id": 99,
+      "index_0based": 98,
+      "name": "Тигровая акула",
+      "names_i18n": {
+        "ru": "Тигровая акула",
+        "en": "Tiger shark",
+        "de": "Tigerhai",
+        "es": "Tiburón tigre",
+        "pt": "Tubarão-tigre"
+      },
+      "unitWeight": 55000,
+      "unitPrice": 2512,
+      "behavior_raw": "10,10,7,10",
+      "strength": 10,
+      "stamina": 10,
+      "intelligence": 7,
+      "aggression": 10,
+      "behavior_sum": 37,
+      "image": 2131231186,
+      "image_res_hex": "0x7f0801d2",
+      "image_res_name": "fish_99",
+      "image_apk_path": "res/Sx.png",
+      "xp_divisor_grams_d0d_a": 1972,
+      "legacy_123_unitPrice_d0d_h": 2512,
+      "legacy_123_unitWeight_d0d_i": 55000,
+      "md5": "1f863e52a5ee56410b28247ed6531323",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 10,
+          "pond_ui_index": 13,
+          "pond_name_ru": "тропические воды",
+          "min_weight_grams": 35000,
+          "max_weight_grams": 795000
+        }
+      ]
+    },
+    {
+      "id": 100,
+      "index_0based": 99,
+      "name": "Рыба-луна",
+      "names_i18n": {
+        "ru": "Рыба-луна",
+        "en": "Ocean sunfish",
+        "de": "Mondfisch",
+        "es": "Pez luna",
+        "pt": "Peixe-lua"
+      },
+      "unitWeight": 120000,
+      "unitPrice": 2454,
+      "behavior_raw": "7,10,3,3",
+      "strength": 7,
+      "stamina": 10,
+      "intelligence": 3,
+      "aggression": 3,
+      "behavior_sum": 23,
+      "image": 2131231048,
+      "image_res_hex": "0x7f080148",
+      "image_res_name": "fish_100",
+      "image_apk_path": "res/0_.png",
+      "xp_divisor_grams_d0d_a": 7438,
+      "legacy_123_unitPrice_d0d_h": 2454,
+      "legacy_123_unitWeight_d0d_i": 120000,
+      "md5": "9d27858685ef59b4a313593151de93f2",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 10,
+          "pond_ui_index": 13,
+          "pond_name_ru": "тропические воды",
+          "min_weight_grams": 71000,
+          "max_weight_grams": 2100000
+        }
+      ]
+    },
+    {
+      "id": 101,
+      "index_0based": 100,
+      "name": "Окунь нильский",
+      "names_i18n": {
+        "ru": "Окунь нильский",
+        "en": "Nile perch",
+        "de": "Nilbarsch",
+        "es": "Perca del Nilo",
+        "pt": "Perca-do-nilo"
+      },
+      "unitWeight": 9000,
+      "unitPrice": 910,
+      "behavior_raw": "7,8,6,9",
+      "strength": 7,
+      "stamina": 8,
+      "intelligence": 6,
+      "aggression": 9,
+      "behavior_sum": 30,
+      "image": 2131231049,
+      "image_res_hex": "0x7f080149",
+      "image_res_name": "fish_101",
+      "image_apk_path": "res/pC.png",
+      "xp_divisor_grams_d0d_a": 750,
+      "legacy_123_unitPrice_d0d_h": 910,
+      "legacy_123_unitWeight_d0d_i": 9000,
+      "md5": "77bace11541c3337d171104875d90b60",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 11,
+          "pond_ui_index": 7,
+          "pond_name_ru": "оазис",
+          "min_weight_grams": 12200,
+          "max_weight_grams": 212000
+        }
+      ]
+    },
+    {
+      "id": 102,
+      "index_0based": 101,
+      "name": "Тигровая рыба большая",
+      "names_i18n": {
+        "ru": "Тигровая рыба большая",
+        "en": "Hydrocynus goliath",
+        "de": "Riesen-Tigersalmler",
+        "es": "El pez tigre",
+        "pt": "Peixe-tigre-golias"
+      },
+      "unitWeight": 4100,
+      "unitPrice": 700,
+      "behavior_raw": "8,8,7,10",
+      "strength": 8,
+      "stamina": 8,
+      "intelligence": 7,
+      "aggression": 10,
+      "behavior_sum": 33,
+      "image": 2131231050,
+      "image_res_hex": "0x7f08014a",
+      "image_res_name": "fish_102",
+      "image_apk_path": "res/uH.png",
+      "xp_divisor_grams_d0d_a": 290,
+      "legacy_123_unitPrice_d0d_h": 700,
+      "legacy_123_unitWeight_d0d_i": 4100,
+      "md5": "7a84dff9980891e1ec19a70c9d6daf84",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 11,
+          "pond_ui_index": 7,
+          "pond_name_ru": "оазис",
+          "min_weight_grams": 5400,
+          "max_weight_grams": 49000
+        }
+      ]
+    },
+    {
+      "id": 103,
+      "index_0based": 102,
+      "name": "Сом вунду",
+      "names_i18n": {
+        "ru": "Сом вунду",
+        "en": "Vundu",
+        "de": "Wunduwels",
+        "es": "Vundu",
+        "pt": "Vundu"
+      },
+      "unitWeight": 4500,
+      "unitPrice": 610,
+      "behavior_raw": "7,8,5,7",
+      "strength": 7,
+      "stamina": 8,
+      "intelligence": 5,
+      "aggression": 7,
+      "behavior_sum": 27,
+      "image": 2131231051,
+      "image_res_hex": "0x7f08014b",
+      "image_res_name": "fish_103",
+      "image_apk_path": "res/yJ.png",
+      "xp_divisor_grams_d0d_a": 289,
+      "legacy_123_unitPrice_d0d_h": 610,
+      "legacy_123_unitWeight_d0d_i": 4500,
+      "md5": "c6b9931bcec2f5c9b73e7a8fd9d6301b",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 11,
+          "pond_ui_index": 7,
+          "pond_name_ru": "оазис",
+          "min_weight_grams": 1500,
+          "max_weight_grams": 55100
+        }
+      ]
+    },
+    {
+      "id": 104,
+      "index_0based": 103,
+      "name": "Электрический сом",
+      "names_i18n": {
+        "ru": "Электрический сом",
+        "en": "Electric catfish",
+        "de": "Zitterwels",
+        "es": "Bagre eléctrico",
+        "pt": "Bagre elétrico"
+      },
+      "unitWeight": 1550,
+      "unitPrice": 430,
+      "behavior_raw": "5,7,6,8",
+      "strength": 5,
+      "stamina": 7,
+      "intelligence": 6,
+      "aggression": 8,
+      "behavior_sum": 26,
+      "image": 2131231052,
+      "image_res_hex": "0x7f08014c",
+      "image_res_name": "fish_104",
+      "image_apk_path": "res/6r.png",
+      "xp_divisor_grams_d0d_a": 250,
+      "legacy_123_unitPrice_d0d_h": 430,
+      "legacy_123_unitWeight_d0d_i": 1550,
+      "md5": "44684ff1a93690299bbfd9d5aa4d2543",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 11,
+          "pond_ui_index": 7,
+          "pond_name_ru": "оазис",
+          "min_weight_grams": 650,
+          "max_weight_grams": 23250
+        }
+      ]
+    },
+    {
+      "id": 105,
+      "index_0based": 104,
+      "name": "Гетеротис нильский",
+      "names_i18n": {
+        "ru": "Гетеротис нильский",
+        "en": "Heterotis",
+        "de": "Afrikanischer Knochenzüngler",
+        "es": "Arowana africano",
+        "pt": "African arowana"
+      },
+      "unitWeight": 1400,
+      "unitPrice": 380,
+      "behavior_raw": "4,5,4,5",
+      "strength": 4,
+      "stamina": 5,
+      "intelligence": 4,
+      "aggression": 5,
+      "behavior_sum": 18,
+      "image": 2131231053,
+      "image_res_hex": "0x7f08014d",
+      "image_res_name": "fish_105",
+      "image_apk_path": "res/Fe1.png",
+      "xp_divisor_grams_d0d_a": 198,
+      "legacy_123_unitPrice_d0d_h": 380,
+      "legacy_123_unitWeight_d0d_i": 1400,
+      "md5": "c0d6b7fcb407479ac6bac952a6354c64",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 11,
+          "pond_ui_index": 7,
+          "pond_name_ru": "оазис",
+          "min_weight_grams": 350,
+          "max_weight_grams": 12100
+        }
+      ]
+    },
+    {
+      "id": 106,
+      "index_0based": 105,
+      "name": "Сом жирафовый",
+      "names_i18n": {
+        "ru": "Сом жирафовый",
+        "en": "Giraffe catfish",
+        "de": "Giraffenwels",
+        "es": "Bagre jirafa",
+        "pt": "Giraffe bagfish"
+      },
+      "unitWeight": 2000,
+      "unitPrice": 910,
+      "behavior_raw": "6,7,5,6",
+      "strength": 6,
+      "stamina": 7,
+      "intelligence": 5,
+      "aggression": 6,
+      "behavior_sum": 24,
+      "image": 2131231054,
+      "image_res_hex": "0x7f08014e",
+      "image_res_name": "fish_106",
+      "image_apk_path": "res/7N1.png",
+      "xp_divisor_grams_d0d_a": 155,
+      "legacy_123_unitPrice_d0d_h": 910,
+      "legacy_123_unitWeight_d0d_i": 2000,
+      "md5": "782abd26db7771214fb8c79224aabd47",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 11,
+          "pond_ui_index": 7,
+          "pond_name_ru": "оазис",
+          "min_weight_grams": 250,
+          "max_weight_grams": 3600
+        }
+      ]
+    },
+    {
+      "id": 107,
+      "index_0based": 106,
+      "name": "Мраморный протоптер",
+      "names_i18n": {
+        "ru": "Мраморный протоптер",
+        "en": "Marbled lungfish",
+        "de": "Äthiopischer Lungenfisch",
+        "es": "Pez pulmonado marmoleado",
+        "pt": "Peixe pulmonar marmoreado"
+      },
+      "unitWeight": 3000,
+      "unitPrice": 800,
+      "behavior_raw": "5,9,4,6",
+      "strength": 5,
+      "stamina": 9,
+      "intelligence": 4,
+      "aggression": 6,
+      "behavior_sum": 24,
+      "image": 2131231055,
+      "image_res_hex": "0x7f08014f",
+      "image_res_name": "fish_107",
+      "image_apk_path": "res/6t.png",
+      "xp_divisor_grams_d0d_a": 170,
+      "legacy_123_unitPrice_d0d_h": 800,
+      "legacy_123_unitWeight_d0d_i": 3000,
+      "md5": "c1a475b474f9d9b0dd3bc521f7ef6d46",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 11,
+          "pond_ui_index": 7,
+          "pond_name_ru": "оазис",
+          "min_weight_grams": 650,
+          "max_weight_grams": 17800
+        }
+      ]
+    },
+    {
+      "id": 108,
+      "index_0based": 107,
+      "name": "Бишир",
+      "names_i18n": {
+        "ru": "Бишир",
+        "en": "Nile bichir",
+        "de": "Nil-Flösselhecht",
+        "es": "Nilo bichir",
+        "pt": "Peixe-manel"
+      },
+      "unitWeight": 3700,
+      "unitPrice": 900,
+      "behavior_raw": "6,7,5,6",
+      "strength": 6,
+      "stamina": 7,
+      "intelligence": 5,
+      "aggression": 6,
+      "behavior_sum": 24,
+      "image": 2131231056,
+      "image_res_hex": "0x7f080150",
+      "image_res_name": "fish_108",
+      "image_apk_path": "res/Bm.png",
+      "xp_divisor_grams_d0d_a": 117,
+      "legacy_123_unitPrice_d0d_h": 900,
+      "legacy_123_unitWeight_d0d_i": 3700,
+      "md5": "26b6b57d27cc5fab69bb14672e43eb18",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 11,
+          "pond_ui_index": 7,
+          "pond_name_ru": "оазис",
+          "min_weight_grams": 200,
+          "max_weight_grams": 2450
+        }
+      ]
+    },
+    {
+      "id": 109,
+      "index_0based": 108,
+      "name": "Нильская тиляпия",
+      "names_i18n": {
+        "ru": "Нильская тиляпия",
+        "en": "Nile tilapia",
+        "de": "Nilbuntbarsch",
+        "es": "Tilapia del Nilo",
+        "pt": "Tilápia-do-nilo"
+      },
+      "unitWeight": 1200,
+      "unitPrice": 910,
+      "behavior_raw": "4,5,4,5",
+      "strength": 4,
+      "stamina": 5,
+      "intelligence": 4,
+      "aggression": 5,
+      "behavior_sum": 18,
+      "image": 2131231057,
+      "image_res_hex": "0x7f080151",
+      "image_res_name": "fish_109",
+      "image_apk_path": "res/5j.png",
+      "xp_divisor_grams_d0d_a": 95,
+      "legacy_123_unitPrice_d0d_h": 910,
+      "legacy_123_unitWeight_d0d_i": 1200,
+      "md5": "77fc61fb22ad799724ca7912c569990e",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 11,
+          "pond_ui_index": 7,
+          "pond_name_ru": "оазис",
+          "min_weight_grams": 120,
+          "max_weight_grams": 1800
+        }
+      ]
+    },
+    {
+      "id": 110,
+      "index_0based": 109,
+      "name": "Мормир длиннорылый",
+      "names_i18n": {
+        "ru": "Мормир длиннорылый",
+        "en": "Eastern bottlenose mormyrid",
+        "de": "Flaschenmaul-Nilhecht",
+        "es": "Mormyrus longirostris",
+        "pt": "Mormyrus longirostris"
+      },
+      "unitWeight": 1500,
+      "unitPrice": 880,
+      "behavior_raw": "5,6,5,6",
+      "strength": 5,
+      "stamina": 6,
+      "intelligence": 5,
+      "aggression": 6,
+      "behavior_sum": 22,
+      "image": 2131231059,
+      "image_res_hex": "0x7f080153",
+      "image_res_name": "fish_110",
+      "image_apk_path": "res/UH.png",
+      "xp_divisor_grams_d0d_a": 106,
+      "legacy_123_unitPrice_d0d_h": 880,
+      "legacy_123_unitWeight_d0d_i": 1500,
+      "md5": "e36f0c452e7d7c549040f28f658acc54",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 11,
+          "pond_ui_index": 7,
+          "pond_name_ru": "оазис",
+          "min_weight_grams": 150,
+          "max_weight_grams": 1850
+        }
+      ]
+    },
+    {
+      "id": 111,
+      "index_0based": 110,
+      "name": "Цитаринус цитарус",
+      "names_i18n": {
+        "ru": "Цитаринус цитарус",
+        "en": "Citharinus citharus",
+        "de": "Afrikanischer Hochrückensalmler",
+        "es": "Citharinus citharus",
+        "pt": "Citharinus citharus"
+      },
+      "unitWeight": 5100,
+      "unitPrice": 850,
+      "behavior_raw": "7,8,5,7",
+      "strength": 7,
+      "stamina": 8,
+      "intelligence": 5,
+      "aggression": 7,
+      "behavior_sum": 27,
+      "image": 2131231060,
+      "image_res_hex": "0x7f080154",
+      "image_res_name": "fish_111",
+      "image_apk_path": "res/Pq.png",
+      "xp_divisor_grams_d0d_a": 178,
+      "legacy_123_unitPrice_d0d_h": 850,
+      "legacy_123_unitWeight_d0d_i": 5100,
+      "md5": "32c0a7b9aad4dc5ba7cdd0df513ff348",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 11,
+          "pond_ui_index": 7,
+          "pond_name_ru": "оазис",
+          "min_weight_grams": 220,
+          "max_weight_grams": 7150
+        }
+      ]
+    },
+    {
+      "id": 112,
+      "index_0based": 111,
+      "name": "Нильский крокодил",
+      "names_i18n": {
+        "ru": "Нильский крокодил",
+        "en": "Nile crocodile",
+        "de": "Nilkrokodil",
+        "es": "Сocodrilo del Nilo",
+        "pt": "Crocodilo-do-nilo"
+      },
+      "unitWeight": 35000,
+      "unitPrice": 7590,
+      "behavior_raw": "10,10,8,10",
+      "strength": 10,
+      "stamina": 10,
+      "intelligence": 8,
+      "aggression": 10,
+      "behavior_sum": 38,
+      "image": 2131231061,
+      "image_res_hex": "0x7f080155",
+      "image_res_name": "fish_112",
+      "image_apk_path": "res/OU.png",
+      "xp_divisor_grams_d0d_a": 1590,
+      "legacy_123_unitPrice_d0d_h": 7590,
+      "legacy_123_unitWeight_d0d_i": 35000,
+      "md5": "e72c7c42b44f058ac0f33fd02f961f32",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 11,
+          "pond_ui_index": 7,
+          "pond_name_ru": "оазис",
+          "min_weight_grams": 21500,
+          "max_weight_grams": 721000
+        }
+      ]
+    },
+    {
+      "id": 113,
+      "index_0based": 112,
+      "name": "Скат пресноводный гигантский",
+      "names_i18n": {
+        "ru": "Скат пресноводный гигантский",
+        "en": "Giant freshwater stingray",
+        "de": "Riesen-Süßwasserstechrochen",
+        "es": "Raya gigante chaophraya",
+        "pt": "Arraia gigante"
+      },
+      "unitWeight": 19500,
+      "unitPrice": 1270,
+      "behavior_raw": "8,9,7,8",
+      "strength": 8,
+      "stamina": 9,
+      "intelligence": 7,
+      "aggression": 8,
+      "behavior_sum": 32,
+      "image": 2131231062,
+      "image_res_hex": "0x7f080156",
+      "image_res_name": "fish_113",
+      "image_apk_path": "res/xw.png",
+      "xp_divisor_grams_d0d_a": 1350,
+      "legacy_123_unitPrice_d0d_h": 1270,
+      "legacy_123_unitWeight_d0d_i": 19500,
+      "md5": "3902c11243375afd859b49bdffe25cb7",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 12,
+          "pond_ui_index": 9,
+          "pond_name_ru": "тихий омут",
+          "min_weight_grams": 18300,
+          "max_weight_grams": 590500
+        }
+      ]
+    },
+    {
+      "id": 114,
+      "index_0based": 113,
+      "name": "Арапайма",
+      "names_i18n": {
+        "ru": "Арапайма",
+        "en": "Arapaima",
+        "de": "Arapaima",
+        "es": "Paiche",
+        "pt": "Pirarucú"
+      },
+      "unitWeight": 7100,
+      "unitPrice": 740,
+      "behavior_raw": "8,9,6,8",
+      "strength": 8,
+      "stamina": 9,
+      "intelligence": 6,
+      "aggression": 8,
+      "behavior_sum": 31,
+      "image": 2131231063,
+      "image_res_hex": "0x7f080157",
+      "image_res_name": "fish_114",
+      "image_apk_path": "res/j21.png",
+      "xp_divisor_grams_d0d_a": 850,
+      "legacy_123_unitPrice_d0d_h": 740,
+      "legacy_123_unitWeight_d0d_i": 7100,
+      "md5": "e0fbb49e99f6c9b39d612cc0562342cd",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 12,
+          "pond_ui_index": 9,
+          "pond_name_ru": "тихий омут",
+          "min_weight_grams": 14350,
+          "max_weight_grams": 220200
+        }
+      ]
+    },
+    {
+      "id": 115,
+      "index_0based": 114,
+      "name": "Гигантский шильбовый сом",
+      "names_i18n": {
+        "ru": "Гигантский шильбовый сом",
+        "en": "Mekong giant catfish",
+        "de": "Mekong-Riesenwels",
+        "es": "Siluro gigante",
+        "pt": "Peixe-gato-gigante"
+      },
+      "unitWeight": 8500,
+      "unitPrice": 670,
+      "behavior_raw": "9,9,6,7",
+      "strength": 9,
+      "stamina": 9,
+      "intelligence": 6,
+      "aggression": 7,
+      "behavior_sum": 31,
+      "image": 2131231064,
+      "image_res_hex": "0x7f080158",
+      "image_res_name": "fish_115",
+      "image_apk_path": "res/YP.png",
+      "xp_divisor_grams_d0d_a": 950,
+      "legacy_123_unitPrice_d0d_h": 670,
+      "legacy_123_unitWeight_d0d_i": 8500,
+      "md5": "912d522fa663f56bc18cfa3f2228bab4",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 12,
+          "pond_ui_index": 9,
+          "pond_name_ru": "тихий омут",
+          "min_weight_grams": 19500,
+          "max_weight_grams": 347850
+        }
+      ]
+    },
+    {
+      "id": 116,
+      "index_0based": 115,
+      "name": "Арована азиатская",
+      "names_i18n": {
+        "ru": "Арована азиатская",
+        "en": "Asian arowana",
+        "de": "Asiatischer Gabelbart",
+        "es": "Arowana asiático",
+        "pt": "Aruanã-dourado"
+      },
+      "unitWeight": 1000,
+      "unitPrice": 230,
+      "behavior_raw": "4,5,4,6",
+      "strength": 4,
+      "stamina": 5,
+      "intelligence": 4,
+      "aggression": 6,
+      "behavior_sum": 19,
+      "image": 2131231065,
+      "image_res_hex": "0x7f080159",
+      "image_res_name": "fish_116",
+      "image_apk_path": "res/kt1.png",
+      "xp_divisor_grams_d0d_a": 202,
+      "legacy_123_unitPrice_d0d_h": 230,
+      "legacy_123_unitWeight_d0d_i": 1000,
+      "md5": "b29f2c569329e338e16ab375ccdee6ef",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 12,
+          "pond_ui_index": 9,
+          "pond_name_ru": "тихий омут",
+          "min_weight_grams": 255,
+          "max_weight_grams": 10800
+        }
+      ]
+    },
+    {
+      "id": 117,
+      "index_0based": 116,
+      "name": "Рыба-нож королевская",
+      "names_i18n": {
+        "ru": "Рыба-нож королевская",
+        "en": "Royal featherback",
+        "de": "Indochina-Federmesserfisch",
+        "es": "Pez cuchillo real",
+        "pt": "Peixe-faca-real"
+      },
+      "unitWeight": 1400,
+      "unitPrice": 310,
+      "behavior_raw": "5,6,5,7",
+      "strength": 5,
+      "stamina": 6,
+      "intelligence": 5,
+      "aggression": 7,
+      "behavior_sum": 23,
+      "image": 2131231066,
+      "image_res_hex": "0x7f08015a",
+      "image_res_name": "fish_117",
+      "image_apk_path": "res/zQ.png",
+      "xp_divisor_grams_d0d_a": 161,
+      "legacy_123_unitPrice_d0d_h": 310,
+      "legacy_123_unitWeight_d0d_i": 1400,
+      "md5": "b38ce2777eadcce02ce6d1ccb1a3a650",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 12,
+          "pond_ui_index": 9,
+          "pond_name_ru": "тихий омут",
+          "min_weight_grams": 654,
+          "max_weight_grams": 15340
+        }
+      ]
+    },
+    {
+      "id": 118,
+      "index_0based": 117,
+      "name": "Паку бурый",
+      "names_i18n": {
+        "ru": "Паку бурый",
+        "en": "Tambaqui",
+        "de": "Schwarzer Pacu",
+        "es": "Cachama",
+        "pt": "Tambaqui"
+      },
+      "unitWeight": 2000,
+      "unitPrice": 295,
+      "behavior_raw": "5,6,4,6",
+      "strength": 5,
+      "stamina": 6,
+      "intelligence": 4,
+      "aggression": 6,
+      "behavior_sum": 21,
+      "image": 2131231067,
+      "image_res_hex": "0x7f08015b",
+      "image_res_name": "fish_118",
+      "image_apk_path": "res/r2.png",
+      "xp_divisor_grams_d0d_a": 480,
+      "legacy_123_unitPrice_d0d_h": 295,
+      "legacy_123_unitWeight_d0d_i": 2000,
+      "md5": "f46ebc824e57cef7460e7623231ef0b6",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 12,
+          "pond_ui_index": 9,
+          "pond_name_ru": "тихий омут",
+          "min_weight_grams": 1244,
+          "max_weight_grams": 44380
+        }
+      ]
+    },
+    {
+      "id": 119,
+      "index_0based": 118,
+      "name": "Змееголов гигантский",
+      "names_i18n": {
+        "ru": "Змееголов гигантский",
+        "en": "Giant snakehead",
+        "de": "Großer Schlangenkopffisch",
+        "es": "Cabeza de serpiente gigante",
+        "pt": "Gigante Snakehead"
+      },
+      "unitWeight": 3000,
+      "unitPrice": 590,
+      "behavior_raw": "7,8,6,9",
+      "strength": 7,
+      "stamina": 8,
+      "intelligence": 6,
+      "aggression": 9,
+      "behavior_sum": 30,
+      "image": 2131231068,
+      "image_res_hex": "0x7f08015c",
+      "image_res_name": "fish_119",
+      "image_apk_path": "res/HQ1.png",
+      "xp_divisor_grams_d0d_a": 270,
+      "legacy_123_unitPrice_d0d_h": 590,
+      "legacy_123_unitWeight_d0d_i": 3000,
+      "md5": "70f93d7b0222da464b30acac4722a667",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 12,
+          "pond_ui_index": 9,
+          "pond_name_ru": "тихий омут",
+          "min_weight_grams": 1122,
+          "max_weight_grams": 20100
+        }
+      ]
+    },
+    {
+      "id": 120,
+      "index_0based": 119,
+      "name": "Панцирник миссисипский",
+      "names_i18n": {
+        "ru": "Панцирник миссисипский",
+        "en": "Alligator gar",
+        "de": "Alligatorhecht",
+        "es": "Pejelagarto",
+        "pt": "Alligator gar"
+      },
+      "unitWeight": 6700,
+      "unitPrice": 820,
+      "behavior_raw": "8,9,6,8",
+      "strength": 8,
+      "stamina": 9,
+      "intelligence": 6,
+      "aggression": 8,
+      "behavior_sum": 31,
+      "image": 2131231070,
+      "image_res_hex": "0x7f08015e",
+      "image_res_name": "fish_120",
+      "image_apk_path": "res/lB.png",
+      "xp_divisor_grams_d0d_a": 710,
+      "legacy_123_unitPrice_d0d_h": 820,
+      "legacy_123_unitWeight_d0d_i": 6700,
+      "md5": "cf45b30d87f1f77ed869b359a2f18750",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 12,
+          "pond_ui_index": 9,
+          "pond_name_ru": "тихий омут",
+          "min_weight_grams": 5372,
+          "max_weight_grams": 140240
+        }
+      ]
+    },
+    {
+      "id": 121,
+      "index_0based": 120,
+      "name": "Сом краснохвостый",
+      "names_i18n": {
+        "ru": "Сом краснохвостый",
+        "en": "Redtail catfish",
+        "de": "Rotflossen-Antennenwels",
+        "es": "Pez torre",
+        "pt": "Pirarara"
+      },
+      "unitWeight": 4200,
+      "unitPrice": 480,
+      "behavior_raw": "7,8,5,7",
+      "strength": 7,
+      "stamina": 8,
+      "intelligence": 5,
+      "aggression": 7,
+      "behavior_sum": 27,
+      "image": 2131231071,
+      "image_res_hex": "0x7f08015f",
+      "image_res_name": "fish_121",
+      "image_apk_path": "res/ib.png",
+      "xp_divisor_grams_d0d_a": 491,
+      "legacy_123_unitPrice_d0d_h": 480,
+      "legacy_123_unitWeight_d0d_i": 4200,
+      "md5": "9efdc6e9cd43a834f842da8e2abd68a9",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 12,
+          "pond_ui_index": 9,
+          "pond_name_ru": "тихий омут",
+          "min_weight_grams": 3243,
+          "max_weight_grams": 50210
+        }
+      ]
+    },
+    {
+      "id": 122,
+      "index_0based": 121,
+      "name": "Барамунди",
+      "names_i18n": {
+        "ru": "Барамунди",
+        "en": "Barramundi",
+        "de": "Barramundi",
+        "es": "Lates calcarifer",
+        "pt": "Perca-gigante"
+      },
+      "unitWeight": 5500,
+      "unitPrice": 900,
+      "behavior_raw": "7,8,6,7",
+      "strength": 7,
+      "stamina": 8,
+      "intelligence": 6,
+      "aggression": 7,
+      "behavior_sum": 28,
+      "image": 2131231072,
+      "image_res_hex": "0x7f080160",
+      "image_res_name": "fish_122",
+      "image_apk_path": "res/5U.png",
+      "xp_divisor_grams_d0d_a": 510,
+      "legacy_123_unitPrice_d0d_h": 900,
+      "legacy_123_unitWeight_d0d_i": 5500,
+      "md5": "9844795f1444e31d90b0c454c11663e6",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 12,
+          "pond_ui_index": 9,
+          "pond_name_ru": "тихий омут",
+          "min_weight_grams": 2050,
+          "max_weight_grams": 59850
+        }
+      ]
+    },
+    {
+      "id": 123,
+      "index_0based": 122,
+      "name": "Акула-бык",
+      "names_i18n": {
+        "ru": "Акула-бык",
+        "en": "Bull shark",
+        "de": "Bullenhai",
+        "es": "Lamia",
+        "pt": "Tubarão-cabeça-chata"
+      },
+      "unitWeight": 9900,
+      "unitPrice": 850,
+      "behavior_raw": "9,9,7,10",
+      "strength": 9,
+      "stamina": 9,
+      "intelligence": 7,
+      "aggression": 10,
+      "behavior_sum": 35,
+      "image": 2131231073,
+      "image_res_hex": "0x7f080161",
+      "image_res_name": "fish_123",
+      "image_apk_path": "res/CT.png",
+      "xp_divisor_grams_d0d_a": 990,
+      "legacy_123_unitPrice_d0d_h": 850,
+      "legacy_123_unitWeight_d0d_i": 9900,
+      "md5": "9c084b403c628e6029af1dfff437993d",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 12,
+          "pond_ui_index": 9,
+          "pond_name_ru": "тихий омут",
+          "min_weight_grams": 20340,
+          "max_weight_grams": 395100
+        }
+      ]
+    },
+    {
+      "id": 124,
+      "index_0based": 123,
+      "name": "Кумжа",
+      "names_i18n": {
+        "ru": "Кумжа",
+        "en": "Brown trout",
+        "de": "Forelle",
+        "es": "Salmo trutta",
+        "pt": "Salmo trutta"
+      },
+      "unitWeight": 2410,
+      "unitPrice": 598,
+      "behavior_raw": "6,7,5,7",
+      "strength": 6,
+      "stamina": 7,
+      "intelligence": 5,
+      "aggression": 7,
+      "behavior_sum": 25,
+      "image": 2131231074,
+      "image_res_hex": "0x7f080162",
+      "image_res_name": "fish_124",
+      "image_apk_path": "res/dv.png",
+      "xp_divisor_grams_d0d_a": 217,
+      "legacy_123_unitPrice_d0d_h": null,
+      "legacy_123_unitWeight_d0d_i": null,
+      "md5": "e61a2421f67c88a253f557581826164f",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 13,
+          "pond_ui_index": 3,
+          "pond_name_ru": "северный берег",
+          "min_weight_grams": 350,
+          "max_weight_grams": 23208
+        }
+      ]
+    },
+    {
+      "id": 125,
+      "index_0based": 124,
+      "name": "Подуст",
+      "names_i18n": {
+        "ru": "Подуст",
+        "en": "Common nase",
+        "de": "Nase",
+        "es": "Chondrostoma nasus",
+        "pt": "Boga-do-Danúbio"
+      },
+      "unitWeight": 1250,
+      "unitPrice": 570,
+      "behavior_raw": "4,5,4,4",
+      "strength": 4,
+      "stamina": 5,
+      "intelligence": 4,
+      "aggression": 4,
+      "behavior_sum": 17,
+      "image": 2131231075,
+      "image_res_hex": "0x7f080163",
+      "image_res_name": "fish_125",
+      "image_apk_path": "res/O_.png",
+      "xp_divisor_grams_d0d_a": 58,
+      "legacy_123_unitPrice_d0d_h": null,
+      "legacy_123_unitWeight_d0d_i": null,
+      "md5": "d3e28ce1439054db988c2fe684346d25",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 13,
+          "pond_ui_index": 3,
+          "pond_name_ru": "северный берег",
+          "min_weight_grams": 150,
+          "max_weight_grams": 1612
+        }
+      ]
+    },
+    {
+      "id": 126,
+      "index_0based": 125,
+      "name": "Сиг",
+      "names_i18n": {
+        "ru": "Сиг",
+        "en": "Lavaret",
+        "de": "Lavaret",
+        "es": "Lavareto",
+        "pt": "Coregono-lavareda"
+      },
+      "unitWeight": 3130,
+      "unitPrice": 640,
+      "behavior_raw": "5,6,4,5",
+      "strength": 5,
+      "stamina": 6,
+      "intelligence": 4,
+      "aggression": 5,
+      "behavior_sum": 20,
+      "image": 2131231076,
+      "image_res_hex": "0x7f080164",
+      "image_res_name": "fish_126",
+      "image_apk_path": "res/yH.png",
+      "xp_divisor_grams_d0d_a": 157,
+      "legacy_123_unitPrice_d0d_h": null,
+      "legacy_123_unitWeight_d0d_i": null,
+      "md5": "046d8b0e040a35206d5a8b54db91d94c",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 13,
+          "pond_ui_index": 3,
+          "pond_name_ru": "северный берег",
+          "min_weight_grams": 400,
+          "max_weight_grams": 8134
+        }
+      ]
+    },
+    {
+      "id": 127,
+      "index_0based": 126,
+      "name": "Синец",
+      "names_i18n": {
+        "ru": "Синец",
+        "en": "Zope",
+        "de": "Zope",
+        "es": "Zope",
+        "pt": "Zope"
+      },
+      "unitWeight": 880,
+      "unitPrice": 280,
+      "behavior_raw": "3,4,3,3",
+      "strength": 3,
+      "stamina": 4,
+      "intelligence": 3,
+      "aggression": 3,
+      "behavior_sum": 13,
+      "image": 2131231077,
+      "image_res_hex": "0x7f080165",
+      "image_res_name": "fish_127",
+      "image_apk_path": "res/jj.png",
+      "xp_divisor_grams_d0d_a": 103,
+      "legacy_123_unitPrice_d0d_h": null,
+      "legacy_123_unitWeight_d0d_i": null,
+      "md5": "6dd1a0ddd7bdb3e96d25ed725dcdfb83",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 13,
+          "pond_ui_index": 3,
+          "pond_name_ru": "северный берег",
+          "min_weight_grams": 50,
+          "max_weight_grams": 1225
+        }
+      ]
+    },
+    {
+      "id": 128,
+      "index_0based": 127,
+      "name": "Корюшка",
+      "names_i18n": {
+        "ru": "Корюшка",
+        "en": "Smelt",
+        "de": "Stint",
+        "es": "Eperlano",
+        "pt": "Eperlano"
+      },
+      "unitWeight": 142,
+      "unitPrice": 65,
+      "behavior_raw": "2,3,3,4",
+      "strength": 2,
+      "stamina": 3,
+      "intelligence": 3,
+      "aggression": 4,
+      "behavior_sum": 12,
+      "image": 2131231078,
+      "image_res_hex": "0x7f080166",
+      "image_res_name": "fish_128",
+      "image_apk_path": "res/qT.png",
+      "xp_divisor_grams_d0d_a": 29,
+      "legacy_123_unitPrice_d0d_h": null,
+      "legacy_123_unitWeight_d0d_i": null,
+      "md5": "a347b54a60d533bd556f3f25a674d562",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 13,
+          "pond_ui_index": 3,
+          "pond_name_ru": "северный берег",
+          "min_weight_grams": 11,
+          "max_weight_grams": 352
+        }
+      ]
+    },
+    {
+      "id": 129,
+      "index_0based": 128,
+      "name": "Ряпушка",
+      "names_i18n": {
+        "ru": "Ряпушка",
+        "en": "Vendace",
+        "de": "Kleine Maräne",
+        "es": "Corégono blanco",
+        "pt": "Coregono branco"
+      },
+      "unitWeight": 150,
+      "unitPrice": 81,
+      "behavior_raw": "2,3,3,3",
+      "strength": 2,
+      "stamina": 3,
+      "intelligence": 3,
+      "aggression": 3,
+      "behavior_sum": 11,
+      "image": 2131231079,
+      "image_res_hex": "0x7f080167",
+      "image_res_name": "fish_129",
+      "image_apk_path": "res/4N.png",
+      "xp_divisor_grams_d0d_a": 32,
+      "legacy_123_unitPrice_d0d_h": null,
+      "legacy_123_unitWeight_d0d_i": null,
+      "md5": "bc11356e68ed012865f59939a318bc0e",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 13,
+          "pond_ui_index": 3,
+          "pond_name_ru": "северный берег",
+          "min_weight_grams": 23,
+          "max_weight_grams": 517
+        }
+      ]
+    },
+    {
+      "id": 130,
+      "index_0based": 129,
+      "name": "Рипус",
+      "names_i18n": {
+        "ru": "Рипус",
+        "en": "Ripus",
+        "de": "Ripus",
+        "es": "Ripus",
+        "pt": "Ripus"
+      },
+      "unitWeight": 840,
+      "unitPrice": 230,
+      "behavior_raw": "3,4,3,4",
+      "strength": 3,
+      "stamina": 4,
+      "intelligence": 3,
+      "aggression": 4,
+      "behavior_sum": 14,
+      "image": 2131231081,
+      "image_res_hex": "0x7f080169",
+      "image_res_name": "fish_130",
+      "image_apk_path": "res/Da.png",
+      "xp_divisor_grams_d0d_a": 178,
+      "legacy_123_unitPrice_d0d_h": null,
+      "legacy_123_unitWeight_d0d_i": null,
+      "md5": "355ef2d3962b9a056005134a6551b2b0",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 13,
+          "pond_ui_index": 3,
+          "pond_name_ru": "северный берег",
+          "min_weight_grams": 300,
+          "max_weight_grams": 1521
+        }
+      ]
+    },
+    {
+      "id": 131,
+      "index_0based": 130,
+      "name": "Палия",
+      "names_i18n": {
+        "ru": "Палия",
+        "en": "Arctic char",
+        "de": "Seesaibling",
+        "es": "Salvelino",
+        "pt": "Salvelino-árctico"
+      },
+      "unitWeight": 3010,
+      "unitPrice": 892,
+      "behavior_raw": "6,7,5,7",
+      "strength": 6,
+      "stamina": 7,
+      "intelligence": 5,
+      "aggression": 7,
+      "behavior_sum": 25,
+      "image": 2131231082,
+      "image_res_hex": "0x7f08016a",
+      "image_res_name": "fish_131",
+      "image_apk_path": "res/LB.png",
+      "xp_divisor_grams_d0d_a": 172,
+      "legacy_123_unitPrice_d0d_h": null,
+      "legacy_123_unitWeight_d0d_i": null,
+      "md5": "aa5cc6de992c317fdc01d44415ab4a20",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 13,
+          "pond_ui_index": 3,
+          "pond_name_ru": "северный берег",
+          "min_weight_grams": 400,
+          "max_weight_grams": 9508
+        }
+      ]
+    },
+    {
+      "id": 132,
+      "index_0based": 131,
+      "name": "Щиповка",
+      "names_i18n": {
+        "ru": "Щиповка",
+        "en": "Spined loach",
+        "de": "Steinbeißer",
+        "es": "Cobitis taenia",
+        "pt": "Verdemã"
+      },
+      "unitWeight": 70,
+      "unitPrice": 126,
+      "behavior_raw": "1,3,2,2",
+      "strength": 1,
+      "stamina": 3,
+      "intelligence": 2,
+      "aggression": 2,
+      "behavior_sum": 8,
+      "image": 2131231083,
+      "image_res_hex": "0x7f08016b",
+      "image_res_name": "fish_132",
+      "image_apk_path": "res/ek.png",
+      "xp_divisor_grams_d0d_a": 38,
+      "legacy_123_unitPrice_d0d_h": null,
+      "legacy_123_unitWeight_d0d_i": null,
+      "md5": "77346d7f83a6741e2cef92931e7fa1d1",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 13,
+          "pond_ui_index": 3,
+          "pond_name_ru": "северный берег",
+          "min_weight_grams": 10,
+          "max_weight_grams": 121
+        }
+      ]
+    },
+    {
+      "id": 133,
+      "index_0based": 132,
+      "name": "Буффало черный",
+      "names_i18n": {
+        "ru": "Буффало черный",
+        "en": "Black buffalo",
+        "de": "Schwarzer Büffelfisch",
+        "es": "Ictiobus niger",
+        "pt": "Black buffalo"
+      },
+      "unitWeight": 2500,
+      "unitPrice": 450,
+      "behavior_raw": "5,6,4,5",
+      "strength": 5,
+      "stamina": 6,
+      "intelligence": 4,
+      "aggression": 5,
+      "behavior_sum": 20,
+      "image": 2131231084,
+      "image_res_hex": "0x7f08016c",
+      "image_res_name": "fish_133",
+      "image_apk_path": "res/2k.png",
+      "xp_divisor_grams_d0d_a": 212,
+      "legacy_123_unitPrice_d0d_h": null,
+      "legacy_123_unitWeight_d0d_i": null,
+      "md5": "8aa272f9793b793181a3d5ef26f927d6",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 14,
+          "pond_ui_index": 5,
+          "pond_name_ru": "протока",
+          "min_weight_grams": 310,
+          "max_weight_grams": 25114
+        }
+      ]
+    },
+    {
+      "id": 134,
+      "index_0based": 133,
+      "name": "Буффало малоротый",
+      "names_i18n": {
+        "ru": "Буффало малоротый",
+        "en": "Smallmouth buffalo",
+        "de": "Kleinmäuliger Büffelfisch",
+        "es": "Ictiobus bubalus",
+        "pt": "Smallmouth buffalo"
+      },
+      "unitWeight": 3200,
+      "unitPrice": 340,
+      "behavior_raw": "6,7,4,5",
+      "strength": 6,
+      "stamina": 7,
+      "intelligence": 4,
+      "aggression": 5,
+      "behavior_sum": 22,
+      "image": 2131231085,
+      "image_res_hex": "0x7f08016d",
+      "image_res_name": "fish_134",
+      "image_apk_path": "res/S9.png",
+      "xp_divisor_grams_d0d_a": 147,
+      "legacy_123_unitPrice_d0d_h": null,
+      "legacy_123_unitWeight_d0d_i": null,
+      "md5": "d3525cdf32424133b0f8e682ff9f2256",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 14,
+          "pond_ui_index": 5,
+          "pond_name_ru": "протока",
+          "min_weight_grams": 420,
+          "max_weight_grams": 29411
+        }
+      ]
+    },
+    {
+      "id": 135,
+      "index_0based": 134,
+      "name": "Буффало большеротый",
+      "names_i18n": {
+        "ru": "Буффало большеротый",
+        "en": "Bigmouth buffalo",
+        "de": "Großmäuliger Büffelfisch",
+        "es": "Ictiobus cyprinellus",
+        "pt": "Bigmouth buffalo"
+      },
+      "unitWeight": 4140,
+      "unitPrice": 420,
+      "behavior_raw": "6,7,4,5",
+      "strength": 6,
+      "stamina": 7,
+      "intelligence": 4,
+      "aggression": 5,
+      "behavior_sum": 22,
+      "image": 2131231086,
+      "image_res_hex": "0x7f08016e",
+      "image_res_name": "fish_135",
+      "image_apk_path": "res/F1.png",
+      "xp_divisor_grams_d0d_a": 252,
+      "legacy_123_unitPrice_d0d_h": null,
+      "legacy_123_unitWeight_d0d_i": null,
+      "md5": "7bbba7eed40d72074aa440b306e5ad7a",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 14,
+          "pond_ui_index": 5,
+          "pond_name_ru": "протока",
+          "min_weight_grams": 450,
+          "max_weight_grams": 31908
+        }
+      ]
+    },
+    {
+      "id": 136,
+      "index_0based": 135,
+      "name": "Окунь малоротый",
+      "names_i18n": {
+        "ru": "Окунь малоротый",
+        "en": "Smallmouth bass",
+        "de": "Schwarzbarsch",
+        "es": "Micropterus dolomieu",
+        "pt": "Achiga-boca-pequena"
+      },
+      "unitWeight": 820,
+      "unitPrice": 170,
+      "behavior_raw": "5,6,4,8",
+      "strength": 5,
+      "stamina": 6,
+      "intelligence": 4,
+      "aggression": 8,
+      "behavior_sum": 23,
+      "image": 2131231087,
+      "image_res_hex": "0x7f08016f",
+      "image_res_name": "fish_136",
+      "image_apk_path": "res/09.png",
+      "xp_divisor_grams_d0d_a": 178,
+      "legacy_123_unitPrice_d0d_h": null,
+      "legacy_123_unitWeight_d0d_i": null,
+      "md5": "3d6a5dd5819c6ffa68aa5c73b3bffdc2",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 14,
+          "pond_ui_index": 5,
+          "pond_name_ru": "протока",
+          "min_weight_grams": 300,
+          "max_weight_grams": 4052
+        }
+      ]
+    },
+    {
+      "id": 137,
+      "index_0based": 136,
+      "name": "Ильная рыба",
+      "names_i18n": {
+        "ru": "Ильная рыба",
+        "en": "Bowfin",
+        "de": "Kahlhecht",
+        "es": "Amia calva",
+        "pt": "Amia"
+      },
+      "unitWeight": 1610,
+      "unitPrice": 320,
+      "behavior_raw": "4,5,3,5",
+      "strength": 4,
+      "stamina": 5,
+      "intelligence": 3,
+      "aggression": 5,
+      "behavior_sum": 17,
+      "image": 2131231088,
+      "image_res_hex": "0x7f080170",
+      "image_res_name": "fish_137",
+      "image_apk_path": "res/Jw1.png",
+      "xp_divisor_grams_d0d_a": 97,
+      "legacy_123_unitPrice_d0d_h": null,
+      "legacy_123_unitWeight_d0d_i": null,
+      "md5": "63cc4bfcc7b0aca7121c94eb6ef72643",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 14,
+          "pond_ui_index": 5,
+          "pond_name_ru": "протока",
+          "min_weight_grams": 450,
+          "max_weight_grams": 9744
+        }
+      ]
+    },
+    {
+      "id": 138,
+      "index_0based": 137,
+      "name": "Щука-маскинонг",
+      "names_i18n": {
+        "ru": "Щука-маскинонг",
+        "en": "Muskellunge",
+        "de": "Muskellunge",
+        "es": "Muskallonga americano",
+        "pt": "Lúcio-almiscarado"
+      },
+      "unitWeight": 3100,
+      "unitPrice": 410,
+      "behavior_raw": "8,8,7,9",
+      "strength": 8,
+      "stamina": 8,
+      "intelligence": 7,
+      "aggression": 9,
+      "behavior_sum": 32,
+      "image": 2131231089,
+      "image_res_hex": "0x7f080171",
+      "image_res_name": "fish_138",
+      "image_apk_path": "res/py.png",
+      "xp_divisor_grams_d0d_a": 312,
+      "legacy_123_unitPrice_d0d_h": null,
+      "legacy_123_unitWeight_d0d_i": null,
+      "md5": "45a51a96512fadb85d95611996d8d915",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 14,
+          "pond_ui_index": 5,
+          "pond_name_ru": "протока",
+          "min_weight_grams": 850,
+          "max_weight_grams": 32105
+        }
+      ]
+    },
+    {
+      "id": 139,
+      "index_0based": 138,
+      "name": "Окунь солнечный",
+      "names_i18n": {
+        "ru": "Окунь солнечный",
+        "en": "Pumpkinseed",
+        "de": "Gemeiner Sonnenbarsch",
+        "es": "Perca sol",
+        "pt": "Perca-sol"
+      },
+      "unitWeight": 300,
+      "unitPrice": 85,
+      "behavior_raw": "3,4,3,6",
+      "strength": 3,
+      "stamina": 4,
+      "intelligence": 3,
+      "aggression": 6,
+      "behavior_sum": 16,
+      "image": 2131231090,
+      "image_res_hex": "0x7f080172",
+      "image_res_name": "fish_139",
+      "image_apk_path": "res/hj.png",
+      "xp_divisor_grams_d0d_a": 78,
+      "legacy_123_unitPrice_d0d_h": null,
+      "legacy_123_unitWeight_d0d_i": null,
+      "md5": "0070c211edae5df04e16d0991cdee06c",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 14,
+          "pond_ui_index": 5,
+          "pond_name_ru": "протока",
+          "min_weight_grams": 50,
+          "max_weight_grams": 684
+        }
+      ]
+    },
+    {
+      "id": 140,
+      "index_0based": 139,
+      "name": "Чавыча",
+      "names_i18n": {
+        "ru": "Чавыча",
+        "en": "Chinook salmon",
+        "de": "Königslachs",
+        "es": "Salmón real",
+        "pt": "Salmão-real"
+      },
+      "unitWeight": 5400,
+      "unitPrice": 730,
+      "behavior_raw": "7,8,5,8",
+      "strength": 7,
+      "stamina": 8,
+      "intelligence": 5,
+      "aggression": 8,
+      "behavior_sum": 28,
+      "image": 2131231092,
+      "image_res_hex": "0x7f080174",
+      "image_res_name": "fish_140",
+      "image_apk_path": "res/ej.png",
+      "xp_divisor_grams_d0d_a": 204,
+      "legacy_123_unitPrice_d0d_h": null,
+      "legacy_123_unitWeight_d0d_i": null,
+      "md5": "aa77ad6beaeacb8e1c3eafa412c6c7e7",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 14,
+          "pond_ui_index": 5,
+          "pond_name_ru": "протока",
+          "min_weight_grams": 900,
+          "max_weight_grams": 57319
+        }
+      ]
+    },
+    {
+      "id": 141,
+      "index_0based": 140,
+      "name": "Чукучан",
+      "names_i18n": {
+        "ru": "Чукучан",
+        "en": "Longnose sucker",
+        "de": "Tschukutschan",
+        "es": "Catostomus catostomus",
+        "pt": "Catostomus catostomus"
+      },
+      "unitWeight": 900,
+      "unitPrice": 268,
+      "behavior_raw": "3,4,3,4",
+      "strength": 3,
+      "stamina": 4,
+      "intelligence": 3,
+      "aggression": 4,
+      "behavior_sum": 14,
+      "image": 2131231093,
+      "image_res_hex": "0x7f080175",
+      "image_res_name": "fish_141",
+      "image_apk_path": "res/lI.png",
+      "xp_divisor_grams_d0d_a": 217,
+      "legacy_123_unitPrice_d0d_h": null,
+      "legacy_123_unitWeight_d0d_i": null,
+      "md5": "7f054da952462b1a0bdd7ddf4c0f17a3",
+      "ponds_where_caught": [
+        {
+          "pond_data_id": 14,
+          "pond_ui_index": 5,
+          "pond_name_ru": "протока",
+          "min_weight_grams": 310,
+          "max_weight_grams": 3327
+        }
+      ]
+    }
+  ]
+}

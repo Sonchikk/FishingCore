@@ -1,0 +1,189 @@
+{
+  "apk_verification": {
+    "file": "fishing181.apk",
+    "size_bytes": 29322571,
+    "sha256": "a96fd0986703cbc6c76b0a3ab1523190b18803eb8503136a6d2bf76c8e1ef092",
+    "unmodified": true
+  },
+  "datasets": [
+    {
+      "file": "fishes.json",
+      "sqlite_table": "fishes",
+      "source_class_or_resource": "Lcom/evados/fishing/database/generators/FishGenerator; + LD0/d;.a + 0x7f03000b (array/fishes)",
+      "extraction_method": "DalvikVM bytecode execution (<init>, initNames, initImgRes, initUnitWeights, initUnitPrices, initBehavior, generate) + resources.arsc parser",
+      "record_count": 141,
+      "phase1_expected_count": 141,
+      "status": "VERIFIED_100_PERCENT"
+    },
+    {
+      "file": "records_initial.json",
+      "sqlite_table": "records",
+      "source_class_or_resource": "Lcom/evados/fishing/database/DatabaseHelper;->fillRecordsTable()V",
+      "extraction_method": "DalvikVM bytecode execution of fillRecordsTable()",
+      "record_count": 141,
+      "phase1_expected_count": 141,
+      "status": "VERIFIED_100_PERCENT"
+    },
+    {
+      "file": "baits.json",
+      "sqlite_table": "baits",
+      "source_class_or_resource": "Lcom/evados/fishing/database/generators/BaitGenerator; + 0x7f030005 (array/baits)",
+      "extraction_method": "DalvikVM bytecode execution (<init>, initNames, initImages, initAmounts, initPrices, generate) + resources.arsc parser",
+      "record_count": 40,
+      "phase1_expected_count": 40,
+      "status": "VERIFIED_100_PERCENT"
+    },
+    {
+      "file": "fishing_rods.json",
+      "sqlite_table": "fishing_rods",
+      "source_class_or_resource": "Lcom/evados/fishing/database/generators/FishingRodGenerator; + LD0/d;.k",
+      "extraction_method": "DalvikVM bytecode execution (<init>, initNames, initWeights, initPrices, generate) + LD0/d;.v()",
+      "record_count": 13,
+      "phase1_expected_count": 13,
+      "status": "VERIFIED_100_PERCENT"
+    },
+    {
+      "file": "fishing_lines.json",
+      "sqlite_table": "fishing_lines",
+      "source_class_or_resource": "Lcom/evados/fishing/database/generators/FishingLineGenerator; + LD0/d;.l",
+      "extraction_method": "DalvikVM bytecode execution (<init>, initNames, initWeights, initPrices, initLengths, generate) + LD0/d;.s()",
+      "record_count": 16,
+      "phase1_expected_count": 16,
+      "status": "VERIFIED_100_PERCENT"
+    },
+    {
+      "file": "coils.json",
+      "sqlite_table": "coils",
+      "source_class_or_resource": "Lcom/evados/fishing/database/generators/CoilGenerator; + LD0/d;.{b,c,f}",
+      "extraction_method": "DalvikVM bytecode execution (<init>, initNames, initBearingCounts, initPrices, generate) + LD0/d;",
+      "record_count": 10,
+      "phase1_expected_count": 10,
+      "status": "VERIFIED_100_PERCENT"
+    },
+    {
+      "file": "hooks.json",
+      "sqlite_table": "hooks",
+      "source_class_or_resource": "Lcom/evados/fishing/database/generators/HookGenerator; + LD0/d;.e",
+      "extraction_method": "DalvikVM bytecode execution (<init>, initNames, initAmounts, initPrices, generate) + LD0/d;.r()",
+      "record_count": 10,
+      "phase1_expected_count": 10,
+      "status": "VERIFIED_100_PERCENT"
+    },
+    {
+      "file": "coupons.json",
+      "sqlite_table": "coupons",
+      "source_class_or_resource": "Lcom/evados/fishing/database/generators/CouponGenerator; + 0x7f12010e (string/coupon)",
+      "extraction_method": "DalvikVM bytecode execution (<init>, initDays, initPrices, initDns, generate) + resources.arsc parser",
+      "record_count": 7,
+      "phase1_expected_count": 7,
+      "status": "VERIFIED_100_PERCENT"
+    },
+    {
+      "file": "achievements.json",
+      "sqlite_table": "achievements",
+      "source_class_or_resource": "Lcom/evados/fishing/database/generators/AchievementGenerator; + LD0/d;.m + 0x7f030000/0x7f030001",
+      "extraction_method": "DalvikVM bytecode execution (<init>, initImgAch, initNagSize, generate) + LD0/d;.l() + resources.arsc parser",
+      "record_count": 14,
+      "phase1_expected_count": 14,
+      "status": "VERIFIED_100_PERCENT"
+    },
+    {
+      "file": "quests.json",
+      "sqlite_table": "quests",
+      "source_class_or_resource": "Lcom/evados/fishing/database/generators/QuestGenerator; + 0x7f030011/0x7f030012",
+      "extraction_method": "DalvikVM bytecode execution (<init>, initType, initFish, initBait, initNum, initWeight, initCat, initNag, generate) + resources.arsc parser",
+      "record_count": 44,
+      "phase1_expected_count": 44,
+      "status": "VERIFIED_100_PERCENT"
+    },
+    {
+      "file": "ponds.json",
+      "sqlite_table": "ref_ponds, ref_pond_species_weights, ref_pond_bait_catches, ref_pond_time_factors",
+      "source_class_or_resource": "LD0/e; -> Lcom/evados/fishing/ui/gameobjects/PondData; + 0x7f03000f (array/ponds) + 0x7f030010 (array/ponds_id)",
+      "extraction_method": "DalvikVM bytecode execution of LD0/e;.<clinit>, LD0/e;.a(0..14), LD0/e;.k() + resources.arsc parser",
+      "record_count": 15,
+      "phase1_expected_count": 15,
+      "sub_counts": {
+        "pond_species_weight_rows": 165,
+        "pond_bait_catch_links": 821,
+        "pond_time_factor_pairs_4_periods": 3296
+      },
+      "status": "VERIFIED_100_PERCENT"
+    },
+    {
+      "file": "progression_and_balance.json",
+      "sqlite_table": "ref_rank_thresholds, data_signs, user_data, user_tackles",
+      "source_class_or_resource": "LD0/d; (13 tables a..m) + Lcom/evados/fishing/database/DatabaseHelper;",
+      "extraction_method": "DalvikVM bytecode execution of LD0/d;.<init> and DatabaseHelper seed/MD5 methods",
+      "record_count": 13,
+      "status": "VERIFIED_100_PERCENT"
+    },
+    {
+      "file": "localization.json",
+      "sqlite_table": "ref_i18n_arrays, ref_i18n_strings",
+      "source_class_or_resource": "resources.arsc + LF0/g; (LocaleHelper)",
+      "extraction_method": "Binary chunk parsing of resources.arsc string pools and type packages across all locale configurations",
+      "record_count": {
+        "languages": 5,
+        "game_arrays": 23,
+        "game_strings": 485
+      },
+      "status": "VERIFIED_100_PERCENT"
+    }
+  ],
+  "sqlite_table_row_counts": {
+    "fishes": 141,
+    "records": 141,
+    "baits": 40,
+    "fishing_rods": 13,
+    "fishing_lines": 16,
+    "coils": 10,
+    "hooks": 10,
+    "coupons": 7,
+    "achievements": 14,
+    "quests": 44,
+    "data_signs": 8,
+    "user_data": 1,
+    "user_tackles": 1,
+    "ref_ponds": 15,
+    "ref_pond_species_weights": 165,
+    "ref_pond_bait_catches": 821,
+    "ref_pond_time_factors": 3296,
+    "ref_rank_thresholds": 45,
+    "ref_i18n_arrays": 383,
+    "ref_i18n_strings": 485
+  },
+  "authentic_apk_anomalies_and_findings": [
+    "Online-only tackle items initialized with 0 in generators (populated dynamically via online.php or D0.d): rods=[(11, 'venol', 525), (12, 'master fish', 680), (13, 'dasf', 1900)], lines=[(14, 'leska 600', 600), (15, 'leska 810', 810), (16, 'big fish', 2150)], coils=[(8, 'rewery', 8), (9, 'tyhol', 9), (10, 'wectern', 10)]",
+    "Quest id=17 ('Королевский лосось') has len(num_parts)=4 vs len(fish)=3 (num=5,5,5,5, fish=140,140,140).",
+    "Pond 0 (кедровый остров) factorAfternoon[slot=0, bait=0]: factor fishes [0, 14, 1, 3, 4, 27, 32, 33, 10, 18] vs catches [14, 0, 1, 3, 4, 27, 32, 33, 15, 18]",
+    "Pond 0 (кедровый остров) factorAfternoon[slot=2, bait=2]: factor fishes [0, 1, 3, 4, 32, 33, 10, 7, 27] vs catches [0, 1, 3, 4, 32, 33, 15, 7, 27]",
+    "Pond 0 (кедровый остров) factorMorning[slot=17, bait=13]: factor fishes [14, 4] vs catches [14]",
+    "Pond 0 (кедровый остров) factorAfternoon[slot=17, bait=13]: factor fishes [14, 4] vs catches [14]",
+    "Pond 0 (кедровый остров) factorEvening[slot=17, bait=13]: factor fishes [14, 4] vs catches [14]",
+    "Pond 0 (кедровый остров) factorNight[slot=17, bait=13]: factor fishes [14, 4] vs catches [14]",
+    "Pond 1 (речной брод) factorMorning[slot=0, bait=0]: factor fishes [0, 2, 3, 6, 16, 19, 27, 29, 15, 33] vs catches [0, 2, 3, 6, 16, 19, 27, 29, 30, 33]",
+    "Pond 1 (речной брод) factorAfternoon[slot=0, bait=0]: factor fishes [0, 2, 3, 6, 16, 19, 27, 29, 15, 33] vs catches [0, 2, 3, 6, 16, 19, 27, 29, 30, 33]",
+    "Pond 1 (речной брод) factorEvening[slot=0, bait=0]: factor fishes [0, 2, 3, 6, 16, 19, 27, 29, 15, 33] vs catches [0, 2, 3, 6, 16, 19, 27, 29, 30, 33]",
+    "Pond 1 (речной брод) factorMorning[slot=1, bait=1]: factor fishes [0, 2, 3, 19, 15] vs catches [0, 2, 3, 19, 30]",
+    "Pond 1 (речной брод) factorAfternoon[slot=1, bait=1]: factor fishes [0, 2, 3, 19, 15] vs catches [0, 2, 3, 19, 30]",
+    "Pond 1 (речной брод) factorEvening[slot=1, bait=1]: factor fishes [0, 2, 3, 19, 15] vs catches [0, 2, 3, 19, 30]",
+    "Pond 1 (речной брод) factorMorning[slot=2, bait=2]: factor fishes [0, 2, 3, 9, 16, 27, 29, 15, 33] vs catches [0, 2, 3, 9, 16, 27, 29, 30, 33]",
+    "Pond 1 (речной брод) factorAfternoon[slot=2, bait=2]: factor fishes [0, 2, 3, 9, 16, 27, 29, 15, 33] vs catches [0, 2, 3, 9, 16, 27, 29, 30, 33]",
+    "Pond 1 (речной брод) factorEvening[slot=2, bait=2]: factor fishes [0, 2, 3, 9, 16, 27, 29, 15, 33] vs catches [0, 2, 3, 9, 16, 27, 29, 30, 33]",
+    "Pond 1 (речной брод) factorMorning[slot=9, bait=11]: factor fishes [0, 2, 3, 6, 9, 16, 27, 29, 15, 33] vs catches [0, 2, 3, 6, 9, 16, 27, 29, 30, 33]",
+    "Pond 1 (речной брод) factorAfternoon[slot=9, bait=11]: factor fishes [0, 2, 3, 6, 9, 16, 27, 29, 15, 33] vs catches [0, 2, 3, 6, 9, 16, 27, 29, 30, 33]",
+    "Pond 1 (речной брод) factorEvening[slot=9, bait=11]: factor fishes [0, 2, 3, 6, 9, 16, 27, 29, 15, 33] vs catches [0, 2, 3, 6, 9, 16, 27, 29, 30, 33]",
+    "Pond 1 (речной брод) factorMorning[slot=11, bait=16]: factor fishes [15] vs catches [30]",
+    "Pond 1 (речной брод) factorAfternoon[slot=11, bait=16]: factor fishes [15] vs catches [30]",
+    "Pond 1 (речной брод) factorEvening[slot=11, bait=16]: factor fishes [15] vs catches [30]",
+    "Pond 2 (лесной перекат) factorMorning[slot=10, bait=15]: factor fishes [4, 22] vs catches [22]",
+    "Pond 2 (лесной перекат) factorAfternoon[slot=10, bait=15]: factor fishes [4, 22] vs catches [22]",
+    "Pond 2 (лесной перекат) factorEvening[slot=10, bait=15]: factor fishes [4, 22] vs catches [22]",
+    "Pond 2 (лесной перекат) factorNight[slot=10, bait=15]: factor fishes [4, 22] vs catches [22]",
+    "Pond 10 (тропические воды) factorMorning[slot=6, bait=33]: factor fishes [89, 90] vs catches [89]",
+    "Pond 10 (тропические воды) factorAfternoon[slot=6, bait=33]: factor fishes [89, 90] vs catches [89]",
+    "Pond 10 (тропические воды) factorEvening[slot=6, bait=33]: factor fishes [89, 90] vs catches [89]",
+    "Pond 10 (тропические воды) factorNight[slot=6, bait=33]: factor fishes [89, 90] vs catches [89]"
+  ]
+}

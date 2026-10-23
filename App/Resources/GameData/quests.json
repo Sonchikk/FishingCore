@@ -1,0 +1,2699 @@
+{
+  "metadata": {
+    "dataset": "quests",
+    "source_class": "Lcom/evados/fishing/database/generators/QuestGenerator;",
+    "ormlite_model": "Lcom/evados/fishing/database/objects/base/Quest;",
+    "sqlite_table": "quests",
+    "localization_resource": "0x7f030011 (array/quests), 0x7f030012 (array/quests_desc)",
+    "extraction_method": "DalvikVM bytecode execution of QuestGenerator.<init> and generate(0..43) + resources.arsc",
+    "record_count": 44
+  },
+  "records": [
+    {
+      "id": 1,
+      "index_0based": 0,
+      "title_ru": "Ведро рыбы",
+      "titles_i18n": {
+        "ru": "Ведро рыбы",
+        "en": "Bucket of fishes",
+        "de": "Eimer voller Fische",
+        "es": "Cubo de peces",
+        "pt": "Balde de peixes"
+      },
+      "descriptions_i18n": {
+        "ru": "Поймать 20 кг любой рыбы.",
+        "en": "Catch 20 kg any fishes.",
+        "de": "Fange 20 kg beliebige Fische.",
+        "es": "Pesca 20 kg de cualquier tipo de pez.",
+        "pt": "Pesque 20 kg de qualquer tipo de peixe."
+      },
+      "type": 2,
+      "fish": "0",
+      "bait": "1,2,12",
+      "num": "0",
+      "weight": "20000",
+      "cat": 0,
+      "nag": "200,150",
+      "res": "null",
+      "made": 0,
+      "date": 0,
+      "md5": "2e881a52f3d5e8a8209d180126eb68c9",
+      "parsed": {
+        "id_indexing_note": "QuestGenerator uses 1-based SQLite IDs (fishes.id 1..141, baits.id 1..40) where 0 means ANY fish/bait.",
+        "fish_db_ids_1based": [
+          0
+        ],
+        "resolved_fish_names_ru": [
+          "ANY"
+        ],
+        "bait_db_ids_1based": [
+          1,
+          2,
+          12
+        ],
+        "resolved_bait_names_ru": [
+          "червь",
+          "хлеб",
+          "опарыш"
+        ],
+        "num_parts": [
+          0
+        ],
+        "weight_parts": [
+          "20000"
+        ],
+        "reward_coins": 200,
+        "reward_experience": 150
+      }
+    },
+    {
+      "id": 2,
+      "index_0based": 1,
+      "title_ru": "Вкусная уха",
+      "titles_i18n": {
+        "ru": "Вкусная уха",
+        "en": "Tasty fish soup",
+        "de": "Leckere Fischsuppe",
+        "es": "Sopa de pescado sabrosa",
+        "pt": "Sopa de peixe saborosa"
+      },
+      "descriptions_i18n": {
+        "ru": "Налови на уху по 5 шт. следующих рыб: плотва (500-1000 г), окунь (500-1000 г), красноперка (500-1000 г).",
+        "en": "Catch 5 pcs. of each fishes for fish soup: roach (500-1000 g), perch (500-1000 g), rudd (500-1000 g).",
+        "de": "Fange je 5 Stk. der folgenden Fische für eine Suppe: Plötze (500–1000 g), Flussbarsch (500–1000 g), Rotfeder (500–1000 g).",
+        "es": "Pesca 5 uds. de cada pez para la sopa: rutilo (500-1000 g), perca (500-1000 g), gardí (500-1000 g).",
+        "pt": "Pesque 5 unid. de cada peixe para a sopa: pardo (500-1000 g), perca (500-1000 g), ruivo (500-1000 g)."
+      },
+      "type": 7,
+      "fish": "4,28,5",
+      "bait": "0",
+      "num": "5,5,5",
+      "weight": "500-1000,500-1000,500-1000",
+      "cat": 0,
+      "nag": "500,300",
+      "res": "null",
+      "made": 0,
+      "date": 0,
+      "md5": "8bffe137cda48d550c787c364667cb6d",
+      "parsed": {
+        "id_indexing_note": "QuestGenerator uses 1-based SQLite IDs (fishes.id 1..141, baits.id 1..40) where 0 means ANY fish/bait.",
+        "fish_db_ids_1based": [
+          4,
+          28,
+          5
+        ],
+        "resolved_fish_names_ru": [
+          "Плотва",
+          "Окунь",
+          "Красноперка"
+        ],
+        "bait_db_ids_1based": [
+          0
+        ],
+        "resolved_bait_names_ru": [
+          "ANY"
+        ],
+        "num_parts": [
+          5,
+          5,
+          5
+        ],
+        "weight_parts": [
+          "500-1000",
+          "500-1000",
+          "500-1000"
+        ],
+        "reward_coins": 500,
+        "reward_experience": 300
+      }
+    },
+    {
+      "id": 3,
+      "index_0based": 2,
+      "title_ru": "Карасики",
+      "titles_i18n": {
+        "ru": "Карасики",
+        "en": "Prussian/Crucian carps",
+        "de": "Giebel und Karauschen",
+        "es": "Carpas prusianas y crucias",
+        "pt": "Carpas prussianas e gibel"
+      },
+      "descriptions_i18n": {
+        "ru": "Поймай по 5 шт.: карась 500-1000 г и 1800-2200 г, карась золотой 1100-1600 г и 2400-3000 г.",
+        "en": "Catch 5 pcs. of each fishes: prussian carp 500-1000 g and 1800-2200 g, crucian carp 1100-1600 g and 2400-3000 g.",
+        "de": "Fange je 5 Stk. der folgenden Fische: Giebel 500–1000 g und 1800–2200 g, Karausche 1100–1600 g und 2400–3000 g.",
+        "es": "Pesca 5 uds. de cada pez: carpa prusiana de 500-1000 g y 1800-2200 g, carpa crucia de 1100-1600 g y 2400-3000 g.",
+        "pt": "Pesque 5 unid. de cada peixe: carpa-gibel de 500-1000 g e 1800-2200 g, carpa-prusiana de 1100-1600 g e 2400-3000 g."
+      },
+      "type": 7,
+      "fish": "1,1,2,2",
+      "bait": "0",
+      "num": "5,5,5,5",
+      "weight": "500-1000,1800-2200,1100-1600,2400-3000",
+      "cat": 0,
+      "nag": "1000,400",
+      "res": "null",
+      "made": 0,
+      "date": 0,
+      "md5": "6be59dbb5a0780f8dcd1adcd37569b4e",
+      "parsed": {
+        "id_indexing_note": "QuestGenerator uses 1-based SQLite IDs (fishes.id 1..141, baits.id 1..40) where 0 means ANY fish/bait.",
+        "fish_db_ids_1based": [
+          1,
+          1,
+          2,
+          2
+        ],
+        "resolved_fish_names_ru": [
+          "Карась",
+          "Карась",
+          "Карась золотой",
+          "Карась золотой"
+        ],
+        "bait_db_ids_1based": [
+          0
+        ],
+        "resolved_bait_names_ru": [
+          "ANY"
+        ],
+        "num_parts": [
+          5,
+          5,
+          5,
+          5
+        ],
+        "weight_parts": [
+          "500-1000",
+          "1800-2200",
+          "1100-1600",
+          "2400-3000"
+        ],
+        "reward_coins": 1000,
+        "reward_experience": 400
+      }
+    },
+    {
+      "id": 4,
+      "index_0based": 3,
+      "title_ru": "Мелочь, а приятно",
+      "titles_i18n": {
+        "ru": "Мелочь, а приятно",
+        "en": "Trifle, but nice",
+        "de": "Kleinigkeit, aber nett",
+        "es": "Una menudencia, pero agradable",
+        "pt": "Uma miudeza, mas agradável"
+      },
+      "descriptions_i18n": {
+        "ru": "Нужно наловить по 1 кг каждой из рыб: елец, вьюн, ерш, пескарь, ротан, ерш носарь.",
+        "en": "You need to catch 1 kg of each of the fish: common dace, misgurnus, ruffe, gudgeon, chinese sleeper, donets ruffe.",
+        "de": "Du musst je 1 kg der folgenden Fische fangen: Hasel, Schlammpeizger, Kaulbarsch, Gründling, Amur-Schläfergrundel, Don-Kaulbarsch.",
+        "es": "Debes pescar 1 kg de cada uno de estos peces: leucisco, misgurno, acerina, góbido, durmiente de Amur, acerina del Donets.",
+        "pt": "Você precisa pescar 1 kg de cada um destes peixes: dace-comum, misgurno, papa-terra, góbio, dorminhoco-chinês, papa-terra do Donets."
+      },
+      "type": 2,
+      "fish": "15,10,16,30,34,17",
+      "bait": "0",
+      "num": "0",
+      "weight": "1000,1000,1000,1000,1000,1000",
+      "cat": 0,
+      "nag": "1500,500",
+      "res": "null",
+      "made": 0,
+      "date": 0,
+      "md5": "f4d3d0d460194c05cf169327b6f74225",
+      "parsed": {
+        "id_indexing_note": "QuestGenerator uses 1-based SQLite IDs (fishes.id 1..141, baits.id 1..40) where 0 means ANY fish/bait.",
+        "fish_db_ids_1based": [
+          15,
+          10,
+          16,
+          30,
+          34,
+          17
+        ],
+        "resolved_fish_names_ru": [
+          "Елец",
+          "Вьюн",
+          "Ерш",
+          "Пескарь",
+          "Ротан",
+          "Ерш носарь"
+        ],
+        "bait_db_ids_1based": [
+          0
+        ],
+        "resolved_bait_names_ru": [
+          "ANY"
+        ],
+        "num_parts": [
+          0
+        ],
+        "weight_parts": [
+          "1000",
+          "1000",
+          "1000",
+          "1000",
+          "1000",
+          "1000"
+        ],
+        "reward_coins": 1500,
+        "reward_experience": 500
+      }
+    },
+    {
+      "id": 5,
+      "index_0based": 4,
+      "title_ru": "Заказ для рынка",
+      "titles_i18n": {
+        "ru": "Заказ для рынка",
+        "en": "Order for market",
+        "de": "Bestellung für den Markt",
+        "es": "Pedido para el mercado",
+        "pt": "Pedido para o mercado"
+      },
+      "descriptions_i18n": {
+        "ru": "Наловить крупной рыбы: щука (от 12кг), карп (от 10 кг), карп голый (от 10 кг), жерех (от 8 кг). Каждой по 3 шт.",
+        "en": "Catch large fish: northern pike (from 12 kg), carp (from 10 kg), leather carp (from 10 kg), asp (from 8 kg). 3 pcs. each.",
+        "de": "Fange große Fische: Hecht (ab 12 kg), Karpfen (ab 10 kg), Lederkarpfen (ab 10 kg), Rapport/Rapfen (ab 8 kg). Je 3 Stk.",
+        "es": "Pesca peces grandes: lucio norteño (desde 12 kg), carpa común (desde 10 kg), carpa de cuero (desde 10 kg), aspe (desde 8 kg). 3 uds. de cada uno.",
+        "pt": "Pesque peixes grandes: lúcio-nórdico (a partir de 12 kg), carpa-comum (a partir de 10 kg), carpa-de-couro (a partir de 10 kg), aspe (a partir de 8 kg). 3 unid. de cada."
+      },
+      "type": 3,
+      "fish": "52,19,20,18",
+      "bait": "0",
+      "num": "3,3,3,3",
+      "weight": "12000,10000,10000,8000",
+      "cat": 0,
+      "nag": "2000,700",
+      "res": "null",
+      "made": 0,
+      "date": 0,
+      "md5": "0d48ce6fc640a92e739fbfcaa04b2935",
+      "parsed": {
+        "id_indexing_note": "QuestGenerator uses 1-based SQLite IDs (fishes.id 1..141, baits.id 1..40) where 0 means ANY fish/bait.",
+        "fish_db_ids_1based": [
+          52,
+          19,
+          20,
+          18
+        ],
+        "resolved_fish_names_ru": [
+          "Щука",
+          "Карп",
+          "Карп голый",
+          "Жерех"
+        ],
+        "bait_db_ids_1based": [
+          0
+        ],
+        "resolved_bait_names_ru": [
+          "ANY"
+        ],
+        "num_parts": [
+          3,
+          3,
+          3,
+          3
+        ],
+        "weight_parts": [
+          "12000",
+          "10000",
+          "10000",
+          "8000"
+        ],
+        "reward_coins": 2000,
+        "reward_experience": 700
+      }
+    },
+    {
+      "id": 6,
+      "index_0based": 5,
+      "title_ru": "Рыбалка на мотыля",
+      "titles_i18n": {
+        "ru": "Рыбалка на мотыля",
+        "en": "Fishing on bloodworms",
+        "de": "Angeln mit Zuckmückenlarven",
+        "es": "Pesca con larva de mosquito",
+        "pt": "Pesca com larva de mosquito"
+      },
+      "descriptions_i18n": {
+        "ru": "Используй наживку мотыль и поймай по 5 шт. рыб: голавль, белоглазка, густера, рыбец, подлещик.",
+        "en": "Use bloodworm bait and catch 5 pcs. of each fishes: european chub, white-eye bream, white bream, vimba bream, young bream.",
+        "de": "Nutze Zuckmückenlarven als Köder und fange je 5 Stk.: Döbel, Zope, Güster, Zährte, Brachsen (Jungfisch).",
+        "es": "Usa larva de mosquito como cebo y pesca 5 uds. de cada pez: cacho, ojo de buey, brema blanca, vimba, brema joven.",
+        "pt": "Use larva de mosquito como isca e pesque 5 unid. de cada peixe: escalo-europeu, brema-de-olho-branco, brema-branca, vimbá, brema jovem."
+      },
+      "type": 1,
+      "fish": "8,3,6,23,31",
+      "bait": "3",
+      "num": "5,5,5,5,5",
+      "weight": "0",
+      "cat": 4,
+      "nag": "2500,700",
+      "res": "null",
+      "made": 0,
+      "date": 0,
+      "md5": "7bff67b173edb9bd89e330feea15f39c",
+      "parsed": {
+        "id_indexing_note": "QuestGenerator uses 1-based SQLite IDs (fishes.id 1..141, baits.id 1..40) where 0 means ANY fish/bait.",
+        "fish_db_ids_1based": [
+          8,
+          3,
+          6,
+          23,
+          31
+        ],
+        "resolved_fish_names_ru": [
+          "Голавль",
+          "Белоглазка",
+          "Густера",
+          "Рыбец",
+          "Подлещик"
+        ],
+        "bait_db_ids_1based": [
+          3
+        ],
+        "resolved_bait_names_ru": [
+          "мотыль"
+        ],
+        "num_parts": [
+          5,
+          5,
+          5,
+          5,
+          5
+        ],
+        "weight_parts": [
+          "0"
+        ],
+        "reward_coins": 2500,
+        "reward_experience": 700
+      }
+    },
+    {
+      "id": 7,
+      "index_0based": 6,
+      "title_ru": "Большое и маленькое",
+      "titles_i18n": {
+        "ru": "Большое и маленькое",
+        "en": "Big and small",
+        "de": "Groß und klein",
+        "es": "Grandes y pequeños",
+        "pt": "Grandes e pequenos"
+      },
+      "descriptions_i18n": {
+        "ru": "Поймать 1 кг уклейки и 100 кг усача.",
+        "en": "Catch 1 kg of common bleak and 100 kg of common barbel.",
+        "de": "Fange 1 kg Ukeleien und 100 kg Flussbarben.",
+        "es": "Pesca 1 kg de albur y 100 kg de barbo común.",
+        "pt": "Pesque 1 kg de alburno e 100 kg de barbo-comum."
+      },
+      "type": 2,
+      "fish": "46,47",
+      "bait": "0",
+      "num": "0",
+      "weight": "1000,100000",
+      "cat": 4,
+      "nag": "3000,700",
+      "res": "null",
+      "made": 0,
+      "date": 0,
+      "md5": "51b7499527a69f2d15ae36be762fb178",
+      "parsed": {
+        "id_indexing_note": "QuestGenerator uses 1-based SQLite IDs (fishes.id 1..141, baits.id 1..40) where 0 means ANY fish/bait.",
+        "fish_db_ids_1based": [
+          46,
+          47
+        ],
+        "resolved_fish_names_ru": [
+          "Уклейка",
+          "Усач"
+        ],
+        "bait_db_ids_1based": [
+          0
+        ],
+        "resolved_bait_names_ru": [
+          "ANY"
+        ],
+        "num_parts": [
+          0
+        ],
+        "weight_parts": [
+          "1000",
+          "100000"
+        ],
+        "reward_coins": 3000,
+        "reward_experience": 700
+      }
+    },
+    {
+      "id": 8,
+      "index_0based": 7,
+      "title_ru": "Рыба моей мечты: Язь!",
+      "titles_i18n": {
+        "ru": "Рыба моей мечты: Язь!",
+        "en": "Fish of my dreams: Ide!",
+        "de": "Der Fisch meiner Träume: Aland!",
+        "es": "¡El pez de mis sueños: el idus!",
+        "pt": "O peixe dos meus sonhos: o idus!"
+      },
+      "descriptions_i18n": {
+        "ru": "Ну-ка, поймай 5 язей, чтобы каждый весил 6-7 кг.",
+        "en": "Well, catch 5 ides so that each weighs 6-7 kg.",
+        "de": "Na los, fange 5 Alande, von denen jeder zwischen 6 und 7 kg wiegt.",
+        "es": "Bueno, pesca 5 idus que pesen entre 6 y 7 kg cada uno.",
+        "pt": "Bem, pesque 5 idus de forma que cada um pese entre 6 e 7 kg."
+      },
+      "type": 7,
+      "fish": "53",
+      "bait": "0",
+      "num": "5",
+      "weight": "6000-7000",
+      "cat": 4,
+      "nag": "4000,750",
+      "res": "null",
+      "made": 0,
+      "date": 0,
+      "md5": "0cd7910190eb1bd5234b5fd5d9f2775b",
+      "parsed": {
+        "id_indexing_note": "QuestGenerator uses 1-based SQLite IDs (fishes.id 1..141, baits.id 1..40) where 0 means ANY fish/bait.",
+        "fish_db_ids_1based": [
+          53
+        ],
+        "resolved_fish_names_ru": [
+          "Язь"
+        ],
+        "bait_db_ids_1based": [
+          0
+        ],
+        "resolved_bait_names_ru": [
+          "ANY"
+        ],
+        "num_parts": [
+          5
+        ],
+        "weight_parts": [
+          "6000-7000"
+        ],
+        "reward_coins": 4000,
+        "reward_experience": 750
+      }
+    },
+    {
+      "id": 9,
+      "index_0based": 8,
+      "title_ru": "Щукарь",
+      "titles_i18n": {
+        "ru": "Щукарь",
+        "en": "Pikes",
+        "de": "Hechte",
+        "es": "Lucios",
+        "pt": "Lucios"
+      },
+      "descriptions_i18n": {
+        "ru": "Выловить по 5 шт. щук в пределах веса: 6-10 кг, 11-15 кг, 16-20 кг.",
+        "en": "Catch 5 pcs. of northern pikes each within the weight ranges: 6-10 kg, 11-15 kg, 16-20 kg.",
+        "de": "Fange je 5 Stk. Hechte in den Gewichtsklassen: 6–10 kg, 11–15 kg, 16–20 kg.",
+        "es": "Pesca 5 uds. de lucios norteños dentro de los siguientes rangos de peso: 6-10 kg, 11-15 kg, 16-20 kg.",
+        "pt": "Pesque 5 unid. de lúcios-nórdicos dentro das seguintes faixas de peso: 6-10 kg, 11-15 kg, 16-20 kg."
+      },
+      "type": 7,
+      "fish": "52,52,52",
+      "bait": "0",
+      "num": "5,5,5",
+      "weight": "6000-10000,11000-15000,16000-20000",
+      "cat": 5,
+      "nag": "4500,800",
+      "res": "null",
+      "made": 0,
+      "date": 0,
+      "md5": "31fb7971d1c5dc783f059fdb7678a2de",
+      "parsed": {
+        "id_indexing_note": "QuestGenerator uses 1-based SQLite IDs (fishes.id 1..141, baits.id 1..40) where 0 means ANY fish/bait.",
+        "fish_db_ids_1based": [
+          52,
+          52,
+          52
+        ],
+        "resolved_fish_names_ru": [
+          "Щука",
+          "Щука",
+          "Щука"
+        ],
+        "bait_db_ids_1based": [
+          0
+        ],
+        "resolved_bait_names_ru": [
+          "ANY"
+        ],
+        "num_parts": [
+          5,
+          5,
+          5
+        ],
+        "weight_parts": [
+          "6000-10000",
+          "11000-15000",
+          "16000-20000"
+        ],
+        "reward_coins": 4500,
+        "reward_experience": 800
+      }
+    },
+    {
+      "id": 10,
+      "index_0based": 9,
+      "title_ru": "Испытание червем",
+      "titles_i18n": {
+        "ru": "Испытание червем",
+        "en": "Trial by worm",
+        "de": "Prüfung durch den Wurm",
+        "es": "Prueba del gusano",
+        "pt": "Provando a minhoca"
+      },
+      "descriptions_i18n": {
+        "ru": "Поймать кумжа (от 12 кг, 1 шт.), сиг (от 4 кг, 2 шт.) на наживку червь.",
+        "en": "Catch brown trout (from 12 kg, 1 pc.), lavaret (from 4 kg, 2 pcs.) with a worm bait.",
+        "de": "Fange Bachforelle (ab 12 kg, 1 Stk.) und Große Maräne (ab 4 kg, 2 Stk.) mit einem Wurm als Köder.",
+        "es": "Pesca trucha marrón (desde 12 kg, 1 ud.), lavareto (desde 4 kg, 2 uds.) usando gusano como cebo.",
+        "pt": "Pesque truta-marrom (a partir de 12 kg, 1 unid.), lavareto (a partir de 4 kg, 2 unid.) usando minhoca como isca."
+      },
+      "type": 3,
+      "fish": "124,126",
+      "bait": "1",
+      "num": "1,2",
+      "weight": "12000,4000",
+      "cat": 5,
+      "nag": "4500,600",
+      "res": "null",
+      "made": 0,
+      "date": 0,
+      "md5": "dfc0f41544c86c34b01cc95c2051560d",
+      "parsed": {
+        "id_indexing_note": "QuestGenerator uses 1-based SQLite IDs (fishes.id 1..141, baits.id 1..40) where 0 means ANY fish/bait.",
+        "fish_db_ids_1based": [
+          124,
+          126
+        ],
+        "resolved_fish_names_ru": [
+          "Кумжа",
+          "Сиг"
+        ],
+        "bait_db_ids_1based": [
+          1
+        ],
+        "resolved_bait_names_ru": [
+          "червь"
+        ],
+        "num_parts": [
+          1,
+          2
+        ],
+        "weight_parts": [
+          "12000",
+          "4000"
+        ],
+        "reward_coins": 4500,
+        "reward_experience": 600
+      }
+    },
+    {
+      "id": 11,
+      "index_0based": 10,
+      "title_ru": "Мини-сафари",
+      "titles_i18n": {
+        "ru": "Мини-сафари",
+        "en": "Mini safari",
+        "de": "Mini-Safari",
+        "es": "Mini safari",
+        "pt": "Mini safári"
+      },
+      "descriptions_i18n": {
+        "ru": "Поймать по 3 шт. следующих рыб: щиповка, корюшка, ряпушка, синец и подуст.",
+        "en": "Catch 3 pcs. of each fishes: spined loach, smelt, vendace, zope and common nase.",
+        "de": "Fange je 3 Stk. der folgenden Fische: Dorndidg/Steinbeißer, Stint, Kleine Maräne, Spitzkopfzope und Nase.",
+        "es": "Pesca 3 uds. de cada pez: locha de espina, eperlano, corégono picudo, blicca y condrostoma común.",
+        "pt": "Pesque 3 unid. de cada peixe: bochecha-de-espinho, eperlano, sargo-do-ártico, blicca e condrostoma-comum."
+      },
+      "type": 1,
+      "fish": "132,128,129,127,125",
+      "bait": "0",
+      "num": "3,3,3,3,3",
+      "weight": "0",
+      "cat": 5,
+      "nag": "5000,700",
+      "res": "null",
+      "made": 0,
+      "date": 0,
+      "md5": "07346f83d8b06dcb5ebf97a336aadd2e",
+      "parsed": {
+        "id_indexing_note": "QuestGenerator uses 1-based SQLite IDs (fishes.id 1..141, baits.id 1..40) where 0 means ANY fish/bait.",
+        "fish_db_ids_1based": [
+          132,
+          128,
+          129,
+          127,
+          125
+        ],
+        "resolved_fish_names_ru": [
+          "Щиповка",
+          "Корюшка",
+          "Ряпушка",
+          "Синец",
+          "Подуст"
+        ],
+        "bait_db_ids_1based": [
+          0
+        ],
+        "resolved_bait_names_ru": [
+          "ANY"
+        ],
+        "num_parts": [
+          3,
+          3,
+          3,
+          3,
+          3
+        ],
+        "weight_parts": [
+          "0"
+        ],
+        "reward_coins": 5000,
+        "reward_experience": 700
+      }
+    },
+    {
+      "id": 12,
+      "index_0based": 11,
+      "title_ru": "Пройди Квест",
+      "titles_i18n": {
+        "ru": "Пройди Квест",
+        "en": "Russian Quest",
+        "de": "Russische „Quest“",
+        "es": "\"Misión\" rusa",
+        "pt": "\"Missão\" russa"
+      },
+      "descriptions_i18n": {
+        "ru": "Поймай карась, вобла, ерш, судак, толстолобик. Каждой по 5 шт.",
+        "en": "Catch prussian carp, caspian roach, ruffe, zander, bighead carp. Each of 5 pcs.",
+        "de": "Fange Giebel, Kaspi-Plötze, Kaulbarsch, Zander und Marmorkarpfen. Je 5 Stk.",
+        "es": "Pesca carpa prusiana, rutilo del Caspio, acerina, lucioperca y carpa cabezona. 5 uds. de cada uno.",
+        "pt": "Pesque carpa-gibel, rutilo do Cáspio, papa-terra, lucioperca e carpa-cabeçuda. 5 unid. de cada."
+      },
+      "type": 1,
+      "fish": "1,7,16,41,44",
+      "bait": "0",
+      "num": "5,5,5,5,5",
+      "weight": "0",
+      "cat": 6,
+      "nag": "5000,700",
+      "res": "null",
+      "made": 0,
+      "date": 0,
+      "md5": "05a8e21b471b5fceeee4de5c5f226c15",
+      "parsed": {
+        "id_indexing_note": "QuestGenerator uses 1-based SQLite IDs (fishes.id 1..141, baits.id 1..40) where 0 means ANY fish/bait.",
+        "fish_db_ids_1based": [
+          1,
+          7,
+          16,
+          41,
+          44
+        ],
+        "resolved_fish_names_ru": [
+          "Карась",
+          "Вобла",
+          "Ерш",
+          "Судак",
+          "Толстолобик"
+        ],
+        "bait_db_ids_1based": [
+          0
+        ],
+        "resolved_bait_names_ru": [
+          "ANY"
+        ],
+        "num_parts": [
+          5,
+          5,
+          5,
+          5,
+          5
+        ],
+        "weight_parts": [
+          "0"
+        ],
+        "reward_coins": 5000,
+        "reward_experience": 700
+      }
+    },
+    {
+      "id": 13,
+      "index_0based": 12,
+      "title_ru": "Карповник",
+      "titles_i18n": {
+        "ru": "Карповник",
+        "en": "Carps",
+        "de": "Karpfen",
+        "es": "Carpas",
+        "pt": "Carpas"
+      },
+      "descriptions_i18n": {
+        "ru": "Поймай по 3 шт. все видов карпов на водохранилище: карп (от 18 кг), карп голый (от 20 кг), карп зеркальный (от 20 кг).",
+        "en": "Catch 3 pcs. of all types of carp each: carp (from 18 kg), leather carp (from 20 kg), mirror carp (from 20 kg).",
+        "de": "Fange je 3 Stk. aller Karpfenarten: Karpfen (ab 18 kg), Lederkarpfen (ab 20 kg), Spiegelkarpfen (ab 20 kg).",
+        "es": "Pesca 3 uds. de cada tipo de carpa: carpa común (desde 18 kg), carpa de cuero (desde 20 kg), carpa espejo (desde 20 kg).",
+        "pt": "Pesque 3 unid. de todos os tipos de carpa: carpa-comum (a partir de 18 kg), carpa-de-couro (a partir de 20 kg), carpa-espelho (a partir de 20 kg)."
+      },
+      "type": 3,
+      "fish": "19,20,21",
+      "bait": "0",
+      "num": "3,3,3",
+      "weight": "18000,20000,20000",
+      "cat": 6,
+      "nag": "6000,800",
+      "res": "null",
+      "made": 0,
+      "date": 0,
+      "md5": "070e56d7c7e4e85294f605160a30a9d4",
+      "parsed": {
+        "id_indexing_note": "QuestGenerator uses 1-based SQLite IDs (fishes.id 1..141, baits.id 1..40) where 0 means ANY fish/bait.",
+        "fish_db_ids_1based": [
+          19,
+          20,
+          21
+        ],
+        "resolved_fish_names_ru": [
+          "Карп",
+          "Карп голый",
+          "Карп зеркальный"
+        ],
+        "bait_db_ids_1based": [
+          0
+        ],
+        "resolved_bait_names_ru": [
+          "ANY"
+        ],
+        "num_parts": [
+          3,
+          3,
+          3
+        ],
+        "weight_parts": [
+          "18000",
+          "20000",
+          "20000"
+        ],
+        "reward_coins": 6000,
+        "reward_experience": 800
+      }
+    },
+    {
+      "id": 14,
+      "index_0based": 13,
+      "title_ru": "Пивной набор",
+      "titles_i18n": {
+        "ru": "Пивной набор",
+        "en": "Beer set",
+        "de": "Bier-Set",
+        "es": "Set para cerveza",
+        "pt": "Kit para cerveja"
+      },
+      "descriptions_i18n": {
+        "ru": "Налови по 10 шт.: рак, лещ, тарань, подлещик.",
+        "en": "Catch 10 pcs. of each fishes: crayfish, common bream, taran, young bream.",
+        "de": "Fange je 10 Stk. der folgenden Tiere/Fische: Flusskrebs, Brachse, Taran-Plötze, Brachsen (Jungfisch).",
+        "es": "Pesca 10 uds. de cada espécimen: cangrejo de río, brema común, tarán, brema joven.",
+        "pt": "Pesque 10 unid. de cada espécime: lagostim, brema-comum, taran, brema jovem."
+      },
+      "type": 1,
+      "fish": "33,24,43,31",
+      "bait": "0",
+      "num": "10,10,10,10",
+      "weight": "0",
+      "cat": 6,
+      "nag": "6000,800",
+      "res": "null",
+      "made": 0,
+      "date": 0,
+      "md5": "4014ac883e5be3d0ba270038e74fbcc3",
+      "parsed": {
+        "id_indexing_note": "QuestGenerator uses 1-based SQLite IDs (fishes.id 1..141, baits.id 1..40) where 0 means ANY fish/bait.",
+        "fish_db_ids_1based": [
+          33,
+          24,
+          43,
+          31
+        ],
+        "resolved_fish_names_ru": [
+          "Рак",
+          "Лещ",
+          "Тарань",
+          "Подлещик"
+        ],
+        "bait_db_ids_1based": [
+          0
+        ],
+        "resolved_bait_names_ru": [
+          "ANY"
+        ],
+        "num_parts": [
+          10,
+          10,
+          10,
+          10
+        ],
+        "weight_parts": [
+          "0"
+        ],
+        "reward_coins": 6000,
+        "reward_experience": 800
+      }
+    },
+    {
+      "id": 15,
+      "index_0based": 14,
+      "title_ru": "Буффало",
+      "titles_i18n": {
+        "ru": "Буффало",
+        "en": "Buffalo",
+        "de": "Büffelfische",
+        "es": "Búfalos",
+        "pt": "Búfalos"
+      },
+      "descriptions_i18n": {
+        "ru": "Используй наживку ручейник и поймай буффало черный - 100 кг, буффало малоротый - 150 кг, буффало большеротый - 150 кг.",
+        "en": "Use caddisfly bait and catch black buffalo - 100 kg, smallmouth buffalo - 150 kg, bigmouth buffalo - 150 kg.",
+        "de": "Nutze Köcherfliegenlarven als Köder und fange: Schwarzer Büffelfisch – 100 kg, Kleinmaul-Büffelfisch – 150 kg, Großmaul-Büffelfisch – 150 kg.",
+        "es": "Usa larva de frigánea como cebo y pesca: búfalo negro - 100 kg, búfalo de boca pequeña - 150 kg, búfalo de boca grande - 150 kg.",
+        "pt": "Use larva de frigânea como isca e pesque: búfalo-preto - 100 kg, búfalo-de-boca-pequena - 150 kg, búfalo-de-boca-grande - 150 kg."
+      },
+      "type": 2,
+      "fish": "133,134,135",
+      "bait": "25",
+      "num": "0",
+      "weight": "100000,150000,150000",
+      "cat": 7,
+      "nag": "7000,800",
+      "res": "null",
+      "made": 0,
+      "date": 0,
+      "md5": "0e652a10d7fb5482089490a4ea20c665",
+      "parsed": {
+        "id_indexing_note": "QuestGenerator uses 1-based SQLite IDs (fishes.id 1..141, baits.id 1..40) where 0 means ANY fish/bait.",
+        "fish_db_ids_1based": [
+          133,
+          134,
+          135
+        ],
+        "resolved_fish_names_ru": [
+          "Буффало черный",
+          "Буффало малоротый",
+          "Буффало большеротый"
+        ],
+        "bait_db_ids_1based": [
+          25
+        ],
+        "resolved_bait_names_ru": [
+          "ручейник"
+        ],
+        "num_parts": [
+          0
+        ],
+        "weight_parts": [
+          "100000",
+          "150000",
+          "150000"
+        ],
+        "reward_coins": 7000,
+        "reward_experience": 800
+      }
+    },
+    {
+      "id": 16,
+      "index_0based": 15,
+      "title_ru": "Ловля на живца",
+      "titles_i18n": {
+        "ru": "Ловля на живца",
+        "en": "Live bait fishing",
+        "de": "Angeln mit Köderfisch",
+        "es": "Pesca con cebo vivo",
+        "pt": "Pesca com isca viva"
+      },
+      "descriptions_i18n": {
+        "ru": "Поймай всех нижеуказаных рыб на живца. Каждой по 3 шт.",
+        "en": "Catch all of fishes below with live bait. 3 pcs. each.",
+        "de": "Fange alle unten aufgeführten Fische mit einem Köderfisch. Je 3 Stk.",
+        "es": "Pesca todos los siguientes peces usando cebo vivo. 3 uds. de cada uno.",
+        "pt": "Pesque todos os seguintes peixes usando isca viva. 3 unid. de cada."
+      },
+      "type": 1,
+      "fish": "136,137,138,139",
+      "bait": "33",
+      "num": "3,3,3,3",
+      "weight": "0",
+      "cat": 7,
+      "nag": "7000,800",
+      "res": "null",
+      "made": 0,
+      "date": 0,
+      "md5": "56c974e2ad3c231c1c39ca187fe48483",
+      "parsed": {
+        "id_indexing_note": "QuestGenerator uses 1-based SQLite IDs (fishes.id 1..141, baits.id 1..40) where 0 means ANY fish/bait.",
+        "fish_db_ids_1based": [
+          136,
+          137,
+          138,
+          139
+        ],
+        "resolved_fish_names_ru": [
+          "Окунь малоротый",
+          "Ильная рыба",
+          "Щука-маскинонг",
+          "Окунь солнечный"
+        ],
+        "bait_db_ids_1based": [
+          33
+        ],
+        "resolved_bait_names_ru": [
+          "живец"
+        ],
+        "num_parts": [
+          3,
+          3,
+          3,
+          3
+        ],
+        "weight_parts": [
+          "0"
+        ],
+        "reward_coins": 7000,
+        "reward_experience": 800
+      }
+    },
+    {
+      "id": 17,
+      "index_0based": 16,
+      "title_ru": "Королевский лосось",
+      "titles_i18n": {
+        "ru": "Королевский лосось",
+        "en": "King salmon",
+        "de": "Königslachs",
+        "es": "Salmón real",
+        "pt": "Salmão-rei"
+      },
+      "descriptions_i18n": {
+        "ru": "Налови по 5 шт. чавычи в пределах веса: 15-20 кг, 25-30 кг, 35-40 кг.",
+        "en": "Catch 5 pcs. of chinook salmon each within the weight ranges: 15-20 kg, 25-30 kg, 35-40 kg.",
+        "de": "Fange je 5 Stk. Königslachse (Chinook) in den Gewichtsklassen: 15–20 kg, 25–30 kg, 35–40 kg.",
+        "es": "Pesca 5 uds. de salmón real (chinook) dentro de los siguientes rangos de peso: 15-20 kg, 25-30 kg, 35-40 kg.",
+        "pt": "Pesque 5 unid. de salmão-rei (chinook) dentro das seguintes faixas de peso: 15-20 kg, 25-30 kg, 35-40 kg."
+      },
+      "type": 7,
+      "fish": "140,140,140",
+      "bait": "0",
+      "num": "5,5,5,5",
+      "weight": "15000-20000,25000-30000,35000-40000",
+      "cat": 7,
+      "nag": "8000,900",
+      "res": "null",
+      "made": 0,
+      "date": 0,
+      "md5": "cafa1e19b88f5bbbc82d3b477f83ff06",
+      "parsed": {
+        "id_indexing_note": "QuestGenerator uses 1-based SQLite IDs (fishes.id 1..141, baits.id 1..40) where 0 means ANY fish/bait.",
+        "fish_db_ids_1based": [
+          140,
+          140,
+          140
+        ],
+        "resolved_fish_names_ru": [
+          "Чавыча",
+          "Чавыча",
+          "Чавыча"
+        ],
+        "bait_db_ids_1based": [
+          0
+        ],
+        "resolved_bait_names_ru": [
+          "ANY"
+        ],
+        "num_parts": [
+          5,
+          5,
+          5,
+          5
+        ],
+        "weight_parts": [
+          "15000-20000",
+          "25000-30000",
+          "35000-40000"
+        ],
+        "reward_coins": 8000,
+        "reward_experience": 900
+      }
+    },
+    {
+      "id": 18,
+      "index_0based": 17,
+      "title_ru": "Заказ ресторана",
+      "titles_i18n": {
+        "ru": "Заказ ресторана",
+        "en": "Restaurant order",
+        "de": "Restaurant-Bestellung",
+        "es": "Pedido de restaurante",
+        "pt": "Pedido do restaurante"
+      },
+      "descriptions_i18n": {
+        "ru": "Нужно поймать голец (от 7 кг), налим (от 12 кг), сазан (от 20 кг). Каждой по 7 шт.",
+        "en": "You need to catch arctic char (from 7 kg), burbot (from 12 kg), common carp (from 20 kg). 7 pcs. each.",
+        "de": "Du musst Seesaibling (ab 7 kg), Quappe (ab 12 kg) und Wildkarpfen (ab 20 kg) fangen. Je 7 Stk.",
+        "es": "Debes pescar salvelino ártico (desde 7 kg), lote (desde 12 kg), carpa común (desde 20 kg). 7 uds. de cada uno.",
+        "pt": "Você precisa pescar truta-árctica (a partir de 7 kg), bota (a partir de 12 kg), carpa-comum (a partir de 20 kg). 7 unid. de cada."
+      },
+      "type": 3,
+      "fish": "13,26,35",
+      "bait": "0",
+      "num": "7,7,7",
+      "weight": "7000,12000,20000",
+      "cat": 8,
+      "nag": "8500,700",
+      "res": "null",
+      "made": 0,
+      "date": 0,
+      "md5": "e0c4493a4987538b056f7a52eec1c9bf",
+      "parsed": {
+        "id_indexing_note": "QuestGenerator uses 1-based SQLite IDs (fishes.id 1..141, baits.id 1..40) where 0 means ANY fish/bait.",
+        "fish_db_ids_1based": [
+          13,
+          26,
+          35
+        ],
+        "resolved_fish_names_ru": [
+          "Голец арктический",
+          "Налим",
+          "Сазан"
+        ],
+        "bait_db_ids_1based": [
+          0
+        ],
+        "resolved_bait_names_ru": [
+          "ANY"
+        ],
+        "num_parts": [
+          7,
+          7,
+          7
+        ],
+        "weight_parts": [
+          "7000",
+          "12000",
+          "20000"
+        ],
+        "reward_coins": 8500,
+        "reward_experience": 700
+      }
+    },
+    {
+      "id": 19,
+      "index_0based": 18,
+      "title_ru": "Форелевая запеканка",
+      "titles_i18n": {
+        "ru": "Форелевая запеканка",
+        "en": "Trout casserole",
+        "de": "Forellenauflauf",
+        "es": "Cazuela de trucha",
+        "pt": "Ensopado de truta"
+      },
+      "descriptions_i18n": {
+        "ru": "Поймать радужная форель (от 6 кг), севанская форель (от 10 кг). Каждой по 10 шт.",
+        "en": "Catch rainbow trout (from 6 kg), sevan trout (from 10 kg). 10 pcs. each.",
+        "de": "Fange Regenbogenforelle (ab 6 kg) und Sevan-Forelle (ab 10 kg). Je 10 Stk.",
+        "es": "Pesca trucha arcoíris (desde 6 kg), trucha de Seván (desde 10 kg). 10 uds. de cada una.",
+        "pt": "Pesque truta-arco-íris (a partir de 6 kg), truta-de-sevan (a partir de 10 kg). 10 unid. de cada."
+      },
+      "type": 3,
+      "fish": "32,36",
+      "bait": "0",
+      "num": "10,10",
+      "weight": "6000,10000",
+      "cat": 8,
+      "nag": "8500,700",
+      "res": "null",
+      "made": 0,
+      "date": 0,
+      "md5": "2d02b24aa461cdf51c7a86216d3cd4f5",
+      "parsed": {
+        "id_indexing_note": "QuestGenerator uses 1-based SQLite IDs (fishes.id 1..141, baits.id 1..40) where 0 means ANY fish/bait.",
+        "fish_db_ids_1based": [
+          32,
+          36
+        ],
+        "resolved_fish_names_ru": [
+          "Радужная форель",
+          "Севанская форель"
+        ],
+        "bait_db_ids_1based": [
+          0
+        ],
+        "resolved_bait_names_ru": [
+          "ANY"
+        ],
+        "num_parts": [
+          10,
+          10
+        ],
+        "weight_parts": [
+          "6000",
+          "10000"
+        ],
+        "reward_coins": 8500,
+        "reward_experience": 700
+      }
+    },
+    {
+      "id": 20,
+      "index_0based": 19,
+      "title_ru": "Сомы",
+      "titles_i18n": {
+        "ru": "Сомы",
+        "en": "Catfish",
+        "de": "Welse",
+        "es": "Bagres",
+        "pt": "Bagres"
+      },
+      "descriptions_i18n": {
+        "ru": "Налови по 3 шт. сомов в пределах веса: 10-40 кг, 50-80 кг, 120-150 кг.",
+        "en": "Catch 3 pcs. of catfish each within the weight ranges: 10-40 kg, 50-80 kg, 120-150 kg.",
+        "de": "Fange je 3 Stk. Welse in den Gewichtsklassen: 10–40 kg, 50–80 kg, 120–150 kg.",
+        "es": "Pesca 3 uds. de siluro dentro de los siguientes rangos de peso: 10-40 kg, 50-80 kg, 120-150 kg.",
+        "pt": "Pesque 3 unid. de bagre dentro das seguintes faixas de peso: 10-40 kg, 50-80 kg, 120-150 kg."
+      },
+      "type": 7,
+      "fish": "38,38,38",
+      "bait": "0",
+      "num": "3,3,3",
+      "weight": "10000-40000,50000-80000,120000-150000",
+      "cat": 8,
+      "nag": "9000,1000",
+      "res": "null",
+      "made": 0,
+      "date": 0,
+      "md5": "45273b9cc265473aa6d58e76141941da",
+      "parsed": {
+        "id_indexing_note": "QuestGenerator uses 1-based SQLite IDs (fishes.id 1..141, baits.id 1..40) where 0 means ANY fish/bait.",
+        "fish_db_ids_1based": [
+          38,
+          38,
+          38
+        ],
+        "resolved_fish_names_ru": [
+          "Сом",
+          "Сом",
+          "Сом"
+        ],
+        "bait_db_ids_1based": [
+          0
+        ],
+        "resolved_bait_names_ru": [
+          "ANY"
+        ],
+        "num_parts": [
+          3,
+          3,
+          3
+        ],
+        "weight_parts": [
+          "10000-40000",
+          "50000-80000",
+          "120000-150000"
+        ],
+        "reward_coins": 9000,
+        "reward_experience": 1000
+      }
+    },
+    {
+      "id": 21,
+      "index_0based": 20,
+      "title_ru": "Окушки",
+      "titles_i18n": {
+        "ru": "Окушки",
+        "en": "Perches",
+        "de": "Barsche",
+        "es": "Percas",
+        "pt": "Percas"
+      },
+      "descriptions_i18n": {
+        "ru": "Поймать разных речных окуней: окунь - 10 кг, окунь малоротый - 10 кг, окунь солнечный - 3 кг, окунь нильский - 400 кг.",
+        "en": "Catch different river perches: perch - 10 kg, smallmouth bass - 10 kg, pumpkinseed - 3 kg, nile perch - 400 kg.",
+        "de": "Fange verschiedene Flussbarsche: Flussbarsch – 10 kg, Schwarzbarsch – 10 kg, Gemeiner Sonnenbarsch – 3 kg, Nilbarsch – 400 kg.",
+        "es": "Pesca diferentes percas de río: perca - 10 kg, perca de boca pequeña - 10 kg, perca sol - 3 kg, perca del Nilo - 400 kg.",
+        "pt": "Pesque diferentes percas do rio: perca - 10 kg, achigã-de-boca-pequena - 10 kg, perca-sol - 3 kg, perca-do-nilo - 400 kg."
+      },
+      "type": 2,
+      "fish": "28,136,139,101",
+      "bait": "0",
+      "num": "0",
+      "weight": "10000,10000,3000,400000",
+      "cat": 9,
+      "nag": "10000,1000",
+      "res": "null",
+      "made": 0,
+      "date": 0,
+      "md5": "31efec74e8b57f1154ebe4fff49a0b20",
+      "parsed": {
+        "id_indexing_note": "QuestGenerator uses 1-based SQLite IDs (fishes.id 1..141, baits.id 1..40) where 0 means ANY fish/bait.",
+        "fish_db_ids_1based": [
+          28,
+          136,
+          139,
+          101
+        ],
+        "resolved_fish_names_ru": [
+          "Окунь",
+          "Окунь малоротый",
+          "Окунь солнечный",
+          "Окунь нильский"
+        ],
+        "bait_db_ids_1based": [
+          0
+        ],
+        "resolved_bait_names_ru": [
+          "ANY"
+        ],
+        "num_parts": [
+          0
+        ],
+        "weight_parts": [
+          "10000",
+          "10000",
+          "3000",
+          "400000"
+        ],
+        "reward_coins": 10000,
+        "reward_experience": 1000
+      }
+    },
+    {
+      "id": 22,
+      "index_0based": 21,
+      "title_ru": "Осторожно! Наживка мясо.",
+      "titles_i18n": {
+        "ru": "Осторожно! Наживка мясо.",
+        "en": "Carefully! Bait - meat",
+        "de": "Vorsicht! Köder: Fleisch",
+        "es": "¡Cuidado! Cebo: carne",
+        "pt": "Cuidado! Isca: carne"
+      },
+      "descriptions_i18n": {
+        "ru": "Поймай всех нижеуказаных рыб и рептилию(!) на мясо. Каждой по 2 шт.",
+        "en": "Catch all of fishes and a reptile(!) below with meat. 2 pcs. each.",
+        "de": "Fange alle unten aufgeführten Fische und ein Reptil(!) mit Fleisch als Köder. Je 2 Stk.",
+        "es": "Pesca todos los siguientes peces y ¡un reptil(!) usando carne como cebo. 2 uds. de cada uno.",
+        "pt": "Pesque todos os seguintes peixes e um réptil(!) usando carne como isca. 2 unid. de cada."
+      },
+      "type": 1,
+      "fish": "101,102,103,104,112",
+      "bait": "31",
+      "num": "2,2,2,2,2",
+      "weight": "0",
+      "cat": 9,
+      "nag": "11000,1500",
+      "res": "null",
+      "made": 0,
+      "date": 0,
+      "md5": "68cdfef024bb98ce41dec715751a2227",
+      "parsed": {
+        "id_indexing_note": "QuestGenerator uses 1-based SQLite IDs (fishes.id 1..141, baits.id 1..40) where 0 means ANY fish/bait.",
+        "fish_db_ids_1based": [
+          101,
+          102,
+          103,
+          104,
+          112
+        ],
+        "resolved_fish_names_ru": [
+          "Окунь нильский",
+          "Тигровая рыба большая",
+          "Сом вунду",
+          "Электрический сом",
+          "Нильский крокодил"
+        ],
+        "bait_db_ids_1based": [
+          31
+        ],
+        "resolved_bait_names_ru": [
+          "мясо"
+        ],
+        "num_parts": [
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        "weight_parts": [
+          "0"
+        ],
+        "reward_coins": 11000,
+        "reward_experience": 1500
+      }
+    },
+    {
+      "id": 23,
+      "index_0based": 22,
+      "title_ru": "Африканские сомы",
+      "titles_i18n": {
+        "ru": "Африканские сомы",
+        "en": "African catfish",
+        "de": "Afrikanischer Raubwels",
+        "es": "Bagre africano",
+        "pt": "Bagre-africano"
+      },
+      "descriptions_i18n": {
+        "ru": "Поймай по 5 шт. следующих рыб: сом вунду (от 30 кг), электрический сом (от 12 кг), сом жирафовый (от 2 кг).",
+        "en": "Catch 5 pcs. of each fishes: vundu (from 30 kg), electric catfish (from 12 kg), giraffe catfish (from 2 kg).",
+        "de": "Fange je 5 Stk. der folgenden Fische: Vundu-Wels (ab 30 kg), Zitterwels (ab 12 kg), Giraffenwels (ab 2 kg).",
+        "es": "Pesca 5 uds. de cada pez: vundu (desde 30 kg), bagre eléctrico (desde 12 kg), bagre jirafa (desde 2 kg).",
+        "pt": "Pesque 5 unid. de cada peixe: vundu (a partir de 30 kg), bagre-elétrico (a partir de 12 kg), bagre-girafa (a partir de 2 kg)."
+      },
+      "type": 3,
+      "fish": "103,104,106",
+      "bait": "0",
+      "num": "5,5,5",
+      "weight": "30000,12000,2000",
+      "cat": 9,
+      "nag": "11000,900",
+      "res": "null",
+      "made": 0,
+      "date": 0,
+      "md5": "fd1f51f9448e2f911e9b9438df166656",
+      "parsed": {
+        "id_indexing_note": "QuestGenerator uses 1-based SQLite IDs (fishes.id 1..141, baits.id 1..40) where 0 means ANY fish/bait.",
+        "fish_db_ids_1based": [
+          103,
+          104,
+          106
+        ],
+        "resolved_fish_names_ru": [
+          "Сом вунду",
+          "Электрический сом",
+          "Сом жирафовый"
+        ],
+        "bait_db_ids_1based": [
+          0
+        ],
+        "resolved_bait_names_ru": [
+          "ANY"
+        ],
+        "num_parts": [
+          5,
+          5,
+          5
+        ],
+        "weight_parts": [
+          "30000",
+          "12000",
+          "2000"
+        ],
+        "reward_coins": 11000,
+        "reward_experience": 900
+      }
+    },
+    {
+      "id": 24,
+      "index_0based": 23,
+      "title_ru": "Черное и белое",
+      "titles_i18n": {
+        "ru": "Черное и белое",
+        "en": "Black and white",
+        "de": "Schwarz und weiß",
+        "es": "Blanco y negro",
+        "pt": "Preto e branco"
+      },
+      "descriptions_i18n": {
+        "ru": "Налови по 5 шт.: черный амур (15-18 кг), белый амур (15-18 кг).",
+        "en": "Catch 5 pcs. of each fishes: black carp (15-18 kg), grass carp (15-18 kg).",
+        "de": "Fange je 5 Stk. der folgenden Fische: Schwarzer Karpfen (15–18 kg), Graskarpfen (15–18 kg).",
+        "es": "Pesca 5 uds. de cada pez: carpa negra (15-18 kg), carpa de la hierba (15-18 kg).",
+        "pt": "Pesque 5 unid. de cada peixe: carpa-negra (15-18 kg), carpa-capim (15-18 kg)."
+      },
+      "type": 7,
+      "fish": "50,11",
+      "bait": "0",
+      "num": "5,5",
+      "weight": "15000-18000,15000-18000",
+      "cat": 10,
+      "nag": "11500,800",
+      "res": "null",
+      "made": 0,
+      "date": 0,
+      "md5": "a7126da8033f739e25edd3eddf7d9a20",
+      "parsed": {
+        "id_indexing_note": "QuestGenerator uses 1-based SQLite IDs (fishes.id 1..141, baits.id 1..40) where 0 means ANY fish/bait.",
+        "fish_db_ids_1based": [
+          50,
+          11
+        ],
+        "resolved_fish_names_ru": [
+          "Черный амур",
+          "Белый амур"
+        ],
+        "bait_db_ids_1based": [
+          0
+        ],
+        "resolved_bait_names_ru": [
+          "ANY"
+        ],
+        "num_parts": [
+          5,
+          5
+        ],
+        "weight_parts": [
+          "15000-18000",
+          "15000-18000"
+        ],
+        "reward_coins": 11500,
+        "reward_experience": 800
+      }
+    },
+    {
+      "id": 25,
+      "index_0based": 24,
+      "title_ru": "Ночная охота",
+      "titles_i18n": {
+        "ru": "Ночная охота",
+        "en": "Night hunting",
+        "de": "Nächtliche Jagd",
+        "es": "Caza nocturna",
+        "pt": "Caça noturna"
+      },
+      "descriptions_i18n": {
+        "ru": "Используй указанную наживку и поймай три вида ночных рыб: подлещик, таймень и угорь. Каждой по 5 шт.",
+        "en": "Use the indicated baits and catch three types of night fish: young bream, taimen and eel. 5 pcs. each.",
+        "de": "Nutze die angegebenen Köder und fange drei Arten von Nachtfischen: Brachsen (Jungfisch), Taimen und Aal. Je 5 Stk.",
+        "es": "Usa los cebos indicados y pesca tres tipos de peces nocturnos: brema joven, taimen y anguila. 5 uds. de cada uno.",
+        "pt": "Use as iscas indicadas e pesque três tipos de peixes noturnos: brema jovem, taimen e enguia. 5 unid. de cada."
+      },
+      "type": 1,
+      "fish": "31,42,45",
+      "bait": "12,28,32,33",
+      "num": "5,5,5",
+      "weight": "0",
+      "cat": 10,
+      "nag": "12000,1500",
+      "res": "null",
+      "made": 0,
+      "date": 0,
+      "md5": "22b64aa6114d13244336f6767a8fd4c8",
+      "parsed": {
+        "id_indexing_note": "QuestGenerator uses 1-based SQLite IDs (fishes.id 1..141, baits.id 1..40) where 0 means ANY fish/bait.",
+        "fish_db_ids_1based": [
+          31,
+          42,
+          45
+        ],
+        "resolved_fish_names_ru": [
+          "Подлещик",
+          "Таймень",
+          "Угорь"
+        ],
+        "bait_db_ids_1based": [
+          12,
+          28,
+          32,
+          33
+        ],
+        "resolved_bait_names_ru": [
+          "опарыш",
+          "лягушка",
+          "моллюск",
+          "живец"
+        ],
+        "num_parts": [
+          5,
+          5,
+          5
+        ],
+        "weight_parts": [
+          "0"
+        ],
+        "reward_coins": 12000,
+        "reward_experience": 1500
+      }
+    },
+    {
+      "id": 26,
+      "index_0based": 25,
+      "title_ru": "Вот это лосось!!!",
+      "titles_i18n": {
+        "ru": "Вот это лосось!!!",
+        "en": "That's salmon!!!",
+        "de": "Das ist mal ein Lachs!!!",
+        "es": "¡¡¡Eso sí es un salmón!!!",
+        "pt": "Isso sim é um salmão!!!"
+      },
+      "descriptions_i18n": {
+        "ru": "Налови по 10 шт. лосося в пределах веса: 1-5 кг, 10-14 кг и 23-27 кг.",
+        "en": "Catch 10 pcs. of salmon each within the weight ranges: 1-5 kg, 10-14 kg and 23-27 kg.",
+        "de": "Fange je 10 Stk. Lachse in den Gewichtsklassen: 1–5 kg, 10–14 kg und 23–27 kg.",
+        "es": "Pesca 10 uds. de salmón dentro de los siguientes rangos de peso: 1-5 kg, 10-14 kg y 23-27 kg.",
+        "pt": "Pesque 10 unid. de salmão dentro das seguintes faixas de peso: 1-5 kg, 10-14 kg e 23-27 kg."
+      },
+      "type": 7,
+      "fish": "61,61,61",
+      "bait": "0",
+      "num": "10,10,10",
+      "weight": "1000-5000,10000-14000,23000-27000",
+      "cat": 10,
+      "nag": "11500,800",
+      "res": "null",
+      "made": 0,
+      "date": 0,
+      "md5": "a7cfe1492df5e6ae29be1afa08af290f",
+      "parsed": {
+        "id_indexing_note": "QuestGenerator uses 1-based SQLite IDs (fishes.id 1..141, baits.id 1..40) where 0 means ANY fish/bait.",
+        "fish_db_ids_1based": [
+          61,
+          61,
+          61
+        ],
+        "resolved_fish_names_ru": [
+          "Лосось",
+          "Лосось",
+          "Лосось"
+        ],
+        "bait_db_ids_1based": [
+          0
+        ],
+        "resolved_bait_names_ru": [
+          "ANY"
+        ],
+        "num_parts": [
+          10,
+          10,
+          10
+        ],
+        "weight_parts": [
+          "1000-5000",
+          "10000-14000",
+          "23000-27000"
+        ],
+        "reward_coins": 11500,
+        "reward_experience": 800
+      }
+    },
+    {
+      "id": 27,
+      "index_0based": 26,
+      "title_ru": "Рыба для аквариума",
+      "titles_i18n": {
+        "ru": "Рыба для аквариума",
+        "en": "Fishes for aquarium",
+        "de": "Fische fürs Aquarium",
+        "es": "Peces para acuario",
+        "pt": "Peixes para aquário"
+      },
+      "descriptions_i18n": {
+        "ru": "Поймай следующих рыб: арована (4-6 кг), рыба-нож (7-10 кг), сом краснохвостый (23-27кг). Каждой по 4 шт.",
+        "en": "Catch 4 pcs. of each fishes: asian arowana (4-6 kg), royal featherback (7-10 kg), redtail catfish (23-27 kg).",
+        "de": "Fange je 4 Stk. der folgenden Fische: Asiatischer Gabelbart/Arowana (4–6 kg), Königsmesserfisch (7–10 kg), Rotflossen-Antennenwels (23–27 kg).",
+        "es": "Pesca 4 uds. de cada pez: arawana asiática (4-6 kg), pez navaja real (7-10 kg), bagre de cola roja (23-27 kg).",
+        "pt": "Pesque 4 unid. de cada peixe: aruanã-asiático (4-6 kg), pez-faca-real (7-10 kg), bagre-de-cauda-vermelha (23-27 kg)."
+      },
+      "type": 7,
+      "fish": "116,117,121",
+      "bait": "0",
+      "num": "4,4,4",
+      "weight": "4000-6000,7000-10000,23000-27000",
+      "cat": 11,
+      "nag": "12500,1000",
+      "res": "null",
+      "made": 0,
+      "date": 0,
+      "md5": "94c51872959ee8f42b15c681ada6c6fa",
+      "parsed": {
+        "id_indexing_note": "QuestGenerator uses 1-based SQLite IDs (fishes.id 1..141, baits.id 1..40) where 0 means ANY fish/bait.",
+        "fish_db_ids_1based": [
+          116,
+          117,
+          121
+        ],
+        "resolved_fish_names_ru": [
+          "Арована азиатская",
+          "Рыба-нож королевская",
+          "Сом краснохвостый"
+        ],
+        "bait_db_ids_1based": [
+          0
+        ],
+        "resolved_bait_names_ru": [
+          "ANY"
+        ],
+        "num_parts": [
+          4,
+          4,
+          4
+        ],
+        "weight_parts": [
+          "4000-6000",
+          "7000-10000",
+          "23000-27000"
+        ],
+        "reward_coins": 12500,
+        "reward_experience": 1000
+      }
+    },
+    {
+      "id": 28,
+      "index_0based": 27,
+      "title_ru": "Зубастая рыба",
+      "titles_i18n": {
+        "ru": "Зубастая рыба",
+        "en": "Toothed fish",
+        "de": "Zahnfisch",
+        "es": "Pez dentado",
+        "pt": "Peixe dentado"
+      },
+      "descriptions_i18n": {
+        "ru": "Нужно поймать: тигровая рыба большая (от 30 кг), паку (от 26 кг), змееголов (от 12 кг). Каждой по 7 шт.",
+        "en": "You need to catch: hydrocynus goliath (from 30 kg), tambaqui (from 26 kg), giant snakehead (from 12 kg). 7 pcs. each.",
+        "de": "Du musst fangen: Goliath-Tigerfisch (ab 30 kg), Tambaqui (ab 26 kg), Riesen-Schlangenkopf fisch (ab 12 kg). Je 7 Stk.",
+        "es": "Debes pescar: pez tigre goliat (desde 30 kg), tambaquí (desde 26 kg), cabeza de serpiente gigante (desde 12 kg). 7 uds. de cada uno.",
+        "pt": "Você precisa pescar: peixe-tigre-golias (a partir de 30 kg), tambaqui (a partir de 26 kg), cabeça-de-cobra-gigante (a partir de 12 kg). 7 unid. de cada."
+      },
+      "type": 3,
+      "fish": "102,118,119",
+      "bait": "0",
+      "num": "7,7,7",
+      "weight": "30000,26000,12000",
+      "cat": 11,
+      "nag": "13000,1200",
+      "res": "null",
+      "made": 0,
+      "date": 0,
+      "md5": "2ff424bc4ee4ac783e82f9bbde563c01",
+      "parsed": {
+        "id_indexing_note": "QuestGenerator uses 1-based SQLite IDs (fishes.id 1..141, baits.id 1..40) where 0 means ANY fish/bait.",
+        "fish_db_ids_1based": [
+          102,
+          118,
+          119
+        ],
+        "resolved_fish_names_ru": [
+          "Тигровая рыба большая",
+          "Паку бурый",
+          "Змееголов гигантский"
+        ],
+        "bait_db_ids_1based": [
+          0
+        ],
+        "resolved_bait_names_ru": [
+          "ANY"
+        ],
+        "num_parts": [
+          7,
+          7,
+          7
+        ],
+        "weight_parts": [
+          "30000",
+          "26000",
+          "12000"
+        ],
+        "reward_coins": 13000,
+        "reward_experience": 1200
+      }
+    },
+    {
+      "id": 29,
+      "index_0based": 28,
+      "title_ru": "Речные гиганты",
+      "titles_i18n": {
+        "ru": "Речные гиганты",
+        "en": "River giants",
+        "de": "Flussriesen",
+        "es": "Gigantes del río",
+        "pt": "Gigantes do rio"
+      },
+      "descriptions_i18n": {
+        "ru": "Вылови по 5 шт.: скат пресноводный, сом шильбовый, акула-бык.",
+        "en": "Catch 5 pcs. of each fishes: giant freshwater stingray, mekong giant catfish, bull shark.",
+        "de": "Fange je 5 Stk. der folgenden Fische: Riesen-Süßwasserstechrochen, Mekong-Riesenwels, Bullenhai.",
+        "es": "Pesca 5 uds. de cada pez: raya látigo gigante, bagre gigante del Mekong, tiburón sarda.",
+        "pt": "Pesque 5 unid. de cada peixe: arraia-gigante-água-doce, bagre-gigante-do-mekong, tubarão-cabeça-chata."
+      },
+      "type": 1,
+      "fish": "113,115,123",
+      "bait": "0",
+      "num": "5,5,5",
+      "weight": "0",
+      "cat": 11,
+      "nag": "14000,1700",
+      "res": "null",
+      "made": 0,
+      "date": 0,
+      "md5": "c532fba916e8ce3ddb91ad9135891648",
+      "parsed": {
+        "id_indexing_note": "QuestGenerator uses 1-based SQLite IDs (fishes.id 1..141, baits.id 1..40) where 0 means ANY fish/bait.",
+        "fish_db_ids_1based": [
+          113,
+          115,
+          123
+        ],
+        "resolved_fish_names_ru": [
+          "Скат пресноводный гигантский",
+          "Гигантский шильбовый сом",
+          "Акула-бык"
+        ],
+        "bait_db_ids_1based": [
+          0
+        ],
+        "resolved_bait_names_ru": [
+          "ANY"
+        ],
+        "num_parts": [
+          5,
+          5,
+          5
+        ],
+        "weight_parts": [
+          "0"
+        ],
+        "reward_coins": 14000,
+        "reward_experience": 1700
+      }
+    },
+    {
+      "id": 30,
+      "index_0based": 29,
+      "title_ru": "Карпы гиганты",
+      "titles_i18n": {
+        "ru": "Карпы гиганты",
+        "en": "Giant carps",
+        "de": "Riesenkarpfen",
+        "es": "Carpas gigantes",
+        "pt": "Carpas gigantes"
+      },
+      "descriptions_i18n": {
+        "ru": "Налови по 3 шт. гигантских карпов в пределах веса: 70-100 кг, 170-200 кг, 270-300 кг.",
+        "en": "Catch 3 pcs. of giant carps each within the weight ranges: 70-100 kg, 170-200 kg, 270-300 kg.",
+        "de": "Fange je 3 Stk. Riesenkarpfen in den Gewichtsklassen: 70–100 kg, 170–200 kg, 270–300 kg.",
+        "es": "Pesca 3 uds. de carpas gigantes dentro de los siguientes rangos de peso: 70-100 kg, 170-200 kg, 270-300 kg.",
+        "pt": "Pesque 3 unid. de carpas gigantes dentro das seguintes faixas de peso: 70-100 kg, 170-200 kg, 270-300 kg."
+      },
+      "type": 7,
+      "fish": "54,54,54",
+      "bait": "0",
+      "num": "3,3,3",
+      "weight": "70000-100000,170000-200000,270000-300000",
+      "cat": 12,
+      "nag": "15000,1200",
+      "res": "null",
+      "made": 0,
+      "date": 0,
+      "md5": "395e903185cd179f07b525d29058e9f9",
+      "parsed": {
+        "id_indexing_note": "QuestGenerator uses 1-based SQLite IDs (fishes.id 1..141, baits.id 1..40) where 0 means ANY fish/bait.",
+        "fish_db_ids_1based": [
+          54,
+          54,
+          54
+        ],
+        "resolved_fish_names_ru": [
+          "Гигантский карп",
+          "Гигантский карп",
+          "Гигантский карп"
+        ],
+        "bait_db_ids_1based": [
+          0
+        ],
+        "resolved_bait_names_ru": [
+          "ANY"
+        ],
+        "num_parts": [
+          3,
+          3,
+          3
+        ],
+        "weight_parts": [
+          "70000-100000",
+          "170000-200000",
+          "270000-300000"
+        ],
+        "reward_coins": 15000,
+        "reward_experience": 1200
+      }
+    },
+    {
+      "id": 31,
+      "index_0based": 30,
+      "title_ru": "Рыб не ловить!",
+      "titles_i18n": {
+        "ru": "Рыб не ловить!",
+        "en": "Don't catch fish!",
+        "de": "Fange keine Fische!",
+        "es": "¡No pesques peces!",
+        "pt": "Não pesque peixes!"
+      },
+      "descriptions_i18n": {
+        "ru": "Поймай по 4 шт.: черепаха (от 12 кг) и краб (от 600 г).",
+        "en": "Catch 4 pcs. each: turtle (from 12 kg) and crab (from 600 g).",
+        "de": "Fange je 4 Stk.: Schildkröte (ab 12 kg) und Krabbe (ab 600 g).",
+        "es": "Pesca 4 uds. de cada uno: tortuga (desde 12 kg) y cangrejo de mar (desde 600 g).",
+        "pt": "Pesque 4 unid. de cada: tartaruga (a partir de 12 kg) e caranguejo (a partir de 600 g)."
+      },
+      "type": 3,
+      "fish": "49,59",
+      "bait": "0",
+      "num": "4,4",
+      "weight": "12000,600",
+      "cat": 12,
+      "nag": "17000,1500",
+      "res": "null",
+      "made": 0,
+      "date": 0,
+      "md5": "1ad55470bcc9854cd2b68fead5fe1329",
+      "parsed": {
+        "id_indexing_note": "QuestGenerator uses 1-based SQLite IDs (fishes.id 1..141, baits.id 1..40) where 0 means ANY fish/bait.",
+        "fish_db_ids_1based": [
+          49,
+          59
+        ],
+        "resolved_fish_names_ru": [
+          "Черепаха",
+          "Краб"
+        ],
+        "bait_db_ids_1based": [
+          0
+        ],
+        "resolved_bait_names_ru": [
+          "ANY"
+        ],
+        "num_parts": [
+          4,
+          4
+        ],
+        "weight_parts": [
+          "12000",
+          "600"
+        ],
+        "reward_coins": 17000,
+        "reward_experience": 1500
+      }
+    },
+    {
+      "id": 32,
+      "index_0based": 31,
+      "title_ru": "Охота на белугу",
+      "titles_i18n": {
+        "ru": "Охота на белугу",
+        "en": "Beluga hunting",
+        "de": "Beluga-Jagd",
+        "es": "Caza de belugas",
+        "pt": "Caça às belugas"
+      },
+      "descriptions_i18n": {
+        "ru": "Вылови 5 шт. белуг, чтобы каждая весила 1200-1500 кг.",
+        "en": "Catch 5 beluga so that each weights 1200-1500 kg.",
+        "de": "Fange 5 Beluga-Störe, sodass jeder zwischen 1200 und 1500 kg wiegt.",
+        "es": "Pesca 5 belugas que pesen entre 1200 y 1500 kg cada una.",
+        "pt": "Pesque 5 belugas de modo que cada uma pese entre 1200 e 1500 kg."
+      },
+      "type": 7,
+      "fish": "12",
+      "bait": "0",
+      "num": "5",
+      "weight": "1200000-1500000",
+      "cat": 12,
+      "nag": "20000,2000",
+      "res": "null",
+      "made": 0,
+      "date": 0,
+      "md5": "4d89c59782b5d2b1031082518e6f2858",
+      "parsed": {
+        "id_indexing_note": "QuestGenerator uses 1-based SQLite IDs (fishes.id 1..141, baits.id 1..40) where 0 means ANY fish/bait.",
+        "fish_db_ids_1based": [
+          12
+        ],
+        "resolved_fish_names_ru": [
+          "Белуга"
+        ],
+        "bait_db_ids_1based": [
+          0
+        ],
+        "resolved_bait_names_ru": [
+          "ANY"
+        ],
+        "num_parts": [
+          5
+        ],
+        "weight_parts": [
+          "1200000-1500000"
+        ],
+        "reward_coins": 20000,
+        "reward_experience": 2000
+      }
+    },
+    {
+      "id": 33,
+      "index_0based": 32,
+      "title_ru": "Морской деликатес",
+      "titles_i18n": {
+        "ru": "Морской деликатес",
+        "en": "Sea delicacy",
+        "de": "Meeresdelikatesse",
+        "es": "Manjar marino",
+        "pt": "Iguaria marinha"
+      },
+      "descriptions_i18n": {
+        "ru": "Нужно наловить 100 кг омаров, используя указаные наживки.",
+        "en": "Catch 100 kg of lobster using the baits shown.",
+        "de": "Fange 100 kg Hummer mit den angezeigten Ködern.",
+        "es": "Pesca 100 kg de langosta usando los cebos mostrados.",
+        "pt": "Pesque 100 kg de lagosta usando as iscas mostradas."
+      },
+      "type": 2,
+      "fish": "65",
+      "bait": "27,37,39",
+      "num": "0",
+      "weight": "100000",
+      "cat": 13,
+      "nag": "21000,1700",
+      "res": "null",
+      "made": 0,
+      "date": 0,
+      "md5": "4cce20ee07ea2e163f24caa41885de7e",
+      "parsed": {
+        "id_indexing_note": "QuestGenerator uses 1-based SQLite IDs (fishes.id 1..141, baits.id 1..40) where 0 means ANY fish/bait.",
+        "fish_db_ids_1based": [
+          65
+        ],
+        "resolved_fish_names_ru": [
+          "Омар европейский"
+        ],
+        "bait_db_ids_1based": [
+          27,
+          37,
+          39
+        ],
+        "resolved_bait_names_ru": [
+          "кусочки рыбы",
+          "морской таракан",
+          "морской гребешок"
+        ],
+        "num_parts": [
+          0
+        ],
+        "weight_parts": [
+          "100000"
+        ],
+        "reward_coins": 21000,
+        "reward_experience": 1700
+      }
+    },
+    {
+      "id": 34,
+      "index_0based": 33,
+      "title_ru": "Морские звери",
+      "titles_i18n": {
+        "ru": "Морские звери",
+        "en": "Sea beasts",
+        "de": "Meeres„ungeheuer“",
+        "es": "\"Bestias\" marinas",
+        "pt": "\"Bestas\" marinhas"
+      },
+      "descriptions_i18n": {
+        "ru": "Налови по 7 шт.: морская лисица (от 12 кг), морской черт (от 40 кг), морской петух (от 4 кг).",
+        "en": "Catch 7 pcs. each: thornback ray (from 12 kg), angler (from 40 kg), sea robin (from 4 kg).",
+        "de": "Fange je 7 Stk.: Nagelrochen (ab 12 kg), Seeteufel (ab 40 kg), Seehahn (ab 4 kg).",
+        "es": "Pesca 7 uds. de cada uno: raya de clavos (desde 12 kg), rape (desde 40 kg), rubio (desde 4 kg).",
+        "pt": "Pesque 7 unid. de cada: arraia-prego (a partir de 12 kg), tamboril (a partir de 40 kg), cabra-panga (a partir de 4 kg)."
+      },
+      "type": 3,
+      "fish": "62,63,70",
+      "bait": "0",
+      "num": "7,7,7",
+      "weight": "12000,40000,4000",
+      "cat": 13,
+      "nag": "23000,1900",
+      "res": "null",
+      "made": 0,
+      "date": 0,
+      "md5": "8fb1cb5bb46b7aec115ef112d57ee9c9",
+      "parsed": {
+        "id_indexing_note": "QuestGenerator uses 1-based SQLite IDs (fishes.id 1..141, baits.id 1..40) where 0 means ANY fish/bait.",
+        "fish_db_ids_1based": [
+          62,
+          63,
+          70
+        ],
+        "resolved_fish_names_ru": [
+          "Морская лисица",
+          "Морской черт",
+          "Морской петух"
+        ],
+        "bait_db_ids_1based": [
+          0
+        ],
+        "resolved_bait_names_ru": [
+          "ANY"
+        ],
+        "num_parts": [
+          7,
+          7,
+          7
+        ],
+        "weight_parts": [
+          "12000",
+          "40000",
+          "4000"
+        ],
+        "reward_coins": 23000,
+        "reward_experience": 1900
+      }
+    },
+    {
+      "id": 35,
+      "index_0based": 34,
+      "title_ru": "Рыбалка на креветку",
+      "titles_i18n": {
+        "ru": "Рыбалка на креветку",
+        "en": "Shrimp fishing",
+        "de": "Garelenfischen",
+        "es": "Pesca con camarón",
+        "pt": "Pesca de camarão"
+      },
+      "descriptions_i18n": {
+        "ru": "Используй наживку креветка и поймай по 5 шт. указанных рыб.",
+        "en": "Use a shrimp as bait and catch 5 pcs. of each specified fishs.",
+        "de": "Nutze Garnele als Köder und fange je 5 Stk. der angegebenen Fische.",
+        "es": "Usa camarón como cebo y pesca 5 uds. de cada uno de los peces especificados.",
+        "pt": "Use camarão como isca e pesque 5 unid. de cada um dos peixes especificados."
+      },
+      "type": 1,
+      "fish": "64,66,69",
+      "bait": "40",
+      "num": "5,5,5",
+      "weight": "0",
+      "cat": 13,
+      "nag": "25000,1500",
+      "res": "null",
+      "made": 0,
+      "date": 0,
+      "md5": "71a6e25cf2da2c6d07d112f028aba1a9",
+      "parsed": {
+        "id_indexing_note": "QuestGenerator uses 1-based SQLite IDs (fishes.id 1..141, baits.id 1..40) where 0 means ANY fish/bait.",
+        "fish_db_ids_1based": [
+          64,
+          66,
+          69
+        ],
+        "resolved_fish_names_ru": [
+          "Морской окунь",
+          "Горбыль светлый",
+          "Морской угорь"
+        ],
+        "bait_db_ids_1based": [
+          40
+        ],
+        "resolved_bait_names_ru": [
+          "креветка"
+        ],
+        "num_parts": [
+          5,
+          5,
+          5
+        ],
+        "weight_parts": [
+          "0"
+        ],
+        "reward_coins": 25000,
+        "reward_experience": 1500
+      }
+    },
+    {
+      "id": 36,
+      "index_0based": 35,
+      "title_ru": "Заказ консервного завода",
+      "titles_i18n": {
+        "ru": "Заказ консервного завода",
+        "en": "Ordering a cannery",
+        "de": "Bestellung für Konservenfabrik",
+        "es": "Pedido para fábrica de conservas",
+        "pt": "Pedido para fábrica de conservas"
+      },
+      "descriptions_i18n": {
+        "ru": "Поймай следующих рыб: сайда (8-10 кг), скумбрия (2.5-3 кг), камбала (3-4 кг). Каждой по 5 шт.",
+        "en": "You need to catch pollock (8-10 kg), atlantic mackerel (2.5-3 kg), european plaice (3-4 kg). 5 pcs. each",
+        "de": "Du musst Seelachs (8–10 kg), Atlantische Makrele (2,5–3 kg) und Scholle (3–4 kg) fangen. Je 5 Stk.",
+        "es": "Debes pescar abadejo (8-10 kg), caballa del Atlántico (2.5-3 kg), solla europea (3-4 kg). 5 uds. de cada uno.",
+        "pt": "Você precisa pescar polaca (8-10 kg), cavala-do-atlântico (2.5-3 kg), solha-europeia (3-4 kg). 5 unid. de cada."
+      },
+      "type": 7,
+      "fish": "75,76,79",
+      "bait": "0",
+      "num": "5,5,5",
+      "weight": "8000-10000,2500-3000,3000-4000",
+      "cat": 14,
+      "nag": "26000,1500",
+      "res": "null",
+      "made": 0,
+      "date": 0,
+      "md5": "ac0126dff1080ce7a9805af2cdd89f73",
+      "parsed": {
+        "id_indexing_note": "QuestGenerator uses 1-based SQLite IDs (fishes.id 1..141, baits.id 1..40) where 0 means ANY fish/bait.",
+        "fish_db_ids_1based": [
+          75,
+          76,
+          79
+        ],
+        "resolved_fish_names_ru": [
+          "Сайда",
+          "Скумбрия атлантическая",
+          "Камбала морская"
+        ],
+        "bait_db_ids_1based": [
+          0
+        ],
+        "resolved_bait_names_ru": [
+          "ANY"
+        ],
+        "num_parts": [
+          5,
+          5,
+          5
+        ],
+        "weight_parts": [
+          "8000-10000",
+          "2500-3000",
+          "3000-4000"
+        ],
+        "reward_coins": 26000,
+        "reward_experience": 1500
+      }
+    },
+    {
+      "id": 37,
+      "index_0based": 36,
+      "title_ru": "Марлины",
+      "titles_i18n": {
+        "ru": "Марлины",
+        "en": "Marlins",
+        "de": "Marline",
+        "es": "Marlines",
+        "pt": "Marlins"
+      },
+      "descriptions_i18n": {
+        "ru": "Налови по 3 шт. марлинов в пределах веса: 30-50 кг, 70-100 кг, 140-170 кг.",
+        "en": "Catch 3 pcs. of marlins each within the weight ranges: 30-50 kg, 70-100 kg, 140-170 kg.",
+        "de": "Fange je 3 Stk. Marline in den Gewichtsklassen: 30–50 kg, 70–100 kg, 140–170 kg.",
+        "es": "Pesca 3 uds. de marlines dentro de los siguientes rangos de peso: 30-50 kg, 70-100 kg, 140-170 kg.",
+        "pt": "Pesque 3 unid. de marlins dentro das seguintes faixas de peso: 30-50 kg, 70-100 kg, 140-170 kg."
+      },
+      "type": 7,
+      "fish": "80,80,80",
+      "bait": "0",
+      "num": "3,3,3",
+      "weight": "30000-50000,70000-100000,140000-170000",
+      "cat": 14,
+      "nag": "28000,1700",
+      "res": "null",
+      "made": 0,
+      "date": 0,
+      "md5": "6a6dfca47bad99751bdf332f5f699bff",
+      "parsed": {
+        "id_indexing_note": "QuestGenerator uses 1-based SQLite IDs (fishes.id 1..141, baits.id 1..40) where 0 means ANY fish/bait.",
+        "fish_db_ids_1based": [
+          80,
+          80,
+          80
+        ],
+        "resolved_fish_names_ru": [
+          "Марлин",
+          "Марлин",
+          "Марлин"
+        ],
+        "bait_db_ids_1based": [
+          0
+        ],
+        "resolved_bait_names_ru": [
+          "ANY"
+        ],
+        "num_parts": [
+          3,
+          3,
+          3
+        ],
+        "weight_parts": [
+          "30000-50000",
+          "70000-100000",
+          "140000-170000"
+        ],
+        "reward_coins": 28000,
+        "reward_experience": 1700
+      }
+    },
+    {
+      "id": 38,
+      "index_0based": 37,
+      "title_ru": "Пиратский клад",
+      "titles_i18n": {
+        "ru": "Пиратский клад",
+        "en": "Pirate Treasure",
+        "de": "Piratenschatz",
+        "es": "Tesoro pirata",
+        "pt": "Tesouro pirata"
+      },
+      "descriptions_i18n": {
+        "ru": "Поймай всех нижеуказаных рыб по 3 шт. и найди 3 пиратских клада.",
+        "en": "Catch all of the fishes below and find 3 pirate treasures.",
+        "de": "Fange alle unten aufgeführten Fische und finde 3 Piratenschätze.",
+        "es": "Pesca todos los siguientes peces y encuentra 3 tesoros piratas.",
+        "pt": "Pesque todos os seguintes peixes e encontre 3 tesouros piratas."
+      },
+      "type": 1,
+      "fish": "71,72,73,77,78,81",
+      "bait": "0",
+      "num": "3,3,3,3,3,3",
+      "weight": "0",
+      "cat": 14,
+      "nag": "30000,2500",
+      "res": "null",
+      "made": 0,
+      "date": 0,
+      "md5": "417e1d7b272666c405e6b6f180934cd5",
+      "parsed": {
+        "id_indexing_note": "QuestGenerator uses 1-based SQLite IDs (fishes.id 1..141, baits.id 1..40) where 0 means ANY fish/bait.",
+        "fish_db_ids_1based": [
+          71,
+          72,
+          73,
+          77,
+          78,
+          81
+        ],
+        "resolved_fish_names_ru": [
+          "Клад",
+          "Рыба-меч",
+          "Пеламида",
+          "Тунец",
+          "Черный палтус",
+          "Тарпон"
+        ],
+        "bait_db_ids_1based": [
+          0
+        ],
+        "resolved_bait_names_ru": [
+          "ANY"
+        ],
+        "num_parts": [
+          3,
+          3,
+          3,
+          3,
+          3,
+          3
+        ],
+        "weight_parts": [
+          "0"
+        ],
+        "reward_coins": 30000,
+        "reward_experience": 2500
+      }
+    },
+    {
+      "id": 39,
+      "index_0based": 38,
+      "title_ru": "Рыбка на ужин",
+      "titles_i18n": {
+        "ru": "Рыбка на ужин",
+        "en": "Fish for dinner",
+        "de": "Fisch zum Abendessen",
+        "es": "Pescado para la cena",
+        "pt": "Peixe para o jantar"
+      },
+      "descriptions_i18n": {
+        "ru": "Налови по 10 шт.: пагр розовый, каранкс золотой, каранкс черный.",
+        "en": "Catch 10 pcs. of each fishes: silver seabream, golden trevally, black trevally.",
+        "de": "Fange je 10 Stk. der folgenden Fische: Silberbrasse, Goldene Makrele, Schwarze Makrele.",
+        "es": "Pesca 10 uds. de cada pez: sargo, jurel dorado, jurel negro.",
+        "pt": "Pesque 10 unid. de cada peixe: sargo, xareu-dourado, xareu-preto."
+      },
+      "type": 1,
+      "fish": "92,94,95",
+      "bait": "0",
+      "num": "10,10,10",
+      "weight": "0",
+      "cat": 15,
+      "nag": "31000,1700",
+      "res": "null",
+      "made": 0,
+      "date": 0,
+      "md5": "37c9696b4b301a081347af1f7121afbc",
+      "parsed": {
+        "id_indexing_note": "QuestGenerator uses 1-based SQLite IDs (fishes.id 1..141, baits.id 1..40) where 0 means ANY fish/bait.",
+        "fish_db_ids_1based": [
+          92,
+          94,
+          95
+        ],
+        "resolved_fish_names_ru": [
+          "Пагр розовый",
+          "Каранкс золотой",
+          "Каранкс черный"
+        ],
+        "bait_db_ids_1based": [
+          0
+        ],
+        "resolved_bait_names_ru": [
+          "ANY"
+        ],
+        "num_parts": [
+          10,
+          10,
+          10
+        ],
+        "weight_parts": [
+          "0"
+        ],
+        "reward_coins": 31000,
+        "reward_experience": 1700
+      }
+    },
+    {
+      "id": 40,
+      "index_0based": 39,
+      "title_ru": "Поймай парусник",
+      "titles_i18n": {
+        "ru": "Поймай парусник",
+        "en": "Catch sailfish",
+        "de": "Fange Fächerfisch",
+        "es": "Atrapa el pez vela",
+        "pt": "Pesque o peixe-vela"
+      },
+      "descriptions_i18n": {
+        "ru": "Поймай самую быструю рыбу в мире - парусник. По 3 шт. в пределах веса: 20-35 кг, 40-55 кг, 60-75 кг.",
+        "en": "Catch the fastest fish in the world - sailfish. Catch 3 pcs. of one each within the weight ranges: 20-35 kg, 40-55 kg, 60-75 kg.",
+        "de": "Fange den schnellsten Fisch der Welt – den Fächerfisch. Fange je 3 Stk. in den Gewichtsklassen: 20–35 kg, 40–55 kg, 60–75 kg.",
+        "es": "Pesca el pez más rápido del mundo: el pez vela. Pesca 3 uds., una en cada uno de los siguientes rangos de peso: 20-35 kg, 40-55 kg, 60-75 kg.",
+        "pt": "Pesque o peixe mais rápido do mundo: o peixe-vela. Pesque 3 unid., uma dentro de cada faixa de peso: 20-35 kg, 40-55 kg, 60-75 kg."
+      },
+      "type": 7,
+      "fish": "96,96,96",
+      "bait": "0",
+      "num": "3,3,3",
+      "weight": "20000-35000,40000-55000,60000-75000",
+      "cat": 15,
+      "nag": "33000,2000",
+      "res": "null",
+      "made": 0,
+      "date": 0,
+      "md5": "61868e90f562b2ddd15ff4ff260d5462",
+      "parsed": {
+        "id_indexing_note": "QuestGenerator uses 1-based SQLite IDs (fishes.id 1..141, baits.id 1..40) where 0 means ANY fish/bait.",
+        "fish_db_ids_1based": [
+          96,
+          96,
+          96
+        ],
+        "resolved_fish_names_ru": [
+          "Парусник",
+          "Парусник",
+          "Парусник"
+        ],
+        "bait_db_ids_1based": [
+          0
+        ],
+        "resolved_bait_names_ru": [
+          "ANY"
+        ],
+        "num_parts": [
+          3,
+          3,
+          3
+        ],
+        "weight_parts": [
+          "20000-35000",
+          "40000-55000",
+          "60000-75000"
+        ],
+        "reward_coins": 33000,
+        "reward_experience": 2000
+      }
+    },
+    {
+      "id": 41,
+      "index_0based": 40,
+      "title_ru": "Достань луну",
+      "titles_i18n": {
+        "ru": "Достань луну",
+        "en": "Get the sun",
+        "de": "„Hol dir die Sonne“",
+        "es": "\"Atrapa el sol\"",
+        "pt": "\"Pegue o sol\""
+      },
+      "descriptions_i18n": {
+        "ru": "Поймай всех нижеуказаных рыб на водоеме тропические воды на наживку крабовое мясо и достань 2 рыбы-луны.",
+        "en": "Catch all of the fishes below in tropical water with crab meat as bait and retrieve 2 ocean sunfish.",
+        "de": "Fange alle unten aufgeführten Fische in tropischen Gewässern mit Krebsfleisch als Köder und hole 2 Mondfische ein.",
+        "es": "Pesca todos los siguientes peces en aguas tropicales usando carne de cangrejo como cebo y recupera 2 peces luna.",
+        "pt": "Pesque todos os seguintes peixes em águas tropicais usando carne de caranguejo como isca e capture 2 peixes-lua."
+      },
+      "type": 1,
+      "fish": "92,95,97,100",
+      "bait": "20",
+      "num": "2,2,2,2",
+      "weight": "0",
+      "cat": 15,
+      "nag": "35000,2100",
+      "res": "null",
+      "made": 0,
+      "date": 0,
+      "md5": "4c281ae098e043b4aa67b22c798e1a92",
+      "parsed": {
+        "id_indexing_note": "QuestGenerator uses 1-based SQLite IDs (fishes.id 1..141, baits.id 1..40) where 0 means ANY fish/bait.",
+        "fish_db_ids_1based": [
+          92,
+          95,
+          97,
+          100
+        ],
+        "resolved_fish_names_ru": [
+          "Пагр розовый",
+          "Каранкс черный",
+          "Групер гигантский",
+          "Рыба-луна"
+        ],
+        "bait_db_ids_1based": [
+          20
+        ],
+        "resolved_bait_names_ru": [
+          "крабовое мясо"
+        ],
+        "num_parts": [
+          2,
+          2,
+          2,
+          2
+        ],
+        "weight_parts": [
+          "0"
+        ],
+        "reward_coins": 35000,
+        "reward_experience": 2100
+      }
+    },
+    {
+      "id": 42,
+      "index_0based": 41,
+      "title_ru": "Тунцы",
+      "titles_i18n": {
+        "ru": "Тунцы",
+        "en": "Tuna",
+        "de": "Thunfische",
+        "es": "Atunes",
+        "pt": "Atuns"
+      },
+      "descriptions_i18n": {
+        "ru": "Налови по 4 шт.: тунец (от 400 кг), тунец желтоперый (от 120 кг), тунец южный голубой (от 160 кг).",
+        "en": "Catch 4 pcs. each: tuna (from 400 kg), yellowfin tuna (from 120 kg), southern bluefin tuna (from 160 kg).",
+        "de": "Fange je 4 Stk.: Roter Thunfisch (ab 400 kg), Gelbflossen-Thunfisch (ab 120 kg), Südlicher Blauflossen-Thunfisch (ab 160 kg).",
+        "es": "Pesca 4 uds. de cada uno: atún (desde 400 kg), atún de aleta amarilla (desde 120 kg), atún del sur (desde 160 kg).",
+        "pt": "Pesque 4 unid. de cada: atum (a partir de 400 kg), atum-galha-amarela (a partir de 120 kg), atum-azul-do-sul (a partir de 160 kg)."
+      },
+      "type": 3,
+      "fish": "77,82,90",
+      "bait": "0",
+      "num": "4,4,4",
+      "weight": "400000,120000,160000",
+      "cat": 17,
+      "nag": "36000,3000",
+      "res": "null",
+      "made": 0,
+      "date": 0,
+      "md5": "17172fc9e33121167c79448cdec18511",
+      "parsed": {
+        "id_indexing_note": "QuestGenerator uses 1-based SQLite IDs (fishes.id 1..141, baits.id 1..40) where 0 means ANY fish/bait.",
+        "fish_db_ids_1based": [
+          77,
+          82,
+          90
+        ],
+        "resolved_fish_names_ru": [
+          "Тунец",
+          "Тунец желтоперый",
+          "Тунец южный голубой"
+        ],
+        "bait_db_ids_1based": [
+          0
+        ],
+        "resolved_bait_names_ru": [
+          "ANY"
+        ],
+        "num_parts": [
+          4,
+          4,
+          4
+        ],
+        "weight_parts": [
+          "400000",
+          "120000",
+          "160000"
+        ],
+        "reward_coins": 36000,
+        "reward_experience": 3000
+      }
+    },
+    {
+      "id": 43,
+      "index_0based": 42,
+      "title_ru": "Акулий зуб",
+      "titles_i18n": {
+        "ru": "Акулий зуб",
+        "en": "Shark Tooth",
+        "de": "Haifischzahn",
+        "es": "Diente de tiburón",
+        "pt": "Dente de tubarão"
+      },
+      "descriptions_i18n": {
+        "ru": "Поймай пять разных акул: акула-мако, тигровая акула, акула полярная, кошачья акула, акула-бык. Каждой по 3 шт.",
+        "en": "Catch 3 pcs. of each sharks: shortfin mako shark, tiger shark, greenland shark, small-spotted catshark, bull shark.",
+        "de": "Fange je 3 Stk. der folgenden Haie: Kurzflossen-Mako, Tigerhai, Grönlandhai, Kleingefleckter Katzenhai, Bullenhai.",
+        "es": "Pesca 3 uds. de cada uno de estos tiburones: marrajo común, tiburón tigre, tiburón de Groenlandia, pintarroja, tiburón sarda.",
+        "pt": "Pesque 3 unid. de cada um destes tubarões: tubarão-mako, tubarão-tigre, tubarão-da-groenlândia, pata-roxa, tubarão-cabeça-chata."
+      },
+      "type": 1,
+      "fish": "98,99,89,67,123",
+      "bait": "0",
+      "num": "3,3,3,3,3",
+      "weight": "0",
+      "cat": 17,
+      "nag": "38000,4000",
+      "res": "null",
+      "made": 0,
+      "date": 0,
+      "md5": "c72f4b800667fbb764121dd9e00e171b",
+      "parsed": {
+        "id_indexing_note": "QuestGenerator uses 1-based SQLite IDs (fishes.id 1..141, baits.id 1..40) where 0 means ANY fish/bait.",
+        "fish_db_ids_1based": [
+          98,
+          99,
+          89,
+          67,
+          123
+        ],
+        "resolved_fish_names_ru": [
+          "Акула-мако",
+          "Тигровая акула",
+          "Акула полярная",
+          "Кошачья акула",
+          "Акула-бык"
+        ],
+        "bait_db_ids_1based": [
+          0
+        ],
+        "resolved_bait_names_ru": [
+          "ANY"
+        ],
+        "num_parts": [
+          3,
+          3,
+          3,
+          3,
+          3
+        ],
+        "weight_parts": [
+          "0"
+        ],
+        "reward_coins": 38000,
+        "reward_experience": 4000
+      }
+    },
+    {
+      "id": 44,
+      "index_0based": 43,
+      "title_ru": "Кашалоты",
+      "titles_i18n": {
+        "ru": "Кашалоты",
+        "en": "Sperm whales",
+        "de": "Pottwale",
+        "es": "Cachalotes",
+        "pt": "Cachalotes"
+      },
+      "descriptions_i18n": {
+        "ru": "Налови по 1 шт. кашалотов в пределах веса: 250-500 кг, 750-1000 кг, 1250-1500 кг, 1750-2000 кг.",
+        "en": "Catch 1 pcs. of sperm whales each within the weight ranges: 250-500 kg, 750-1000 kg, 1250-1500 kg, 1750-2000 kg.",
+        "de": "Fange je 1 Stk. Pottwal in den Gewichtsklassen: 250–500 kg, 750–1000 kg, 1250–1500 kg, 1750–2000 kg.",
+        "es": "Pesca 1 ud. de cachalote dentro de los siguientes rangos de peso: 250-500 kg, 750-1000 kg, 1250-1500 kg, 1750-2000 kg.",
+        "pt": "Pesque 1 unid. de cachalote dentro das seguintes faixas de peso: 250-500 kg, 750-1000 kg, 1250-1500 kg, 1750-2000 kg."
+      },
+      "type": 7,
+      "fish": "86,86,86,86",
+      "bait": "0",
+      "num": "1,1,1,1",
+      "weight": "250000-500000,750000-1000000,1250000-1500000,1750000-2000000",
+      "cat": 17,
+      "nag": "40000,5000",
+      "res": "null",
+      "made": 0,
+      "date": 0,
+      "md5": "86cc418ede3fff71093a7a063d7b5345",
+      "parsed": {
+        "id_indexing_note": "QuestGenerator uses 1-based SQLite IDs (fishes.id 1..141, baits.id 1..40) where 0 means ANY fish/bait.",
+        "fish_db_ids_1based": [
+          86,
+          86,
+          86,
+          86
+        ],
+        "resolved_fish_names_ru": [
+          "Кашалот",
+          "Кашалот",
+          "Кашалот",
+          "Кашалот"
+        ],
+        "bait_db_ids_1based": [
+          0
+        ],
+        "resolved_bait_names_ru": [
+          "ANY"
+        ],
+        "num_parts": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "weight_parts": [
+          "250000-500000",
+          "750000-1000000",
+          "1250000-1500000",
+          "1750000-2000000"
+        ],
+        "reward_coins": 40000,
+        "reward_experience": 5000
+      }
+    }
+  ]
+}

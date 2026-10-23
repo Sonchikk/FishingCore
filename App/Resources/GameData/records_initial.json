@@ -1,0 +1,1986 @@
+{
+  "metadata": {
+    "dataset": "records_initial",
+    "source_class": "Lcom/evados/fishing/database/DatabaseHelper;->fillRecordsTable()V",
+    "ormlite_model": "Lcom/evados/fishing/database/objects/base/Record;",
+    "sqlite_table": "records",
+    "extraction_method": "DalvikVM bytecode execution of DatabaseHelper.fillRecordsTable() via FishGenerator",
+    "record_count": 141
+  },
+  "records": [
+    {
+      "id": 1,
+      "index_0based": 0,
+      "fishName": "Карась",
+      "fishName_i18n": {
+        "ru": "Карась",
+        "en": "Prussian carp",
+        "de": "Karausche",
+        "es": "Carasio",
+        "pt": "Carpa prussiana"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 2,
+      "index_0based": 1,
+      "fishName": "Карась золотой",
+      "fishName_i18n": {
+        "ru": "Карась золотой",
+        "en": "Crucian carp",
+        "de": "Gemeine Karausche",
+        "es": "Pez dorado",
+        "pt": "Carpa cruciana"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 3,
+      "index_0based": 2,
+      "fishName": "Белоглазка",
+      "fishName_i18n": {
+        "ru": "Белоглазка",
+        "en": "White-eye bream",
+        "de": "Donaubrachsen",
+        "es": "Sapa",
+        "pt": "Ballerus sapa"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 4,
+      "index_0based": 3,
+      "fishName": "Плотва",
+      "fishName_i18n": {
+        "ru": "Плотва",
+        "en": "Roach",
+        "de": "Rotauge",
+        "es": "Rutilo",
+        "pt": "Pardelha-dos-alpes"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 5,
+      "index_0based": 4,
+      "fishName": "Красноперка",
+      "fishName_i18n": {
+        "ru": "Красноперка",
+        "en": "Common rudd",
+        "de": "Rotfeder",
+        "es": "Gardí",
+        "pt": "Scardinius erythrophthalmus"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 6,
+      "index_0based": 5,
+      "fishName": "Густера",
+      "fishName_i18n": {
+        "ru": "Густера",
+        "en": "White bream",
+        "de": "Güster",
+        "es": "Brema blanca",
+        "pt": "Blicca bjoerkna"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 7,
+      "index_0based": 6,
+      "fishName": "Вобла",
+      "fishName_i18n": {
+        "ru": "Вобла",
+        "en": "Caspian roach",
+        "de": "Plötze",
+        "es": "Rutilo del Caspio",
+        "pt": "Vobla"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 8,
+      "index_0based": 7,
+      "fishName": "Голавль",
+      "fishName_i18n": {
+        "ru": "Голавль",
+        "en": "European chub",
+        "de": "Döbel",
+        "es": "Bagre",
+        "pt": "Squalius sephalus"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 9,
+      "index_0based": 8,
+      "fishName": "Берш",
+      "fishName_i18n": {
+        "ru": "Берш",
+        "en": "Volga pikeperch",
+        "de": "Eiszander",
+        "es": "Sander",
+        "pt": "Zander de Volga"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 10,
+      "index_0based": 9,
+      "fishName": "Вьюн",
+      "fishName_i18n": {
+        "ru": "Вьюн",
+        "en": "Misgurnus",
+        "de": "Schlammpeitzger",
+        "es": "Dojo",
+        "pt": "Missgurnus fossilis"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 11,
+      "index_0based": 10,
+      "fishName": "Белый амур",
+      "fishName_i18n": {
+        "ru": "Белый амур",
+        "en": "Grass carp",
+        "de": "Graskarpfen",
+        "es": "Carpa china",
+        "pt": "Carpa capim"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 12,
+      "index_0based": 11,
+      "fishName": "Белуга",
+      "fishName_i18n": {
+        "ru": "Белуга",
+        "en": "Great sturgeon",
+        "de": "Hausen",
+        "es": "Esturión beluga",
+        "pt": "Esturjão-beluga"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 13,
+      "index_0based": 12,
+      "fishName": "Голец арктический",
+      "fishName_i18n": {
+        "ru": "Голец арктический",
+        "en": "Arctic char",
+        "de": "Seesaibling",
+        "es": "Trucha alpina",
+        "pt": "Truta do ártico"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 14,
+      "index_0based": 13,
+      "fishName": "Горбуша",
+      "fishName_i18n": {
+        "ru": "Горбуша",
+        "en": "Pink salmon",
+        "de": "Buckellachs",
+        "es": "Salmón rosado",
+        "pt": "Salmão-rosa"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 15,
+      "index_0based": 14,
+      "fishName": "Елец",
+      "fishName_i18n": {
+        "ru": "Елец",
+        "en": "Common dace",
+        "de": "Hasel",
+        "es": "Leucisco",
+        "pt": "Leucisco comum"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 16,
+      "index_0based": 15,
+      "fishName": "Ерш",
+      "fishName_i18n": {
+        "ru": "Ерш",
+        "en": "Ruffe",
+        "de": "Kaulbarsch",
+        "es": "Acerina",
+        "pt": "Acerina Eurasiana"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 17,
+      "index_0based": 16,
+      "fishName": "Ерш носарь",
+      "fishName_i18n": {
+        "ru": "Ерш носарь",
+        "en": "Donets ruffe",
+        "de": "Don-Kaulbarsch",
+        "es": "Acerina del Don",
+        "pt": "Gymnocephalus acerina"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 18,
+      "index_0based": 17,
+      "fishName": "Жерех",
+      "fishName_i18n": {
+        "ru": "Жерех",
+        "en": "Asp",
+        "de": "Rapfen",
+        "es": "Aspio",
+        "pt": "Aspius aspius"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 19,
+      "index_0based": 18,
+      "fishName": "Карп",
+      "fishName_i18n": {
+        "ru": "Карп",
+        "en": "Carp",
+        "de": "Karpfen",
+        "es": "Carpa europea",
+        "pt": "Carpa húngara"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 20,
+      "index_0based": 19,
+      "fishName": "Карп голый",
+      "fishName_i18n": {
+        "ru": "Карп голый",
+        "en": "Leather carp",
+        "de": "Karpfenkönig",
+        "es": "Carpa de cuero",
+        "pt": "Cyprinus nudus"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 21,
+      "index_0based": 20,
+      "fishName": "Карп зеркальный",
+      "fishName_i18n": {
+        "ru": "Карп зеркальный",
+        "en": "Mirror carp",
+        "de": "Spiegelkarpfen",
+        "es": "Carpa de espejo",
+        "pt": "Carpa espelho"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 22,
+      "index_0based": 21,
+      "fishName": "Кижуч",
+      "fishName_i18n": {
+        "ru": "Кижуч",
+        "en": "Coho salmon",
+        "de": "Silberlachs",
+        "es": "Salmón plateado",
+        "pt": "Salmão prateado"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 23,
+      "index_0based": 22,
+      "fishName": "Рыбец",
+      "fishName_i18n": {
+        "ru": "Рыбец",
+        "en": "Vimba bream",
+        "de": "Zährte",
+        "es": "Vimba",
+        "pt": "Vimba vimba"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 24,
+      "index_0based": 23,
+      "fishName": "Лещ",
+      "fishName_i18n": {
+        "ru": "Лещ",
+        "en": "Common bream",
+        "de": "Brasse",
+        "es": "Brema",
+        "pt": "Brema"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 25,
+      "index_0based": 24,
+      "fishName": "Линь",
+      "fishName_i18n": {
+        "ru": "Линь",
+        "en": "Tench",
+        "de": "Schleie",
+        "es": "Tenca",
+        "pt": "Tenca"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 26,
+      "index_0based": 25,
+      "fishName": "Налим",
+      "fishName_i18n": {
+        "ru": "Налим",
+        "en": "Burbot",
+        "de": "Quappe",
+        "es": "Lota",
+        "pt": "Lota-do-rio"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 27,
+      "index_0based": 26,
+      "fishName": "Озерная форель",
+      "fishName_i18n": {
+        "ru": "Озерная форель",
+        "en": "Brown trout",
+        "de": "Seeforelle",
+        "es": "Trucha",
+        "pt": "Truta-de-lago"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 28,
+      "index_0based": 27,
+      "fishName": "Окунь",
+      "fishName_i18n": {
+        "ru": "Окунь",
+        "en": "Perch",
+        "de": "Barsch",
+        "es": "Perca de río",
+        "pt": "Perca"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 29,
+      "index_0based": 28,
+      "fishName": "Осетр",
+      "fishName_i18n": {
+        "ru": "Осетр",
+        "en": "Sturgeon",
+        "de": "Stör",
+        "es": "Esturión",
+        "pt": "Esturjão"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 30,
+      "index_0based": 29,
+      "fishName": "Пескарь",
+      "fishName_i18n": {
+        "ru": "Пескарь",
+        "en": "Gudgeon",
+        "de": "Gründling",
+        "es": "Gobio",
+        "pt": "Góbio"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 31,
+      "index_0based": 30,
+      "fishName": "Подлещик",
+      "fishName_i18n": {
+        "ru": "Подлещик",
+        "en": "Young bream",
+        "de": "Brachse",
+        "es": "Brenia",
+        "pt": "Brema pequena"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 32,
+      "index_0based": 31,
+      "fishName": "Радужная форель",
+      "fishName_i18n": {
+        "ru": "Радужная форель",
+        "en": "Rainbow trout",
+        "de": "Regenbogenforelle",
+        "es": "Trucha arcoíris",
+        "pt": "Truta-arco-íris"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 33,
+      "index_0based": 32,
+      "fishName": "Рак",
+      "fishName_i18n": {
+        "ru": "Рак",
+        "en": "Crayfish",
+        "de": "Krebs",
+        "es": "Cangrejo",
+        "pt": "Lagosta"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 34,
+      "index_0based": 33,
+      "fishName": "Ротан",
+      "fishName_i18n": {
+        "ru": "Ротан",
+        "en": "Chinese sleeper",
+        "de": "Amurgrundel",
+        "es": "Pez cama china",
+        "pt": "Perccottus glenii"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 35,
+      "index_0based": 34,
+      "fishName": "Сазан",
+      "fishName_i18n": {
+        "ru": "Сазан",
+        "en": "Common carp",
+        "de": "Flußkarpfen",
+        "es": "Sazán",
+        "pt": "Carpa-comum"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 36,
+      "index_0based": 35,
+      "fishName": "Севанская форель",
+      "fishName_i18n": {
+        "ru": "Севанская форель",
+        "en": "Sevan trout",
+        "de": "Sewan-Forelle",
+        "es": "Trucha del lago Sevan",
+        "pt": "Truta-do-lago-sevan"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 37,
+      "index_0based": 36,
+      "fishName": "Севрюга",
+      "fishName_i18n": {
+        "ru": "Севрюга",
+        "en": "Starry sturgeon",
+        "de": "Sternhausen",
+        "es": "Esturión estrellado",
+        "pt": "Esturjão-estrelado"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 38,
+      "index_0based": 37,
+      "fishName": "Сом",
+      "fishName_i18n": {
+        "ru": "Сом",
+        "en": "Catfish",
+        "de": "Wels",
+        "es": "Siluro",
+        "pt": "Bagre"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 39,
+      "index_0based": 38,
+      "fishName": "Амурский сом",
+      "fishName_i18n": {
+        "ru": "Амурский сом",
+        "en": "Amur catfish",
+        "de": "Amur-Wels",
+        "es": "Siluro de Amur",
+        "pt": "Silurus asotus"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 40,
+      "index_0based": 39,
+      "fishName": "Стерлядь",
+      "fishName_i18n": {
+        "ru": "Стерлядь",
+        "en": "Sterlet",
+        "de": "Sterlet",
+        "es": "Esturión esterlete",
+        "pt": "Sterlet"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 41,
+      "index_0based": 40,
+      "fishName": "Судак",
+      "fishName_i18n": {
+        "ru": "Судак",
+        "en": "Zander",
+        "de": "Zander",
+        "es": "Lucioperca",
+        "pt": "Zander"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 42,
+      "index_0based": 41,
+      "fishName": "Таймень",
+      "fishName_i18n": {
+        "ru": "Таймень",
+        "en": "Taimen",
+        "de": "Taimen",
+        "es": "Hucho taimen",
+        "pt": "Hucho taimen"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 43,
+      "index_0based": 42,
+      "fishName": "Тарань",
+      "fishName_i18n": {
+        "ru": "Тарань",
+        "en": "Taran",
+        "de": "Taran",
+        "es": "Rutilo del mar Negro",
+        "pt": "Rutilus heckelii"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 44,
+      "index_0based": 43,
+      "fishName": "Толстолобик",
+      "fishName_i18n": {
+        "ru": "Толстолобик",
+        "en": "Bighead carp",
+        "de": "Silberkarpfen",
+        "es": "Carpa cabezona",
+        "pt": "Carpa-cabeçuda"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 45,
+      "index_0based": 44,
+      "fishName": "Угорь",
+      "fishName_i18n": {
+        "ru": "Угорь",
+        "en": "Eel",
+        "de": "Aal",
+        "es": "Anguila",
+        "pt": "Enguia"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 46,
+      "index_0based": 45,
+      "fishName": "Уклейка",
+      "fishName_i18n": {
+        "ru": "Уклейка",
+        "en": "Common bleak",
+        "de": "Laube",
+        "es": "Alburno",
+        "pt": "Alburno"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 47,
+      "index_0based": 46,
+      "fishName": "Усач",
+      "fishName_i18n": {
+        "ru": "Усач",
+        "en": "Common barbel",
+        "de": "Barbe",
+        "es": "Barbo común",
+        "pt": "Barbo"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 48,
+      "index_0based": 47,
+      "fishName": "Хариус",
+      "fishName_i18n": {
+        "ru": "Хариус",
+        "en": "Grayling",
+        "de": "Äsche",
+        "es": "Tímalos",
+        "pt": "Tímalo"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 49,
+      "index_0based": 48,
+      "fishName": "Черепаха",
+      "fishName_i18n": {
+        "ru": "Черепаха",
+        "en": "Turtle",
+        "de": "Schildkröte",
+        "es": "Tortuga",
+        "pt": "Tartaruga"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 50,
+      "index_0based": 49,
+      "fishName": "Черный амур",
+      "fishName_i18n": {
+        "ru": "Черный амур",
+        "en": "Black carp",
+        "de": "Schwarzer Amur",
+        "es": "Carpa negra",
+        "pt": "Carpa negra"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 51,
+      "index_0based": 50,
+      "fishName": "Чехонь",
+      "fishName_i18n": {
+        "ru": "Чехонь",
+        "en": "Sabrefish",
+        "de": "Sichling",
+        "es": "Peleco",
+        "pt": "Pelecus cultratus"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 52,
+      "index_0based": 51,
+      "fishName": "Щука",
+      "fishName_i18n": {
+        "ru": "Щука",
+        "en": "Northern pike",
+        "de": "Hecht",
+        "es": "Lucio",
+        "pt": "Lúcio"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 53,
+      "index_0based": 52,
+      "fishName": "Язь",
+      "fishName_i18n": {
+        "ru": "Язь",
+        "en": "Ide",
+        "de": "Aland",
+        "es": "Cachuelo",
+        "pt": "Escalo-prateado"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 54,
+      "index_0based": 53,
+      "fishName": "Гигантский карп",
+      "fishName_i18n": {
+        "ru": "Гигантский карп",
+        "en": "Giant carp",
+        "de": "Riesenkarpfen",
+        "es": "Carpa gigante",
+        "pt": "Carpa gigante"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 55,
+      "index_0based": 54,
+      "fishName": "Глубинная щука",
+      "fishName_i18n": {
+        "ru": "Глубинная щука",
+        "en": "Deep-water pike",
+        "de": "Tiefenhecht",
+        "es": "Lucio de agua profunda",
+        "pt": "Lúcio de águas profundas"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 56,
+      "index_0based": 55,
+      "fishName": "Амурская щука",
+      "fishName_i18n": {
+        "ru": "Амурская щука",
+        "en": "Amur pike",
+        "de": "Amur-Hecht",
+        "es": "Lucio del Pacífico",
+        "pt": "Lúcio do rio Amur"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 57,
+      "index_0based": 56,
+      "fishName": "Ауха",
+      "fishName_i18n": {
+        "ru": "Ауха",
+        "en": "Chinese perch",
+        "de": "Dorschbarsch",
+        "es": "Pez mandarín",
+        "pt": "Siniperca chuatsi"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 58,
+      "index_0based": 57,
+      "fishName": "Сом солдатова",
+      "fishName_i18n": {
+        "ru": "Сом солдатова",
+        "en": "Silurus soldatovi",
+        "de": "Silurus soldatovi",
+        "es": "Siluro de Amur",
+        "pt": "Bagre de soldatov"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 59,
+      "index_0based": 58,
+      "fishName": "Краб",
+      "fishName_i18n": {
+        "ru": "Краб",
+        "en": "Crab",
+        "de": "Krabbe",
+        "es": "Cangrejo",
+        "pt": "Caranguejo"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 60,
+      "index_0based": 59,
+      "fishName": "Бестер",
+      "fishName_i18n": {
+        "ru": "Бестер",
+        "en": "Bester",
+        "de": "Bester",
+        "es": "Bester",
+        "pt": "Bester"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 61,
+      "index_0based": 60,
+      "fishName": "Лосось",
+      "fishName_i18n": {
+        "ru": "Лосось",
+        "en": "Salmon",
+        "de": "Lachs",
+        "es": "Salmón",
+        "pt": "Salmão"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 62,
+      "index_0based": 61,
+      "fishName": "Морская лисица",
+      "fishName_i18n": {
+        "ru": "Морская лисица",
+        "en": "Thornback ray",
+        "de": "Nagelroche",
+        "es": "Raja clavata",
+        "pt": "Raia-lenga"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 63,
+      "index_0based": 62,
+      "fishName": "Морской черт",
+      "fishName_i18n": {
+        "ru": "Морской черт",
+        "en": "Angler",
+        "de": "Seeteufel",
+        "es": "Rape común",
+        "pt": "Peixe-pescador"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 64,
+      "index_0based": 63,
+      "fishName": "Морской окунь",
+      "fishName_i18n": {
+        "ru": "Морской окунь",
+        "en": "Rockfish",
+        "de": "Rotbarsch",
+        "es": "Gallineta",
+        "pt": "Cantarilho"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 65,
+      "index_0based": 64,
+      "fishName": "Омар европейский",
+      "fishName_i18n": {
+        "ru": "Омар европейский",
+        "en": "European lobster",
+        "de": "Europäischer Hummer",
+        "es": "Bogavante",
+        "pt": "Lavagante"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 66,
+      "index_0based": 65,
+      "fishName": "Горбыль светлый",
+      "fishName_i18n": {
+        "ru": "Горбыль светлый",
+        "en": "Atlantic croaker",
+        "de": "Umberfisch",
+        "es": "Verrugato",
+        "pt": "Calafate"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 67,
+      "index_0based": 66,
+      "fishName": "Кошачья акула",
+      "fishName_i18n": {
+        "ru": "Кошачья акула",
+        "en": "Small-spotted catshark",
+        "de": "Kleingefleckte Katzenhai",
+        "es": "Pintarroja",
+        "pt": "Pata-roxa"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 68,
+      "index_0based": 67,
+      "fishName": "Катран",
+      "fishName_i18n": {
+        "ru": "Катран",
+        "en": "Spiny dogfish",
+        "de": "Dornhai",
+        "es": "Mielga",
+        "pt": "Galhudo-malhado"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 69,
+      "index_0based": 68,
+      "fishName": "Морской угорь",
+      "fishName_i18n": {
+        "ru": "Морской угорь",
+        "en": "Conger",
+        "de": "Meeraal",
+        "es": "Anguila de mar",
+        "pt": "Congro"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 70,
+      "index_0based": 69,
+      "fishName": "Морской петух",
+      "fishName_i18n": {
+        "ru": "Морской петух",
+        "en": "Sea robin",
+        "de": "Knurrhahn",
+        "es": "Rubio",
+        "pt": "Triglidae"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 71,
+      "index_0based": 70,
+      "fishName": "Клад",
+      "fishName_i18n": {
+        "ru": "Клад",
+        "en": "Treasure",
+        "de": "Schatz",
+        "es": "Tesoro",
+        "pt": "Tesouro"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 72,
+      "index_0based": 71,
+      "fishName": "Рыба-меч",
+      "fishName_i18n": {
+        "ru": "Рыба-меч",
+        "en": "Swordfish",
+        "de": "Schwertfisch",
+        "es": "Pez espada",
+        "pt": "Espadarte"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 73,
+      "index_0based": 72,
+      "fishName": "Пеламида",
+      "fishName_i18n": {
+        "ru": "Пеламида",
+        "en": "Atlantic bonito",
+        "de": "Pelarnide",
+        "es": "Bonito del Atlántico",
+        "pt": "Sarrajão"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 74,
+      "index_0based": 73,
+      "fishName": "Пелингас",
+      "fishName_i18n": {
+        "ru": "Пелингас",
+        "en": "Haarder",
+        "de": "Harder",
+        "es": "Lisa so-iny",
+        "pt": "Tainha-lábio-vermelho"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 75,
+      "index_0based": 74,
+      "fishName": "Сайда",
+      "fishName_i18n": {
+        "ru": "Сайда",
+        "en": "Pollock",
+        "de": "Seelachs",
+        "es": "Carbonero",
+        "pt": "Escamudo"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 76,
+      "index_0based": 75,
+      "fishName": "Скумбрия атлантическая",
+      "fishName_i18n": {
+        "ru": "Скумбрия атлантическая",
+        "en": "Atlantic mackerel",
+        "de": "Atlantische Makrele",
+        "es": "Xarda",
+        "pt": "Sarda"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 77,
+      "index_0based": 76,
+      "fishName": "Тунец",
+      "fishName_i18n": {
+        "ru": "Тунец",
+        "en": "Tuna",
+        "de": "Thun",
+        "es": "Atún",
+        "pt": "Atum"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 78,
+      "index_0based": 77,
+      "fishName": "Черный палтус",
+      "fishName_i18n": {
+        "ru": "Черный палтус",
+        "en": "Atlantic halibut",
+        "de": "Schwarzer Heilbutt",
+        "es": "Halibut negro",
+        "pt": "Alabote"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 79,
+      "index_0based": 78,
+      "fishName": "Камбала морская",
+      "fishName_i18n": {
+        "ru": "Камбала морская",
+        "en": "European plaice",
+        "de": "Goldbutt",
+        "es": "Solla",
+        "pt": "Solha europeia"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 80,
+      "index_0based": 79,
+      "fishName": "Марлин",
+      "fishName_i18n": {
+        "ru": "Марлин",
+        "en": "Marlin",
+        "de": "Marlin",
+        "es": "Marlín",
+        "pt": "Marlim"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 81,
+      "index_0based": 80,
+      "fishName": "Тарпон",
+      "fishName_i18n": {
+        "ru": "Тарпон",
+        "en": "Tarpon",
+        "de": "Tarpun",
+        "es": "Tarpón",
+        "pt": "Tarpon"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 82,
+      "index_0based": 81,
+      "fishName": "Тунец желтоперый",
+      "fishName_i18n": {
+        "ru": "Тунец желтоперый",
+        "en": "Yellowfin tuna",
+        "de": "Gelbflossen-Thun",
+        "es": "Atún de aleta amarilla",
+        "pt": "Albacora"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 83,
+      "index_0based": 82,
+      "fishName": "Полосатик малый",
+      "fishName_i18n": {
+        "ru": "Полосатик малый",
+        "en": "Common minke whale",
+        "de": "Finnwal",
+        "es": "Ballena enana",
+        "pt": "Baleia-anã"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 84,
+      "index_0based": 83,
+      "fishName": "Марлин черный",
+      "fishName_i18n": {
+        "ru": "Марлин черный",
+        "en": "Black marlin",
+        "de": "Schwarzer Marlin",
+        "es": "Marlín negro",
+        "pt": "Marlim-preto"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 85,
+      "index_0based": 84,
+      "fishName": "Кальмар гигантский",
+      "fishName_i18n": {
+        "ru": "Кальмар гигантский",
+        "en": "Giant squid",
+        "de": "Riesenkalmar",
+        "es": "Calamar gigante",
+        "pt": "Lula-gigante"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 86,
+      "index_0based": 85,
+      "fishName": "Кашалот",
+      "fishName_i18n": {
+        "ru": "Кашалот",
+        "en": "Sperm whale",
+        "de": "Pottwal",
+        "es": "Cachalote",
+        "pt": "Cachalote"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 87,
+      "index_0based": 86,
+      "fishName": "Косатка",
+      "fishName_i18n": {
+        "ru": "Косатка",
+        "en": "Orca",
+        "de": "Schwertwal",
+        "es": "Orca",
+        "pt": "Orca"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 88,
+      "index_0based": 87,
+      "fishName": "Веслонос",
+      "fishName_i18n": {
+        "ru": "Веслонос",
+        "en": "Paddlefish",
+        "de": "Löffelstör",
+        "es": "Pez espátula",
+        "pt": "Peixe-espátula"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 89,
+      "index_0based": 88,
+      "fishName": "Акула полярная",
+      "fishName_i18n": {
+        "ru": "Акула полярная",
+        "en": "Greenland shark",
+        "de": "Grönlandhai",
+        "es": "Tiburón boreal",
+        "pt": "Tubarão-da-groenlândia"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 90,
+      "index_0based": 89,
+      "fishName": "Тунец южный голубой",
+      "fishName_i18n": {
+        "ru": "Тунец южный голубой",
+        "en": "Southern bluefin tuna",
+        "de": "Südlicher Blauflossen-Thunfisch",
+        "es": "Atún de aleta azul",
+        "pt": "Atum azul do sul"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 91,
+      "index_0based": 90,
+      "fishName": "Мелкозубый пилорыл",
+      "fishName_i18n": {
+        "ru": "Мелкозубый пилорыл",
+        "en": "Largetooth sawfish",
+        "de": "Leichhardts Sägerochen",
+        "es": "Pez sierra de dientes cortos",
+        "pt": "Araguaguá"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 92,
+      "index_0based": 91,
+      "fishName": "Пагр розовый",
+      "fishName_i18n": {
+        "ru": "Пагр розовый",
+        "en": "Silver seabream",
+        "de": "Schnapper",
+        "es": "Pargo japonés",
+        "pt": "Madai"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 93,
+      "index_0based": 92,
+      "fishName": "Сериола полосатая",
+      "fishName_i18n": {
+        "ru": "Сериола полосатая",
+        "en": "Yellowtail amberjack",
+        "de": "Gelbschwanzmakrele",
+        "es": "Hamachi",
+        "pt": "Seriola quinqueradiata"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 94,
+      "index_0based": 93,
+      "fishName": "Каранкс золотой",
+      "fishName_i18n": {
+        "ru": "Каранкс золотой",
+        "en": "Golden trevally",
+        "de": "Goldmakrele",
+        "es": "Caranx dorado",
+        "pt": "Xaréu-dourado"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 95,
+      "index_0based": 94,
+      "fishName": "Каранкс черный",
+      "fishName_i18n": {
+        "ru": "Каранкс черный",
+        "en": "Black trevally",
+        "de": "Schwarze Makrele",
+        "es": "Caranx negro",
+        "pt": "Xaréu-preto"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 96,
+      "index_0based": 95,
+      "fishName": "Парусник",
+      "fishName_i18n": {
+        "ru": "Парусник",
+        "en": "Sailfish",
+        "de": "Fächerfisch",
+        "es": "Pez vela",
+        "pt": "Peixe-vela"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 97,
+      "index_0based": 96,
+      "fishName": "Групер гигантский",
+      "fishName_i18n": {
+        "ru": "Групер гигантский",
+        "en": "Giant grouper",
+        "de": "Riesenzackenbarsch",
+        "es": "Mero gigante",
+        "pt": "Mero"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 98,
+      "index_0based": 97,
+      "fishName": "Акула-мако",
+      "fishName_i18n": {
+        "ru": "Акула-мако",
+        "en": "Shortfin mako shark",
+        "de": "Kurzflossen-Mako",
+        "es": "Tiburón mako",
+        "pt": "Tubarão-mako"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 99,
+      "index_0based": 98,
+      "fishName": "Тигровая акула",
+      "fishName_i18n": {
+        "ru": "Тигровая акула",
+        "en": "Tiger shark",
+        "de": "Tigerhai",
+        "es": "Tiburón tigre",
+        "pt": "Tubarão-tigre"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 100,
+      "index_0based": 99,
+      "fishName": "Рыба-луна",
+      "fishName_i18n": {
+        "ru": "Рыба-луна",
+        "en": "Ocean sunfish",
+        "de": "Mondfisch",
+        "es": "Pez luna",
+        "pt": "Peixe-lua"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 101,
+      "index_0based": 100,
+      "fishName": "Окунь нильский",
+      "fishName_i18n": {
+        "ru": "Окунь нильский",
+        "en": "Nile perch",
+        "de": "Nilbarsch",
+        "es": "Perca del Nilo",
+        "pt": "Perca-do-nilo"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 102,
+      "index_0based": 101,
+      "fishName": "Тигровая рыба большая",
+      "fishName_i18n": {
+        "ru": "Тигровая рыба большая",
+        "en": "Hydrocynus goliath",
+        "de": "Riesen-Tigersalmler",
+        "es": "El pez tigre",
+        "pt": "Peixe-tigre-golias"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 103,
+      "index_0based": 102,
+      "fishName": "Сом вунду",
+      "fishName_i18n": {
+        "ru": "Сом вунду",
+        "en": "Vundu",
+        "de": "Wunduwels",
+        "es": "Vundu",
+        "pt": "Vundu"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 104,
+      "index_0based": 103,
+      "fishName": "Электрический сом",
+      "fishName_i18n": {
+        "ru": "Электрический сом",
+        "en": "Electric catfish",
+        "de": "Zitterwels",
+        "es": "Bagre eléctrico",
+        "pt": "Bagre elétrico"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 105,
+      "index_0based": 104,
+      "fishName": "Гетеротис нильский",
+      "fishName_i18n": {
+        "ru": "Гетеротис нильский",
+        "en": "Heterotis",
+        "de": "Afrikanischer Knochenzüngler",
+        "es": "Arowana africano",
+        "pt": "African arowana"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 106,
+      "index_0based": 105,
+      "fishName": "Сом жирафовый",
+      "fishName_i18n": {
+        "ru": "Сом жирафовый",
+        "en": "Giraffe catfish",
+        "de": "Giraffenwels",
+        "es": "Bagre jirafa",
+        "pt": "Giraffe bagfish"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 107,
+      "index_0based": 106,
+      "fishName": "Мраморный протоптер",
+      "fishName_i18n": {
+        "ru": "Мраморный протоптер",
+        "en": "Marbled lungfish",
+        "de": "Äthiopischer Lungenfisch",
+        "es": "Pez pulmonado marmoleado",
+        "pt": "Peixe pulmonar marmoreado"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 108,
+      "index_0based": 107,
+      "fishName": "Бишир",
+      "fishName_i18n": {
+        "ru": "Бишир",
+        "en": "Nile bichir",
+        "de": "Nil-Flösselhecht",
+        "es": "Nilo bichir",
+        "pt": "Peixe-manel"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 109,
+      "index_0based": 108,
+      "fishName": "Нильская тиляпия",
+      "fishName_i18n": {
+        "ru": "Нильская тиляпия",
+        "en": "Nile tilapia",
+        "de": "Nilbuntbarsch",
+        "es": "Tilapia del Nilo",
+        "pt": "Tilápia-do-nilo"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 110,
+      "index_0based": 109,
+      "fishName": "Мормир длиннорылый",
+      "fishName_i18n": {
+        "ru": "Мормир длиннорылый",
+        "en": "Eastern bottlenose mormyrid",
+        "de": "Flaschenmaul-Nilhecht",
+        "es": "Mormyrus longirostris",
+        "pt": "Mormyrus longirostris"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 111,
+      "index_0based": 110,
+      "fishName": "Цитаринус цитарус",
+      "fishName_i18n": {
+        "ru": "Цитаринус цитарус",
+        "en": "Citharinus citharus",
+        "de": "Afrikanischer Hochrückensalmler",
+        "es": "Citharinus citharus",
+        "pt": "Citharinus citharus"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 112,
+      "index_0based": 111,
+      "fishName": "Нильский крокодил",
+      "fishName_i18n": {
+        "ru": "Нильский крокодил",
+        "en": "Nile crocodile",
+        "de": "Nilkrokodil",
+        "es": "Сocodrilo del Nilo",
+        "pt": "Crocodilo-do-nilo"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 113,
+      "index_0based": 112,
+      "fishName": "Скат пресноводный гигантский",
+      "fishName_i18n": {
+        "ru": "Скат пресноводный гигантский",
+        "en": "Giant freshwater stingray",
+        "de": "Riesen-Süßwasserstechrochen",
+        "es": "Raya gigante chaophraya",
+        "pt": "Arraia gigante"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 114,
+      "index_0based": 113,
+      "fishName": "Арапайма",
+      "fishName_i18n": {
+        "ru": "Арапайма",
+        "en": "Arapaima",
+        "de": "Arapaima",
+        "es": "Paiche",
+        "pt": "Pirarucú"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 115,
+      "index_0based": 114,
+      "fishName": "Гигантский шильбовый сом",
+      "fishName_i18n": {
+        "ru": "Гигантский шильбовый сом",
+        "en": "Mekong giant catfish",
+        "de": "Mekong-Riesenwels",
+        "es": "Siluro gigante",
+        "pt": "Peixe-gato-gigante"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 116,
+      "index_0based": 115,
+      "fishName": "Арована азиатская",
+      "fishName_i18n": {
+        "ru": "Арована азиатская",
+        "en": "Asian arowana",
+        "de": "Asiatischer Gabelbart",
+        "es": "Arowana asiático",
+        "pt": "Aruanã-dourado"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 117,
+      "index_0based": 116,
+      "fishName": "Рыба-нож королевская",
+      "fishName_i18n": {
+        "ru": "Рыба-нож королевская",
+        "en": "Royal featherback",
+        "de": "Indochina-Federmesserfisch",
+        "es": "Pez cuchillo real",
+        "pt": "Peixe-faca-real"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 118,
+      "index_0based": 117,
+      "fishName": "Паку бурый",
+      "fishName_i18n": {
+        "ru": "Паку бурый",
+        "en": "Tambaqui",
+        "de": "Schwarzer Pacu",
+        "es": "Cachama",
+        "pt": "Tambaqui"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 119,
+      "index_0based": 118,
+      "fishName": "Змееголов гигантский",
+      "fishName_i18n": {
+        "ru": "Змееголов гигантский",
+        "en": "Giant snakehead",
+        "de": "Großer Schlangenkopffisch",
+        "es": "Cabeza de serpiente gigante",
+        "pt": "Gigante Snakehead"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 120,
+      "index_0based": 119,
+      "fishName": "Панцирник миссисипский",
+      "fishName_i18n": {
+        "ru": "Панцирник миссисипский",
+        "en": "Alligator gar",
+        "de": "Alligatorhecht",
+        "es": "Pejelagarto",
+        "pt": "Alligator gar"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 121,
+      "index_0based": 120,
+      "fishName": "Сом краснохвостый",
+      "fishName_i18n": {
+        "ru": "Сом краснохвостый",
+        "en": "Redtail catfish",
+        "de": "Rotflossen-Antennenwels",
+        "es": "Pez torre",
+        "pt": "Pirarara"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 122,
+      "index_0based": 121,
+      "fishName": "Барамунди",
+      "fishName_i18n": {
+        "ru": "Барамунди",
+        "en": "Barramundi",
+        "de": "Barramundi",
+        "es": "Lates calcarifer",
+        "pt": "Perca-gigante"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 123,
+      "index_0based": 122,
+      "fishName": "Акула-бык",
+      "fishName_i18n": {
+        "ru": "Акула-бык",
+        "en": "Bull shark",
+        "de": "Bullenhai",
+        "es": "Lamia",
+        "pt": "Tubarão-cabeça-chata"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 124,
+      "index_0based": 123,
+      "fishName": "Кумжа",
+      "fishName_i18n": {
+        "ru": "Кумжа",
+        "en": "Brown trout",
+        "de": "Forelle",
+        "es": "Salmo trutta",
+        "pt": "Salmo trutta"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 125,
+      "index_0based": 124,
+      "fishName": "Подуст",
+      "fishName_i18n": {
+        "ru": "Подуст",
+        "en": "Common nase",
+        "de": "Nase",
+        "es": "Chondrostoma nasus",
+        "pt": "Boga-do-Danúbio"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 126,
+      "index_0based": 125,
+      "fishName": "Сиг",
+      "fishName_i18n": {
+        "ru": "Сиг",
+        "en": "Lavaret",
+        "de": "Lavaret",
+        "es": "Lavareto",
+        "pt": "Coregono-lavareda"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 127,
+      "index_0based": 126,
+      "fishName": "Синец",
+      "fishName_i18n": {
+        "ru": "Синец",
+        "en": "Zope",
+        "de": "Zope",
+        "es": "Zope",
+        "pt": "Zope"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 128,
+      "index_0based": 127,
+      "fishName": "Корюшка",
+      "fishName_i18n": {
+        "ru": "Корюшка",
+        "en": "Smelt",
+        "de": "Stint",
+        "es": "Eperlano",
+        "pt": "Eperlano"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 129,
+      "index_0based": 128,
+      "fishName": "Ряпушка",
+      "fishName_i18n": {
+        "ru": "Ряпушка",
+        "en": "Vendace",
+        "de": "Kleine Maräne",
+        "es": "Corégono blanco",
+        "pt": "Coregono branco"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 130,
+      "index_0based": 129,
+      "fishName": "Рипус",
+      "fishName_i18n": {
+        "ru": "Рипус",
+        "en": "Ripus",
+        "de": "Ripus",
+        "es": "Ripus",
+        "pt": "Ripus"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 131,
+      "index_0based": 130,
+      "fishName": "Палия",
+      "fishName_i18n": {
+        "ru": "Палия",
+        "en": "Arctic char",
+        "de": "Seesaibling",
+        "es": "Salvelino",
+        "pt": "Salvelino-árctico"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 132,
+      "index_0based": 131,
+      "fishName": "Щиповка",
+      "fishName_i18n": {
+        "ru": "Щиповка",
+        "en": "Spined loach",
+        "de": "Steinbeißer",
+        "es": "Cobitis taenia",
+        "pt": "Verdemã"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 133,
+      "index_0based": 132,
+      "fishName": "Буффало черный",
+      "fishName_i18n": {
+        "ru": "Буффало черный",
+        "en": "Black buffalo",
+        "de": "Schwarzer Büffelfisch",
+        "es": "Ictiobus niger",
+        "pt": "Black buffalo"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 134,
+      "index_0based": 133,
+      "fishName": "Буффало малоротый",
+      "fishName_i18n": {
+        "ru": "Буффало малоротый",
+        "en": "Smallmouth buffalo",
+        "de": "Kleinmäuliger Büffelfisch",
+        "es": "Ictiobus bubalus",
+        "pt": "Smallmouth buffalo"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 135,
+      "index_0based": 134,
+      "fishName": "Буффало большеротый",
+      "fishName_i18n": {
+        "ru": "Буффало большеротый",
+        "en": "Bigmouth buffalo",
+        "de": "Großmäuliger Büffelfisch",
+        "es": "Ictiobus cyprinellus",
+        "pt": "Bigmouth buffalo"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 136,
+      "index_0based": 135,
+      "fishName": "Окунь малоротый",
+      "fishName_i18n": {
+        "ru": "Окунь малоротый",
+        "en": "Smallmouth bass",
+        "de": "Schwarzbarsch",
+        "es": "Micropterus dolomieu",
+        "pt": "Achiga-boca-pequena"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 137,
+      "index_0based": 136,
+      "fishName": "Ильная рыба",
+      "fishName_i18n": {
+        "ru": "Ильная рыба",
+        "en": "Bowfin",
+        "de": "Kahlhecht",
+        "es": "Amia calva",
+        "pt": "Amia"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 138,
+      "index_0based": 137,
+      "fishName": "Щука-маскинонг",
+      "fishName_i18n": {
+        "ru": "Щука-маскинонг",
+        "en": "Muskellunge",
+        "de": "Muskellunge",
+        "es": "Muskallonga americano",
+        "pt": "Lúcio-almiscarado"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 139,
+      "index_0based": 138,
+      "fishName": "Окунь солнечный",
+      "fishName_i18n": {
+        "ru": "Окунь солнечный",
+        "en": "Pumpkinseed",
+        "de": "Gemeiner Sonnenbarsch",
+        "es": "Perca sol",
+        "pt": "Perca-sol"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 140,
+      "index_0based": 139,
+      "fishName": "Чавыча",
+      "fishName_i18n": {
+        "ru": "Чавыча",
+        "en": "Chinook salmon",
+        "de": "Königslachs",
+        "es": "Salmón real",
+        "pt": "Salmão-real"
+      },
+      "weight": 0,
+      "baitId": 0
+    },
+    {
+      "id": 141,
+      "index_0based": 140,
+      "fishName": "Чукучан",
+      "fishName_i18n": {
+        "ru": "Чукучан",
+        "en": "Longnose sucker",
+        "de": "Tschukutschan",
+        "es": "Catostomus catostomus",
+        "pt": "Catostomus catostomus"
+      },
+      "weight": 0,
+      "baitId": 0
+    }
+  ]
+}

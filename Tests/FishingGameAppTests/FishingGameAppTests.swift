@@ -831,4 +831,84 @@ final class FishingGameAppTests: XCTestCase {
         XCTAssertEqual(domains?["chat.fish-mob.ru"]?["NSExceptionAllowsInsecureHTTPLoads"], true)
         XCTAssertEqual(FishingIOSAppConfiguration.chatServerPort, 15701)
     }
+
+    // MARK: - 22. Phase 11: Persistent `INSTALLATION` UUID (`F0.e.a`) & App Bundle `GameData` Bootstrapper
+
+    func testInstallationUuidPersistenceAndAppBundleDatabaseBootstrap() throws {
+        let tempDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FishingAppBootstrapTest_\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: tempDir) }
+
+        // 1. First call creates `<tempDir>/INSTALLATION` with a valid 36-char UUID v4
+        let uuid1 = try AppBundleDatabaseBootstrapper.resolveOrCreateInstallationUuid(in: tempDir)
+        XCTAssertEqual(uuid1.count, 36)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: tempDir.appendingPathComponent("INSTALLATION").path))
+
+        // 2. Second call returns the exact same persisted UUID (`F0.e.a` idempotency)
+        let uuid2 = try AppBundleDatabaseBootstrapper.resolveOrCreateInstallationUuid(in: tempDir)
+        XCTAssertEqual(uuid1, uuid2)
+
+        // 3. Locate bundled `App/Resources/GameData` or fallback `FISHING_DATA_DIR` / `data/`
+        let packageRoot = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        var candidateDirs: [URL] = [
+            packageRoot.appendingPathComponent("App/Resources/GameData", isDirectory: true),
+            packageRoot.appendingPathComponent("data", isDirectory: true)
+        ]
+        if let envDir = ProcessInfo.processInfo.environment["FISHING_DATA_DIR"], !envDir.isEmpty {
+            candidateDirs.insert(URL(fileURLWithPath: envDir, isDirectory: true), at: 1)
+        }
+        guard let gameDataURL = candidateDirs.first(where: {
+            FileManager.default.fileExists(atPath: $0.appendingPathComponent("fishes.json").path)
+        }) else {
+            return
+        }
+
+        let resolvedURL = AppBundleDatabaseBootstrapper.resolveBundledGameDataURL(explicitURL: gameDataURL)
+        XCTAssertEqual(resolvedURL?.standardizedFileURL, gameDataURL.standardizedFileURL)
+
+        // 4. Verify bundled TGA normal maps (`wNoise3.tga` & `wNoise4.tga`) load and decode cleanly (`256 x 128`, 24-bit BGR)
+        let n3Data = TgaTextureLoader.loadBundledNoiseTGA(named: "wNoise3.tga", gameDataDirectoryURL: gameDataURL)
+            ?? TgaTextureLoader.makeProceduralWaveNoiseTGA(seedPhase: 0)
+        let n4Data = TgaTextureLoader.loadBundledNoiseTGA(named: "wNoise4.tga", gameDataDirectoryURL: gameDataURL)
+            ?? TgaTextureLoader.makeProceduralWaveNoiseTGA(seedPhase: 37)
+        do {
+            let decoded3 = try TgaTextureLoader.decode(data: n3Data)
+            let decoded4 = try TgaTextureLoader.decode(data: n4Data)
+            XCTAssertEqual(decoded3.width, 256)
+            XCTAssertEqual(decoded3.height, 128)
+            XCTAssertEqual(decoded3.bitsPerPixel, 24)
+            XCTAssertEqual(decoded4.width, 256)
+            XCTAssertEqual(decoded4.height, 128)
+        }
+
+        // 5. First launch bootstraps all 141 fish species, 15 ponds, 14 achievements, and 44 quests into `fishing2.db`
+        let coordinator1 = try AppBundleDatabaseBootstrapper.bootstrapAppCoordinator(
+            appSupportDirectory: tempDir,
+            bundledGameDataURL: gameDataURL,
+            nowMs: 1_700_000_000_000
+        )
+        XCTAssertEqual(coordinator1.fishCatalogById.count, 141)
+        XCTAssertEqual(coordinator1.availablePonds.count, 15)
+        XCTAssertEqual(coordinator1.achievements.count, 14)
+        XCTAssertEqual(coordinator1.quests.count, 44)
+        let dbPath = tempDir.appendingPathComponent("fishing2.db").path
+        XCTAssertTrue(AppBundleDatabaseBootstrapper.isFullReferenceCatalogPopulated(atDatabasePath: dbPath))
+
+        // Mutate player state (buy starter kit) and verify second launch preserves state without re-importing
+        coordinator1.buyAndEquipStarterKit(nowMs: 1_700_000_001_000)
+        let balanceAfterStarterKit = coordinator1.profile.balance
+        XCTAssertLessThan(balanceAfterStarterKit, 500)
+
+        let coordinator2 = try AppBundleDatabaseBootstrapper.bootstrapAppCoordinator(
+            appSupportDirectory: tempDir,
+            bundledGameDataURL: gameDataURL,
+            nowMs: 1_700_000_002_000
+        )
+        XCTAssertEqual(coordinator2.profile.balance, balanceAfterStarterKit)
+        XCTAssertEqual(coordinator2.ownedRods.count, 1)
+        XCTAssertEqual(coordinator2.fishCatalogById.count, 141)
+    }
 }

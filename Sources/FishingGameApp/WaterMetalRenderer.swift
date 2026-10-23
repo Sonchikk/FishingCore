@@ -99,6 +99,34 @@ public enum TgaTextureLoader: Sendable {
         )
     }
 
+    /// Loads `Textures/<filename>` (e.g. `wNoise3.tga`, `wNoise4.tga`) from the bundled `GameData` directory if present.
+    public static func loadBundledNoiseTGA(
+        named filename: String,
+        gameDataDirectoryURL: URL? = nil,
+        bundle: Bundle = .main
+    ) -> Data? {
+        var candidates: [URL] = []
+        if let dir = gameDataDirectoryURL {
+            candidates.append(dir.appendingPathComponent("Textures/\(filename)"))
+            candidates.append(dir.appendingPathComponent(filename))
+        }
+        if let bundleGameData = bundle.url(forResource: "GameData", withExtension: nil) {
+            candidates.append(bundleGameData.appendingPathComponent("Textures/\(filename)"))
+        }
+        if let resourceRoot = bundle.resourceURL {
+            candidates.append(resourceRoot.appendingPathComponent("GameData/Textures/\(filename)"))
+            candidates.append(resourceRoot.appendingPathComponent("Textures/\(filename)"))
+        }
+        for url in candidates {
+            if FileManager.default.fileExists(atPath: url.path),
+               let data = try? Data(contentsOf: url),
+               data.count >= headerSizeBytes {
+                return data
+            }
+        }
+        return nil
+    }
+
     /// Synthesizes a valid 24-bit uncompressed BGR `.tga` file (`256 x 128`) for normal-map testing
     /// or fallback when the APK's `assets/Textures/wNoise3.tga` / `wNoise4.tga` are not yet bundled.
     public static func makeProceduralWaveNoiseTGA(
@@ -488,8 +516,8 @@ public final class WaterMetalRenderer: NSObject, MTKViewDelegate {
         )
         offscreenDesc.usage = [.renderTarget, .shaderRead]
 
-        let rawNoise1 = noise1TGAData ?? TgaTextureLoader.makeProceduralWaveNoiseTGA(seedPhase: 0)
-        let rawNoise2 = noise2TGAData ?? TgaTextureLoader.makeProceduralWaveNoiseTGA(seedPhase: 37)
+        let rawNoise1 = noise1TGAData ?? TgaTextureLoader.loadBundledNoiseTGA(named: "wNoise3.tga") ?? TgaTextureLoader.makeProceduralWaveNoiseTGA(seedPhase: 0)
+        let rawNoise2 = noise2TGAData ?? TgaTextureLoader.loadBundledNoiseTGA(named: "wNoise4.tga") ?? TgaTextureLoader.makeProceduralWaveNoiseTGA(seedPhase: 37)
 
         guard let offscreenTex = dev.makeTexture(descriptor: offscreenDesc),
               let decoded1 = try? TgaTextureLoader.decode(data: rawNoise1),

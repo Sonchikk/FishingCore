@@ -1,0 +1,74 @@
+name: FishingIOSApp
+options:
+  bundleIdPrefix: com.evados.fishing
+  deploymentTarget:
+    iOS: "18.0"
+  xcodeVersion: "16.2"
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    IPHONEOS_DEPLOYMENT_TARGET: "18.0"
+    CODE_SIGNING_ALLOWED: NO
+    CODE_SIGNING_REQUIRED: NO
+    CODE_SIGN_IDENTITY: ""
+targets:
+  FishingCore:
+    type: library.static
+    platform: iOS
+    deploymentTarget: "18.0"
+    sources:
+      - path: Sources/FishingCore
+  FishingDatabase:
+    type: library.static
+    platform: iOS
+    deploymentTarget: "18.0"
+    sources:
+      - path: Sources/FishingDatabase
+    dependencies:
+      - target: FishingCore
+      - sdk: libsqlite3.tbd
+  FishingGameApp:
+    type: library.static
+    platform: iOS
+    deploymentTarget: "18.0"
+    sources:
+      - path: Sources/FishingGameApp
+    dependencies:
+      - target: FishingCore
+      - target: FishingDatabase
+  FishingIOSApp:
+    type: application
+    platform: iOS
+    deploymentTarget: "18.0"
+    info:
+      path: App/Info.plist
+    sources:
+      - path: App/FishingIOSApp.swift
+      - path: App/Resources/GameData
+        type: folder
+        buildPhase: resources
+    dependencies:
+      - target: FishingCore
+      - target: FishingDatabase
+      - target: FishingGameApp
+      - sdk: libsqlite3.tbd
+      - sdk: Metal.framework
+      - sdk: MetalKit.framework
+      - sdk: AudioToolbox.framework
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.evados.fishing.ios
+        PRODUCT_NAME: FishingIOSApp
+        MARKETING_VERSION: "1.81"
+        CURRENT_PROJECT_VERSION: "203"
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: App/Info.plist
+        TARGETED_DEVICE_FAMILY: "1,2"
+        CODE_SIGNING_ALLOWED: NO
+        CODE_SIGNING_REQUIRED: NO
+        CODE_SIGN_IDENTITY: ""
+schemes:
+  FishingIOSApp:
+    build:
+      targets:
+        FishingIOSApp: all
