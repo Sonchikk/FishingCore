@@ -31,7 +31,6 @@ public enum FishingLanguage: String, CaseIterable, Sendable, Identifiable {
     }
 }
 
-/// Provides localized strings across all 5 languages (`ru`, `en`, `de`, `es`, `pt`) and pond title resolution.
 /// Tackle components checked before cast (`GameView$c.i()`, `MECHANICS.md` Section 2.1).
 public enum MissingTackleComponent: String, CaseIterable, Sendable {
     case rod
@@ -41,8 +40,9 @@ public enum MissingTackleComponent: String, CaseIterable, Sendable {
     case bait
 }
 
+/// Provides localized strings across all 5 languages (`ru`, `en`, `de`, `es`, `pt`) and pond/achievement/quest title resolution.
 public struct FishingLocaleManager: Sendable, Equatable {
-    /// Original 14 achievement titles from `resources.arsc` (`0x7f030000 array/achievements`).
+    /// Original 14 achievement titles from `resources.arsc` (`0x7f030000 array/achievements`, RU).
     public static let achievementTitlesRu: [String] = [
         "Завсегдатай", "Большой улов", "Хулиган", "Любитель заданий",
         "Временщик", "Инди-рыбак", "Люблю 25", "Красавчик",
@@ -50,7 +50,15 @@ public struct FishingLocaleManager: Sendable, Equatable {
         "Купонщик", "Путешественник"
     ]
 
-    /// Original 14 achievement descriptions from `resources.arsc` (`0x7f030001 array/achievs_desc`).
+    /// Original 14 achievement titles from `resources.arsc` (`0x7f030000 array/achievements`, EN).
+    public static let achievementTitlesEn: [String] = [
+        "Fishing everyday", "Big catch", "Hooligan", "Task lover",
+        "Fish on time", "Individual fisherman", "I love 25", "Handsome",
+        "Maximalist", "Rich", "Big spender", "Rare catch",
+        "I like coupons", "Traveler"
+    ]
+
+    /// Original 14 achievement descriptions from `resources.arsc` (`0x7f030001 array/achievs_desc`, RU).
     public static let achievementDescriptionsRu: [String] = [
         "заходи порыбачить каждый день",
         "поймай много рыб",
@@ -68,7 +76,25 @@ public struct FishingLocaleManager: Sendable, Equatable {
         "открой все водоемы"
     ]
 
-    /// Original 44 quest titles from `resources.arsc` (`0x7f030011 array/quests`).
+    /// Original 14 achievement descriptions from `resources.arsc` (`0x7f030001 array/achievs_desc`, EN).
+    public static let achievementDescriptionsEn: [String] = [
+        "come to fish every day",
+        "catch a lot of fish",
+        "breaks many fishing rods",
+        "perform tasks",
+        "participate in tournaments with registration",
+        "create individual tournaments",
+        "catch fish with the sign 25",
+        "same numbers - beautiful weight",
+        "catch a big fish",
+        "earn a lot of money",
+        "throw out the tackles",
+        "catch crocodile or treasure",
+        "buy a lot of coupons",
+        "open all the ponds"
+    ]
+
+    /// Original 44 quest titles from `resources.arsc` (`0x7f030011 array/quests`, RU).
     public static let questTitlesRu: [String] = [
         "Ведро рыбы", "Вкусная уха", "Карасики", "Мелочь, а приятно",
         "Заказ для рынка", "Рыбалка на мотыля", "Большое и маленькое", "Рыба моей мечты: Язь!",
@@ -83,7 +109,22 @@ public struct FishingLocaleManager: Sendable, Equatable {
         "Достань луну", "Тунцы", "Акулий зуб", "Кашалоты"
     ]
 
-    /// Original 44 quest descriptions from `resources.arsc` (`0x7f030012 array/quests_desc`).
+    /// Original 44 quest titles from `resources.arsc` (`0x7f030011 array/quests`, EN).
+    public static let questTitlesEn: [String] = [
+        "Bucket of fishes", "Tasty fish soup", "Prussian/Crucian carps", "Trifle, but nice",
+        "Order for market", "Fishing on bloodworms", "Big and small", "Fish of my dreams: Ide!",
+        "Pikes", "Trial by worm", "Mini safari", "Russian Quest",
+        "Carps", "Beer set", "Buffalo", "Live bait fishing",
+        "King salmon", "Restaurant order", "Trout casserole", "Catfish",
+        "Perches", "Carefully! Bait - meat", "African catfish", "Black and white",
+        "Night hunting", "That's salmon!!!", "Fishes for aquarium", "Toothed fish",
+        "River giants", "Giant carps", "Don't catch fish!", "Beluga hunting",
+        "Sea delicacy", "Sea beasts", "Shrimp fishing", "Ordering a cannery",
+        "Marlins", "Pirate Treasure", "Fish for dinner", "Catch sailfish",
+        "Get the sun", "Tuna", "Shark Tooth", "Sperm whales"
+    ]
+
+    /// Original 44 quest descriptions from `resources.arsc` (`0x7f030012 array/quests_desc`, RU).
     public static let questDescriptionsRu: [String] = [
         "Поймать 20 кг любой рыбы.",
         "Налови на уху по 5 шт. следующих рыб: плотва (500-1000 г), окунь (500-1000 г), красноперка (500-1000 г).",
@@ -131,6 +172,54 @@ public struct FishingLocaleManager: Sendable, Equatable {
         "Налови по 1 шт. кашалотов в пределах веса: 250-500 кг, 750-1000 кг, 1250-1500 кг, 1750-2000 кг."
     ]
 
+    /// Original 44 quest descriptions from `resources.arsc` (`0x7f030012 array/quests_desc`, EN).
+    public static let questDescriptionsEn: [String] = [
+        "Catch 20 kg any fishes.",
+        "Catch 5 pcs. of each fishes for fish soup: roach (500-1000 g), perch (500-1000 g), rudd (500-1000 g).",
+        "Catch 5 pcs. of each fishes: prussian carp 500-1000 g and 1800-2200 g, crucian carp 1100-1600 g and 2400-3000 g.",
+        "You need to catch 1 kg of each of the fish: common dace, misgurnus, ruffe, gudgeon, chinese sleeper, donets ruffe.",
+        "Catch large fish: northern pike (from 12 kg), carp (from 10 kg), leather carp (from 10 kg), asp (from 8 kg). 3 pcs. each.",
+        "Use bloodworm bait and catch 5 pcs. of each fishes: european chub, white-eye bream, white bream, vimba bream, young bream.",
+        "Catch 1 kg of common bleak and 100 kg of common barbel.",
+        "Well, catch 5 ides so that each weighs 6-7 kg.",
+        "Catch 5 pcs. of northern pikes each within the weight ranges: 6-10 kg, 11-15 kg, 16-20 kg.",
+        "Catch brown trout (from 12 kg, 1 pc.), lavaret (from 4 kg, 2 pcs.) with a worm bait.",
+        "Catch 3 pcs. of each fishes: spined loach, smelt, vendace, zope and common nase.",
+        "Catch prussian carp, caspian roach, ruffe, zander, bighead carp. Each of 5 pcs.",
+        "Catch 3 pcs. of all types of carp each: carp (from 18 kg), leather carp (from 20 kg), mirror carp (from 20 kg).",
+        "Catch 10 pcs. of each fishes: crayfish, common bream, taran, young bream.",
+        "Use caddisfly bait and catch black buffalo - 100 kg, smallmouth buffalo - 150 kg, bigmouth buffalo - 150 kg.",
+        "Catch all of fishes below with live bait. 3 pcs. each.",
+        "Catch 5 pcs. of chinook salmon each within the weight ranges: 15-20 kg, 25-30 kg, 35-40 kg.",
+        "You need to catch arctic char (from 7 kg), burbot (from 12 kg), common carp (from 20 kg). 7 pcs. each.",
+        "Catch rainbow trout (from 6 kg), sevan trout (from 10 kg). 10 pcs. each.",
+        "Catch 3 pcs. of catfish each within the weight ranges: 10-40 kg, 50-80 kg, 120-150 kg.",
+        "Catch different river perches: perch - 10 kg, smallmouth bass - 10 kg, pumpkinseed - 3 kg, nile perch - 400 kg.",
+        "Catch all of fishes and a reptile(!) below with meat. 2 pcs. each.",
+        "Catch 5 pcs. of each fishes: vundu (from 30 kg), electric catfish (from 12 kg), giraffe catfish (from 2 kg).",
+        "Catch 5 pcs. of each fishes: black carp (15-18 kg), grass carp (15-18 kg).",
+        "Use the indicated baits and catch three types of night fish: young bream, taimen and eel. 5 pcs. each.",
+        "Catch 10 pcs. of salmon each within the weight ranges: 1-5 kg, 10-14 kg and 23-27 kg.",
+        "Catch 4 pcs. of each fishes: asian arowana (4-6 kg), royal featherback (7-10 kg), redtail catfish (23-27 kg).",
+        "You need to catch: hydrocynus goliath (from 30 kg), tambaqui (from 26 kg), giant snakehead (from 12 kg). 7 pcs. each.",
+        "Catch 5 pcs. of each fishes: giant freshwater stingray, mekong giant catfish, bull shark.",
+        "Catch 3 pcs. of giant carps each within the weight ranges: 70-100 kg, 170-200 kg, 270-300 kg.",
+        "Catch 4 pcs. each: turtle (from 12 kg) and crab (from 600 g).",
+        "Catch 5 beluga so that each weights 1200-1500 kg.",
+        "Catch 100 kg of lobster using the baits shown.",
+        "Catch 7 pcs. each: thornback ray (from 12 kg), angler (from 40 kg), sea robin (from 4 kg).",
+        "Use a shrimp as bait and catch 5 pcs. of each specified fishs.",
+        "You need to catch pollock (8-10 kg), atlantic mackerel (2.5-3 kg), european plaice (3-4 kg). 5 pcs. each",
+        "Catch 3 pcs. of marlins each within the weight ranges: 30-50 kg, 70-100 kg, 140-170 kg.",
+        "Catch all of the fishes below and find 3 pirate treasures.",
+        "Catch 10 pcs. of each fishes: silver seabream, golden trevally, black trevally.",
+        "Catch the fastest fish in the world - sailfish. Catch 3 pcs. of one each within the weight ranges: 20-35 kg, 40-55 kg, 60-75 kg.",
+        "Catch all of the fishes below in tropical water with crab meat as bait and retrieve 2 ocean sunfish.",
+        "Catch 4 pcs. each: tuna (from 400 kg), yellowfin tuna (from 120 kg), southern bluefin tuna (from 160 kg).",
+        "Catch 3 pcs. of each sharks: shortfin mako shark, tiger shark, greenland shark, small-spotted catshark, bull shark.",
+        "Catch 1 pcs. of sperm whales each within the weight ranges: 250-500 kg, 750-1000 kg, 1250-1500 kg, 1750-2000 kg."
+    ]
+
     public var currentLanguage: FishingLanguage
     public var tasksEnabled: Bool
 
@@ -157,34 +246,38 @@ public struct FishingLocaleManager: Sendable, Equatable {
 
     public func achievementTitle(id1Based: Int) -> String {
         let idx = id1Based - 1
-        guard idx >= 0 && idx < Self.achievementTitlesRu.count else {
-            return "Достижение #\(id1Based)"
+        let table = currentLanguage == .ru ? Self.achievementTitlesRu : Self.achievementTitlesEn
+        guard idx >= 0 && idx < table.count else {
+            return currentLanguage == .ru ? "Достижение #\(id1Based)" : "Achievement #\(id1Based)"
         }
-        return Self.achievementTitlesRu[idx]
+        return table[idx]
     }
 
     public func achievementDescription(id1Based: Int) -> String {
         let idx = id1Based - 1
-        guard idx >= 0 && idx < Self.achievementDescriptionsRu.count else {
+        let table = currentLanguage == .ru ? Self.achievementDescriptionsRu : Self.achievementDescriptionsEn
+        guard idx >= 0 && idx < table.count else {
             return ""
         }
-        return Self.achievementDescriptionsRu[idx]
+        return table[idx]
     }
 
     public func questTitle(id1Based: Int) -> String {
         let idx = id1Based - 1
-        guard idx >= 0 && idx < Self.questTitlesRu.count else {
-            return "Квест #\(id1Based)"
+        let table = currentLanguage == .ru ? Self.questTitlesRu : Self.questTitlesEn
+        guard idx >= 0 && idx < table.count else {
+            return currentLanguage == .ru ? "Квест #\(id1Based)" : "Quest #\(id1Based)"
         }
-        return Self.questTitlesRu[idx]
+        return table[idx]
     }
 
     public func questDescription(id1Based: Int) -> String {
         let idx = id1Based - 1
-        guard idx >= 0 && idx < Self.questDescriptionsRu.count else {
+        let table = currentLanguage == .ru ? Self.questDescriptionsRu : Self.questDescriptionsEn
+        guard idx >= 0 && idx < table.count else {
             return ""
         }
-        return Self.questDescriptionsRu[idx]
+        return table[idx]
     }
 
     public func tabTitle(for tab: AppNavigationTab) -> String {

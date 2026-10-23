@@ -151,9 +151,6 @@ final class FishingGameAppTests: XCTestCase {
     // MARK: - 5. 24-Bit BGR TGA Texture Decoder (`F0.s`)
 
     func testTgaTextureLoaderDecodes24BitBGRAndSwapsRedBlue() throws {
-        // Build a minimal 2x1 24-bit BGR TGA image:
-        // Pixel 0 in file (B=10, G=20, R=30) -> expected RGB=(30, 20, 10)
-        // Pixel 1 in file (B=100, G=150, R=200) -> expected RGB=(200, 150, 100)
         var tgaBytes = [UInt8](repeating: 0, count: 18)
         tgaBytes[2] = 2   // Uncompressed true-color
         tgaBytes[12] = 2  // Width = 2 (LE)
@@ -182,14 +179,12 @@ final class FishingGameAppTests: XCTestCase {
     // MARK: - 6. Exact Water Shader Mathematics (`F0.n`, `PSBackGround.glsl`, `PSBlit0_night.glsl`)
 
     func testWaterShaderMathPhaseWrapRefractionAndNightTint() {
-        // 1. Phase step +0.0005f and wrap at > 1.0f (`F0.n.o()`)
         let step1 = WaterShaderMath.stepPhaseOffset(0.0)
         XCTAssertEqual(step1, 0.0005, accuracy: 1e-7)
 
         let wrapped = WaterShaderMath.stepPhaseOffset(0.9998)
         XCTAssertEqual(wrapped, 0.0003, accuracy: 1e-6)
 
-        // 2. Refracted UV clamping to [0.01, 0.99] (`PSBackGround.glsl`)
         let uvExtremeLow = WaterShaderMath.computeRefractedUV(
             texCoords: SIMD2<Float>(0.001, 0.002),
             ndcPosition: SIMD3<Float>(0.0, -0.5, 0.0),
@@ -208,7 +203,6 @@ final class FishingGameAppTests: XCTestCase {
         XCTAssertLessThanOrEqual(uvExtremeHigh.x, 0.99)
         XCTAssertLessThanOrEqual(uvExtremeHigh.y, 0.99)
 
-        // 3. Specular reflection alpha = 0.8 (`PSBackGround.glsl`)
         let specOut = WaterShaderMath.applyWaterSpecularAndAlpha(
             diffuseColor: SIMD4<Float>(0.2, 0.4, 0.6, 1.0),
             ndcPosition: SIMD3<Float>(0.0, -0.5, 0.0),
@@ -216,7 +210,6 @@ final class FishingGameAppTests: XCTestCase {
         )
         XCTAssertEqual(specOut.w, 0.8, accuracy: 1e-6)
 
-        // 4. Day vs Night Pass 2 blit tint (`PSBlit0.glsl` vs `PSBlit0_night.glsl`)
         let baseColor = SIMD4<Float>(0.8, 0.6, 0.5, 1.0)
         let dayBlit = WaterShaderMath.applyScreenBlitTint(color: baseColor, isDaylight: true)
         XCTAssertEqual(dayBlit.x, 0.8, accuracy: 1e-6)
@@ -239,7 +232,6 @@ final class FishingGameAppTests: XCTestCase {
             nowMs: 1_700_000_000_000
         )
 
-        // 1. Restore profile from `auth.php` semicolon-delimited payload
         let rodName = try XCTUnwrap(coordinator.catalog.listAllRodSpecs().first?.name)
         let coilName = try XCTUnwrap(coordinator.catalog.listAllCoilSpecs().first?.name)
         let lineName = try XCTUnwrap(coordinator.catalog.listAllLineSpecs().first?.name)
@@ -262,7 +254,6 @@ final class FishingGameAppTests: XCTestCase {
         XCTAssertEqual(coordinator.ownedHooks.count, 1)
         XCTAssertEqual(coordinator.ownedBaits.count, 1)
 
-        // 2. Sync online shop CSV (`MainActivity$d.c`)
         var csvTokens: [String] = []
         for idx in 0..<37 {
             switch idx {
@@ -284,7 +275,6 @@ final class FishingGameAppTests: XCTestCase {
         XCTAssertEqual(snapshot.unreadNotesCount, 3)
         XCTAssertEqual(coordinator.onlineShopSnapshot?.pearlsBalance, 320)
 
-        // 3. Receive binary Java Object Serialization Stream (`0xACED0005`) chat message
         let incomingMess = ChatMess(
             fromID: 42,
             prem: 1,
@@ -307,42 +297,40 @@ final class FishingGameAppTests: XCTestCase {
         XCTAssertEqual(coordinator.chatMessages.count, 1)
     }
 
-    // MARK: - 8. Phase 9: Audio & Haptics Throttling (`GameActivity$f` & `F0.o`)
+    // MARK: - 8. Phase 9: Audio, SFX (`F0.p`), Ambient Pond Music & Bite Haptics (`FishingService$e`)
 
-    func testAudioAndHapticsBiteDebounceAndAmbientSelection() {
+    func testAudioAndHapticsBiteSignalAndAmbientSelection() {
         var controller = FishingAudioAndHapticsController(
             soundEnabled: true,
             vibrationEnabled: true,
-            biteSoundMinIntervalMs: 1_000
+            vibrationDurationMs: 500
         )
 
-        // 1. Ambient track selection: day (6..21) -> pond_<id+1>.ogg, night -> night_1.ogg
-        let dayTrack = controller.syncAmbientTrack(pondIndex: 0, hour: 8)
-        XCTAssertEqual(dayTrack, AmbientMusicTrack(filename: "pond_1.ogg", pondIndex: 0, isDaylightTrack: true))
+        // 1. Ambient track selection: day (05..21) -> day track, night (22..04) -> night track
+        controller.syncAmbientTrack(pondIndex: 0, hour: 8)
+        XCTAssertEqual(controller.activeAmbientTrack, AmbientPondTrack(pondIndex: 0, isDaylightTrack: true))
 
-        let nightTrack = controller.syncAmbientTrack(pondIndex: 0, hour: 23)
-        XCTAssertEqual(nightTrack, AmbientMusicTrack(filename: "night_1.ogg", pondIndex: 0, isDaylightTrack: false))
+        controller.syncAmbientTrack(pondIndex: 0, hour: 23)
+        XCTAssertEqual(controller.activeAmbientTrack, AmbientPondTrack(pondIndex: 0, isDaylightTrack: false))
 
-        // 2. Bite signal `what == 0` (`GameActivity$f.handleMessage`): 1000 ms sound debounce + 30 ms haptic
-        let firstPlay = controller.handleBiteSignalWhat0(nowMs: 10_000)
-        XCTAssertTrue(firstPlay)
-        XCTAssertEqual(controller.playedSoundEvents.count, 1)
-        XCTAssertEqual(controller.triggeredHapticDurationsMs, [30])
+        // 2. Record cast scheduled bite (`GameView.q`) -> plays `.castBobber`
+        controller.recordCastScheduledBite(beginTimeMs: 10_000)
+        XCTAssertEqual(controller.lastBeginTimeMs, 10_000)
+        XCTAssertEqual(controller.playedSoundEffects, [.castBobber])
 
-        // Second bite signal 400 ms later: haptic triggers (30 ms), but sound is debounced (< 1000 ms)
-        let secondPlay = controller.handleBiteSignalWhat0(nowMs: 10_400)
-        XCTAssertFalse(secondPlay)
-        XCTAssertEqual(controller.playedSoundEvents.count, 1)
-        XCTAssertEqual(controller.triggeredHapticDurationsMs, [30, 30])
+        // 3. Bite signal `what == 0` (`FishingService$e.handleMessage`)
+        controller.handleBiteSignalWhat0(nowMs: 12_000)
+        XCTAssertEqual(controller.lastBiteTimeMs, 12_000)
+        XCTAssertEqual(controller.biteAlarmTriggerCount, 1)
+        XCTAssertEqual(controller.vibrationTriggerCount, 1)
 
-        // Third bite signal at 11,100 ms (> 1000 ms after 10,000): sound plays again
-        let thirdPlay = controller.handleBiteSignalWhat0(nowMs: 11_100)
-        XCTAssertTrue(thirdPlay)
-        XCTAssertEqual(controller.playedSoundEvents.count, 2)
-
-        // 3. Catch signal `what == 1` (`GameActivity$f.handleMessage`): 100 ms haptic
-        controller.handleCatchSignalWhat1(nowMs: 12_000)
-        XCTAssertEqual(controller.triggeredHapticDurationsMs.last, 100)
+        // 4. Catch signal `what == 1` (`FishingService$e.handleMessage`) -> anti-cheat timing calculation
+        controller.setReelLooping(true)
+        XCTAssertTrue(controller.isReelLoopPlaying)
+        controller.handleCatchSignalWhat1(nowMs: 18_000)
+        XCTAssertFalse(controller.isReelLoopPlaying)
+        XCTAssertEqual(controller.lastCatchTimeMs, 18_000)
+        XCTAssertEqual(controller.lastAntiCheatBiteDelaySeconds, 2)
     }
 
     // MARK: - 9. Phase 9: Multi-Language Localization (`F0.g` & `F0.o.b`)
@@ -358,15 +346,15 @@ final class FishingGameAppTests: XCTestCase {
         coordinator.setLanguage(.ru)
         XCTAssertTrue(coordinator.localeManager.areQuestsAndTasksActive)
         XCTAssertEqual(coordinator.localeManager.pondName(for: firstPond), firstPond.nameRu)
-        XCTAssertEqual(coordinator.localeManager.achievementTitle(id1Based: 1), "Рыболов")
-        XCTAssertEqual(coordinator.localeManager.questTitle(id1Based: 1), "Задание №1")
+        XCTAssertEqual(coordinator.localeManager.achievementTitle(id1Based: 1), "Завсегдатай")
+        XCTAssertEqual(coordinator.localeManager.questTitle(id1Based: 1), "Ведро рыбы")
 
         // English (`en`): quests and tasks active
         coordinator.setLanguage(.en)
         XCTAssertTrue(coordinator.localeManager.areQuestsAndTasksActive)
         XCTAssertEqual(coordinator.localeManager.pondName(for: firstPond), firstPond.nameEn)
-        XCTAssertEqual(coordinator.localeManager.achievementTitle(id1Based: 1), "Angler")
-        XCTAssertEqual(coordinator.localeManager.questTitle(id1Based: 1), "Quest #1")
+        XCTAssertEqual(coordinator.localeManager.achievementTitle(id1Based: 1), "Fishing everyday")
+        XCTAssertEqual(coordinator.localeManager.questTitle(id1Based: 1), "Bucket of fishes")
 
         // German (`de`): quests and tasks disabled (`F0.g.b` returns false for non-ru/en)
         coordinator.setLanguage(.de)
@@ -422,7 +410,6 @@ final class FishingGameAppTests: XCTestCase {
     func testLiveHttpRequestHeadersAndResponseParsers() throws {
         let uuid = "550e8400-e29b-41d4-a716-446655440000"
 
-        // 1. Verify `auth.php` headers (`X-Fish-Fopl`, `X-Fish-Uuid`, `X-Fish-Login`)
         let authReq = FishingHttpRequestBuilder.makeAuthProfileRequest(
             login: "angler_one",
             password: "secret",
@@ -433,7 +420,6 @@ final class FishingGameAppTests: XCTestCase {
         XCTAssertEqual(authReq.value(forHTTPHeaderField: "X-Fish-Uuid"), FishingNetworkCrypto.installationUuidMd5(uuid))
         XCTAssertNotNil(authReq.value(forHTTPHeaderField: "X-Fish-Fopl"))
 
-        // 2. Verify `fish.php` catch submission headers (`X-Fish-Fopl`, `X-Fish-Folp`, `X-Fish-Date`, `X-Fish-Uuid`)
         let fishSpec = FishSpecies(
             id: 1,
             name: "Карась",
@@ -463,7 +449,6 @@ final class FishingGameAppTests: XCTestCase {
         XCTAssertEqual(fishReq.value(forHTTPHeaderField: "X-Fish-Date"), "1700000123000")
         XCTAssertNotNil(fishReq.value(forHTTPHeaderField: "X-Fish-Folp"))
 
-        // 3. Verify `auth_chat.php`, `fish.php`, `top.php`, and `rek.php` response parsers
         XCTAssertEqual(
             FishingOnlineResponseParser.parseChatAuthResponse("1|778899"),
             .authenticated(userId: 778899)
@@ -544,16 +529,13 @@ final class FishingGameAppTests: XCTestCase {
             .appendingPathComponent("FishingAppBootstrapTest_\(UUID().uuidString)", isDirectory: true)
         defer { try? FileManager.default.removeItem(at: tempDir) }
 
-        // 1. First call creates `<tempDir>/INSTALLATION` with a valid 36-char UUID v4
         let uuid1 = try AppBundleDatabaseBootstrapper.resolveOrCreateInstallationUuid(in: tempDir)
         XCTAssertEqual(uuid1.count, 36)
         XCTAssertTrue(FileManager.default.fileExists(atPath: tempDir.appendingPathComponent("INSTALLATION").path))
 
-        // 2. Second call returns the exact same persisted UUID (`F0.e.a` idempotency)
         let uuid2 = try AppBundleDatabaseBootstrapper.resolveOrCreateInstallationUuid(in: tempDir)
         XCTAssertEqual(uuid1, uuid2)
 
-        // 3. Locate bundled `App/Resources/GameData` or fallback `FISHING_DATA_DIR` / `data/`
         let packageRoot = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
@@ -574,7 +556,6 @@ final class FishingGameAppTests: XCTestCase {
         let resolvedURL = AppBundleDatabaseBootstrapper.resolveBundledGameDataURL(explicitURL: gameDataURL)
         XCTAssertEqual(resolvedURL?.standardizedFileURL, gameDataURL.standardizedFileURL)
 
-        // 4. Verify bundled TGA normal maps (`wNoise3.tga` & `wNoise4.tga`) load and decode cleanly (`256 x 128`, 24-bit BGR)
         let n3Data = TgaTextureLoader.loadBundledNoiseTGA(named: "wNoise3.tga", gameDataDirectoryURL: gameDataURL)
             ?? TgaTextureLoader.makeProceduralWaveNoiseTGA(seedPhase: 0)
         let n4Data = TgaTextureLoader.loadBundledNoiseTGA(named: "wNoise4.tga", gameDataDirectoryURL: gameDataURL)
@@ -589,7 +570,6 @@ final class FishingGameAppTests: XCTestCase {
             XCTAssertEqual(decoded4.height, 128)
         }
 
-        // 5. First launch bootstraps all 141 fish species, 15 ponds, 14 achievements, and 44 quests into `fishing2.db`
         let coordinator1 = try AppBundleDatabaseBootstrapper.bootstrapAppCoordinator(
             appSupportDirectory: tempDir,
             bundledGameDataURL: gameDataURL,
@@ -602,7 +582,6 @@ final class FishingGameAppTests: XCTestCase {
         let dbPath = tempDir.appendingPathComponent("fishing2.db").path
         XCTAssertTrue(AppBundleDatabaseBootstrapper.isFullReferenceCatalogPopulated(atDatabasePath: dbPath))
 
-        // Mutate player state (buy starter kit) and verify second launch preserves state without re-importing
         coordinator1.buyAndEquipStarterKit(nowMs: 1_700_000_001_000)
         let balanceAfterStarterKit = coordinator1.profile.balance
         XCTAssertLessThan(balanceAfterStarterKit, 500)
@@ -616,7 +595,6 @@ final class FishingGameAppTests: XCTestCase {
         XCTAssertEqual(coordinator2.ownedRods.count, 1)
         XCTAssertEqual(coordinator2.fishCatalogById.count, 141)
 
-        // 6. Verify OriginalGameAssetsLoader decodes bundled pond_1_big.png and top-25% sky slice when Drawables/ are present
         if OriginalGameAssetsLoader.resolveDrawableURL(named: "pond_1_big", gameDataDirectoryURL: gameDataURL) != nil {
             let pondDecoded = OriginalGameAssetsLoader.decodePondAndTopQuarterSkyRGBA(
                 pondIndex0Based: 0,
