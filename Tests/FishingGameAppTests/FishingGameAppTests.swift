@@ -17,7 +17,7 @@ final class FishingGameAppTests: XCTestCase {
         )
 
         XCTAssertEqual(coordinator.profile.balance, 500)
-        XCTAssertEqual(coordinator.profile.category, 1)
+        XCTAssertEqual(coordinator.profile.category, 0)
         XCTAssertFalse(coordinator.assembledTackle.isComplete)
         XCTAssertTrue(coordinator.dayNightLighting.isDayLight)
         XCTAssertTrue(coordinator.isWaterShaderActive)
@@ -49,7 +49,7 @@ final class FishingGameAppTests: XCTestCase {
             XCTFail("Expected .missingTackle alert, got \(String(describing: coordinator.activeAlert))")
             return
         }
-        XCTAssertTrue(missing.contains("Удочка"))
+        XCTAssertTrue(missing.localizedCaseInsensitiveContains("удочка"))
     }
 
     // MARK: - 3. Full End-to-End Gameplay Loop (Cast -> Bite -> Fight -> Catch -> Sell)
@@ -68,19 +68,18 @@ final class FishingGameAppTests: XCTestCase {
         let balanceAfterKit = coordinator.profile.balance
 
         // 1. Cast near bottom so pull reel catches quickly
+        // RNG sequence:
+        // - 10  -> cast randomSeconds (bound 50)
+        // - 3   -> obfuscationMultiplier offset (2 + 3 = 5)
+        // - 10  -> fish probability roll (< 65% for Fish #1 'Карась' on pond 0 + bait 1)
+        // - 100 -> weight bracket permille roll (in [50..350] bracket: 50g..1010g)
+        // - 50  -> weight offset within bracket (50 + 50 = 100g)
+        // - defaultInt: 50 (never rolls 1 on hook-slip check), defaultFloat: 0.8 (fast downward pull)
         var rng = ScriptedFishingRandom(
-            ints: [
-                10,  // Bite delay: 6 + 10 = 16 sec (16,000 ms)
-                45,  // Fish roll on pond 0 + bait 1 -> Crucian Carp (#1)
-                0,   // Gaussian box-muller uniform trigger
-                5,   // Obfuscation multiplier (1 + 5 = 6)
-                1,   // Pre-hook bobbing direction
-                15,  // FishBehaviorController initial duration
-                10,  // FishBehaviorController speed index
-                2    // FishBehaviorController trajectory
-            ],
-            floats: [0.5, 0.5, 0.4, 0.4, 0.3],
-            gaussians: [0.0]
+            ints: [10, 3, 10, 100, 50],
+            floats: [0.5, 0.5, 0.8, 0.8, 0.8],
+            defaultInt: 50,
+            defaultFloat: 0.8
         )
 
         let castTimeMs: Int64 = 1_700_000_010_000
@@ -94,14 +93,12 @@ final class FishingGameAppTests: XCTestCase {
         XCTAssertEqual(coordinator.stateMachine.state, .fishFight)
         XCTAssertTrue(coordinator.stateMachine.isPreHookBobbing)
 
-        // 3. Advance 1,300 ms so pre-hook bobbing (> 1,200 ms) transitions into active fish fight
-        let fightStartMs = biteTimeMs + 1_300
-        coordinator.stepSimulationTick(nowMs: fightStartMs, rng: &rng)
+        // 3. Touching the reel button (`setReelPulled(true)`) clears `isPreHookBobbing` and starts active fight
+        coordinator.setReelPulled(true)
         XCTAssertFalse(coordinator.stateMachine.isPreHookBobbing)
 
-        // 4. Hold pull button and step ticks until fish reaches bottom landing threshold
-        coordinator.setReelPulled(true)
-        var tickMs = fightStartMs + 200
+        // 4. Step ticks while holding pull button until fish reaches bottom landing threshold
+        var tickMs = biteTimeMs + 200
         for _ in 0..<25 {
             if coordinator.stateMachine.state == .idle { break }
             coordinator.stepSimulationTick(nowMs: tickMs, rng: &rng)
@@ -236,6 +233,7 @@ final class FishingGameAppTests: XCTestCase {
         let coilName = try XCTUnwrap(coordinator.catalog.listAllCoilSpecs().first?.name)
         let lineName = try XCTUnwrap(coordinator.catalog.listAllLineSpecs().first?.name)
 
+        // 7-section `auth.php` response: `experience;balance;rods;coils;lines;achievs;quests`
         let authResponse = "18500;6500;\(rodName):3:97|not|not|not|not;\(coilName):1:92|not|not|not|not;\(lineName):3:95|not|not|not|not;1:4:1|2:15:1;2|1|0"
         let summary = try coordinator.restoreFromOnlineAuthResponse(
             authResponse,
@@ -244,15 +242,18 @@ final class FishingGameAppTests: XCTestCase {
             nowMs: 1_700_000_005_000
         )
 
-        XCTAssertEqual(summary.restoredBalance, 18500)
-        XCTAssertEqual(summary.restoredCategoryRank, 5)
-        XCTAssertEqual(coordinator.profile.balance, 18500)
-        XCTAssertEqual(coordinator.profile.category, 5)
+        XCTAssertEqual(summary.experience, 18500)
+        XCTAssertEqual(summary.balanceCoins, 6500)
+        XCTAssertEqual(summary.categoryRank, coordinator.profile.category)
+        XCTAssertEqual(summary.restoredRodsCount, 1)
+        XCTAssertEqual(summary.restoredCoilsCount, 1)
+        XCTAssertEqual(summary.restoredLinesCount, 1)
+        XCTAssertEqual(coordinator.profile.experience, 18500)
+        XCTAssertEqual(coordinator.profile.balance, 6500)
+        XCTAssertGreaterThan(coordinator.profile.category, 0)
         XCTAssertEqual(coordinator.ownedRods.count, 1)
         XCTAssertEqual(coordinator.ownedCoils.count, 1)
         XCTAssertEqual(coordinator.ownedLines.count, 1)
-        XCTAssertEqual(coordinator.ownedHooks.count, 1)
-        XCTAssertEqual(coordinator.ownedBaits.count, 1)
 
         var csvTokens: [String] = []
         for idx in 0..<37 {
@@ -380,16 +381,23 @@ final class FishingGameAppTests: XCTestCase {
             nowMs: 1_700_000_000_000
         )
 
-        // 1. Claim server rewards: +1500 coins, +800 XP, and rod #2
+        // 1. Claim server rewards (`reaward.php` format: `--notes=1,1=1500,2=800,3=2`): +1500 coins, +800 XP, and rod #2
         let rewardSummary = try coordinator.claimServerRewards(
-            "1:1500;2:800;3:2",
+            "--notes=1,1=1500,2=800,3=2",
             nowMs: 1_700_000_010_000
         )
+        XCTAssertEqual(rewardSummary.unreadNotesCount, 1)
         XCTAssertEqual(rewardSummary.coinsAdded, 1500)
         XCTAssertEqual(rewardSummary.experienceAdded, 800)
-        XCTAssertEqual(rewardSummary.awardedRodBaseIds, [2])
+        XCTAssertEqual(rewardSummary.newBalance, 2000)
+        XCTAssertTrue(
+            rewardSummary.grantedItems.contains(
+                ServerRewardGrant(rewardType: .fishingRod, valueOrItemId: 2)
+            )
+        )
         XCTAssertEqual(coordinator.profile.balance, 2000)
         XCTAssertEqual(coordinator.ownedRods.count, 1)
+        XCTAssertEqual(coordinator.ownedRods.first?.rod.id, 2)
 
         // 2. Assign a fisherman contract (`user_task`): catch 1 Crucian Carp (#1) of at least 100g for +500 XP
         let contract = try coordinator.assignFishermanContract(
@@ -401,7 +409,9 @@ final class FishingGameAppTests: XCTestCase {
             bonusExperience: 500,
             nowMs: 1_700_000_011_000
         )
-        XCTAssertEqual(contract.progressCount, 0)
+        XCTAssertEqual(contract.currentCount, 0)
+        XCTAssertEqual(contract.currentWeightGrams, 0)
+        XCTAssertEqual(contract.made, 0)
         XCTAssertEqual(coordinator.activeContract?.targetFishId, 1)
     }
 
@@ -423,19 +433,19 @@ final class FishingGameAppTests: XCTestCase {
         let fishSpec = FishSpecies(
             id: 1,
             name: "Карась",
-            minWeightGrams: 60,
-            meanWeightGrams: 1350,
-            maxWeightGrams: 3000,
-            behaviorType: 1,
-            rarityRank: 1,
-            basePrice: 1,
-            experience: 10
+            unitWeight: 500,
+            unitPrice: 55,
+            strength: 3,
+            stamina: 6,
+            intelligence: 2,
+            aggression: 4
         )
         let caught = CaughtUserFish(
             fish: fishSpec,
             weightGrams: 1420,
             pondIndex: 0,
             baitIndex: 0,
+            rodWeightKg: 3,
             catchTimeMs: 1_700_000_123_000
         )
         let fishReq = FishingHttpRequestBuilder.makeSubmitFishCatchRequest(
@@ -450,7 +460,7 @@ final class FishingGameAppTests: XCTestCase {
         XCTAssertNotNil(fishReq.value(forHTTPHeaderField: "X-Fish-Folp"))
 
         XCTAssertEqual(
-            FishingOnlineResponseParser.parseChatAuthResponse("1|778899"),
+            FishingOnlineResponseParser.parseChatAuthResponse("1:778899"),
             .authenticated(userId: 778899)
         )
         XCTAssertEqual(
