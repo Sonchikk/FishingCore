@@ -39,9 +39,27 @@ public enum FishingNetworkCrypto: Sendable {
         FishingChecksum.md5(installationUuid)
     }
 
+    /// Returns `true` if `candidate` is already a 32-character lowercase hexadecimal MD5 digest
+    /// (for example, when `user_data.password` was restored by `restoreProfileFromAuthResponse`).
+    public static func isHexMd5Digest(_ candidate: String) -> Bool {
+        guard candidate.utf8.count == 32 else { return false }
+        for b in candidate.utf8 {
+            let isDigit = (b >= 0x30 && b <= 0x39)
+            let isLowerHex = (b >= 0x61 && b <= 0x66)
+            if !isDigit && !isLowerHex {
+                return false
+            }
+        }
+        return true
+    }
+
     /// Computes the double-MD5 password hash (`F0.h` / `F0.i`, `NETWORK.md` Section 1.2):
     /// `passHash = MD5_hex(ASCII(MD5_hex(password)))`.
+    /// Idempotent if `password` is already a 32-character lowercase hex digest stored in `user_data.password`.
     public static func doubleMd5Password(_ password: String) -> String {
+        if isHexMd5Digest(password) {
+            return password
+        }
         let firstHex = FishingChecksum.md5(password)
         return FishingChecksum.md5(firstHex)
     }

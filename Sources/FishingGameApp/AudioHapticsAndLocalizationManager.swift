@@ -388,22 +388,75 @@ public struct AmbientPondTrack: Sendable, Equatable {
     }
 }
 
+/// Bite haptic intensity tier scaled by the hooked fish weight (`activeFishWeightGrams`).
+public enum BiteHapticIntensityProfile: String, Sendable, Equatable {
+    case lightNibbler = "light"      // < 500 g: gentle single light tap
+    case mediumStrike = "medium"     // 500 ..< 3000 g: medium single pulse
+    case heavyPull = "heavy"         // 3000 ..< 15000 g: double heavy impact pulse
+    case trophyGiant = "trophy"      // >= 15000 g: triple heavy rumble burst
+
+    public static func from(fishWeightGrams: Int) -> BiteHapticIntensityProfile {
+        if fishWeightGrams >= 15_000 {
+            return .trophyGiant
+        } else if fishWeightGrams >= 3_000 {
+            return .heavyPull
+        } else if fishWeightGrams >= 500 {
+            return .mediumStrike
+        } else {
+            return .lightNibbler
+        }
+    }
+
+    public var pulseCount: Int {
+        switch self {
+        case .lightNibbler: return 1
+        case .mediumStrike: return 1
+        case .heavyPull: return 2
+        case .trophyGiant: return 3
+        }
+    }
+}
+
 /// Reconstructs `F0.p` (`SoundPool`), `GameActivity.a0()` (ambient pond music), and `FishingService$e`
 /// (`what = 0` bite alarm sound/vibration and `what = 1` catch anti-cheat timing).
 public struct FishingAudioAndHapticsController: Sendable, Equatable {
     public static let defaultBiteSoundUri = "fff klev"
     public static let defaultVibrationDurationMs: Int = 500
 
-    public var soundEnabled: Bool
+    public var soundEnabled: Bool {
+        didSet {
+            if !soundEnabled {
+                isReelLoopPlaying = false
+                LiveAudioPlaybackEngine.shared.stopAllAudioImmediately()
+            } else if isOnPondScreen, let track = activeAmbientTrack {
+                LiveAudioPlaybackEngine.shared.syncAmbientTrack(track, soundEnabled: true)
+            }
+        }
+    }
     public var vibrationEnabled: Bool
     public var vibrationDurationMs: Int
     public var biteSoundUri: String
+    /// Matches `GameActivity.onResume` / `GameActivity.onPause`: ambient pond sounds only play on the pond screen (`GameActivity`), never in `MainActivity`.
+    public var isOnPondScreen: Bool = true {
+        didSet {
+            if !isOnPondScreen {
+                if isReelLoopPlaying {
+                    isReelLoopPlaying = false
+                }
+                LiveAudioPlaybackEngine.shared.setReelLoopPlaying(false)
+                LiveAudioPlaybackEngine.shared.stopAmbientTrack()
+            } else if soundEnabled, let track = activeAmbientTrack {
+                LiveAudioPlaybackEngine.shared.syncAmbientTrack(track, soundEnabled: true)
+            }
+        }
+    }
 
     public private(set) var activeAmbientTrack: AmbientPondTrack?
     public private(set) var isReelLoopPlaying: Bool = false
     public private(set) var playedSoundEffects: [FishingSoundEffect] = []
     public private(set) var biteAlarmTriggerCount: Int = 0
     public private(set) var vibrationTriggerCount: Int = 0
+    public private(set) var lastBiteHapticProfile: BiteHapticIntensityProfile = .mediumStrike
 
     /// SharedPreferences timestamps recorded by `GameView.q` and `FishingService$e` (`MECHANICS.md` Section 2.2 & 7).
     public private(set) var lastBeginTimeMs: Int64 = 0
@@ -427,15 +480,33 @@ public struct FishingAudioAndHapticsController: Sendable, Equatable {
     }
 
     /// Updates ambient pond audio track when entering a pond or when `GameActivity.i0(hour)` flips `dayLight`.
-    public mutating func syncAmbientTrack(pondIndex: Int, hour: Int) {
+    /// Only plays audio hardware when `soundEnabled && isOnPondScreen` (`GameActivity.onResume`).
+    public mutating func syncAmbientTrack(pondIndex: Int, hour: Int, isPondScreenVisible: Bool? = nil) {
+        if let isPondScreenVisible {
+            self.isOnPondScreen = isPondScreenVisible
+        }
         let isDay = (hour >= 5 && hour < 22)
         let desired = AmbientPondTrack(pondIndex: pondIndex, isDaylightTrack: isDay)
+        let shouldPlayNow = soundEnabled && isOnPondScreen
         if activeAmbientTrack != desired {
             activeAmbientTrack = desired
-            LiveAudioPlaybackEngine.shared.syncAmbientTrack(desired, soundEnabled: soundEnabled)
-        } else if !soundEnabled {
+            if shouldPlayNow {
+                LiveAudioPlaybackEngine.shared.syncAmbientTrack(desired, soundEnabled: true)
+            } else {
+                LiveAudioPlaybackEngine.shared.stopAmbientTrack()
+            }
+        } else if !shouldPlayNow {
             LiveAudioPlaybackEngine.shared.stopAmbientTrack()
+        } else {
+            LiveAudioPlaybackEngine.shared.ensureAmbientTrackPlaying(desired, soundEnabled: true)
         }
+    }
+
+    public mutating func stopAmbientAndReelAudio() {
+        if isReelLoopPlaying {
+            isReelLoopPlaying = false
+        }
+        LiveAudioPlaybackEngine.shared.stopAllAudioImmediately()
     }
 
     public mutating func playSoundEffect(_ sfx: FishingSoundEffect) {
@@ -449,7 +520,7 @@ public struct FishingAudioAndHapticsController: Sendable, Equatable {
     }
 
     public mutating func setReelLooping(_ looping: Bool) {
-        let shouldLoop = soundEnabled ? looping : false
+        let shouldLoop = (soundEnabled && isOnPondScreen) ? looping : false
         if isReelLoopPlaying != shouldLoop {
             isReelLoopPlaying = shouldLoop
             LiveAudioPlaybackEngine.shared.setReelLoopPlaying(shouldLoop)
@@ -462,25 +533,50 @@ public struct FishingAudioAndHapticsController: Sendable, Equatable {
     }
 
     /// Reconstructs `FishingService$e.handleMessage(what = 0)` (`MECHANICS.md` Section 7.2):
-    /// Plays bite alarm (`res/raw/klev.ogg`), triggers vibration for `VIBRATION_TIME` ms, and records `BITETIME`.
-    public mutating func handleBiteSignalWhat0(nowMs: Int64) {
+    /// Plays bite alarm (`res/raw/klev.ogg`), triggers vibration scaled by `fishWeightGrams`, and records `BITETIME`.
+    public mutating func handleBiteSignalWhat0(nowMs: Int64, fishWeightGrams: Int = 1_000) {
         lastBiteTimeMs = nowMs
+        let profile = BiteHapticIntensityProfile.from(fishWeightGrams: fishWeightGrams)
+        lastBiteHapticProfile = profile
         if soundEnabled {
             biteAlarmTriggerCount += 1
             LiveAudioPlaybackEngine.shared.playBiteAlarm(soundUri: biteSoundUri)
         }
         if vibrationEnabled && vibrationDurationMs > 0 {
             vibrationTriggerCount += 1
-            Self.triggerPlatformBiteAlarmHaptic()
+            Self.triggerPlatformBiteAlarmHaptic(profile: profile)
         }
     }
 
-    private static func triggerPlatformBiteAlarmHaptic() {
+    private static func triggerPlatformBiteAlarmHaptic(profile: BiteHapticIntensityProfile) {
         #if canImport(UIKit) && !os(watchOS)
         Task { @MainActor in
-            let generator = UINotificationFeedbackGenerator()
-            generator.prepare()
-            generator.notificationOccurred(.warning)
+            switch profile {
+            case .lightNibbler:
+                let gen = UIImpactFeedbackGenerator(style: .light)
+                gen.prepare()
+                gen.impactOccurred(intensity: 0.55)
+            case .mediumStrike:
+                let gen = UIImpactFeedbackGenerator(style: .medium)
+                gen.prepare()
+                gen.impactOccurred(intensity: 0.85)
+            case .heavyPull:
+                let gen = UIImpactFeedbackGenerator(style: .heavy)
+                gen.prepare()
+                gen.impactOccurred(intensity: 1.0)
+                try? await Task.sleep(nanoseconds: 130_000_000)
+                gen.impactOccurred(intensity: 0.90)
+            case .trophyGiant:
+                let notif = UINotificationFeedbackGenerator()
+                notif.prepare()
+                notif.notificationOccurred(.warning)
+                let heavy = UIImpactFeedbackGenerator(style: .heavy)
+                heavy.prepare()
+                try? await Task.sleep(nanoseconds: 120_000_000)
+                heavy.impactOccurred(intensity: 1.0)
+                try? await Task.sleep(nanoseconds: 140_000_000)
+                heavy.impactOccurred(intensity: 1.0)
+            }
         }
         #endif
     }
@@ -593,11 +689,18 @@ public final class LiveAudioPlaybackEngine: @unchecked Sendable {
             case "reel_loop":
                 generated = Self.synthesizeReelClickLoopWAV()
             case "ambient_day":
-                generated = Self.synthesizeAmbientLoopWAV(isDaylight: true)
+                generated = Self.synthesizeAmbientLoopWAV(isDaylight: true, pondIndex: 0)
             case "ambient_night":
-                generated = Self.synthesizeAmbientLoopWAV(isDaylight: false)
+                generated = Self.synthesizeAmbientLoopWAV(isDaylight: false, pondIndex: 0)
             default:
-                generated = Self.synthesizeCastPlopWAV()
+                if key.hasPrefix("pond") {
+                    let isDay = key.hasSuffix("_day")
+                    let digits = key.dropFirst(4).prefix(while: { $0.isNumber })
+                    let pIdx = Int(digits) ?? 0
+                    generated = Self.synthesizeAmbientLoopWAV(isDaylight: isDay, pondIndex: pIdx)
+                } else {
+                    generated = Self.synthesizeCastPlopWAV()
+                }
             }
         }
 
@@ -653,13 +756,39 @@ public final class LiveAudioPlaybackEngine: @unchecked Sendable {
         }
         let specificKey = "pond\(track.pondIndex)_\(track.isDaylightTrack ? "day" : "night")"
         let data = Self.loadBundledSoundData(named: specificKey)
-            ?? resolvedAudioData(forKey: track.isDaylightTrack ? "ambient_day" : "ambient_night")
+            ?? resolvedAudioData(forKey: specificKey)
         Task { @MainActor in
             self.configureAudioSessionIfNeeded()
             self.ambientPlayer?.stop()
             if let player = try? AVAudioPlayer(data: data) {
                 player.numberOfLoops = -1
-                player.volume = 0.22
+                player.volume = 0.16
+                player.prepareToPlay()
+                player.play()
+                self.ambientPlayer = player
+            }
+        }
+        #endif
+    }
+
+    public func ensureAmbientTrackPlaying(_ track: AmbientPondTrack, soundEnabled: Bool) {
+        guard !Self.isRunningUnderXCTest else { return }
+        #if canImport(AVFoundation)
+        guard soundEnabled else {
+            stopAmbientTrack()
+            return
+        }
+        let specificKey = "pond\(track.pondIndex)_\(track.isDaylightTrack ? "day" : "night")"
+        let data = Self.loadBundledSoundData(named: specificKey)
+            ?? resolvedAudioData(forKey: specificKey)
+        Task { @MainActor in
+            if let existing = self.ambientPlayer, existing.isPlaying {
+                return
+            }
+            self.configureAudioSessionIfNeeded()
+            if let player = try? AVAudioPlayer(data: data) {
+                player.numberOfLoops = -1
+                player.volume = 0.16
                 player.prepareToPlay()
                 player.play()
                 self.ambientPlayer = player
@@ -674,6 +803,21 @@ public final class LiveAudioPlaybackEngine: @unchecked Sendable {
         Task { @MainActor in
             self.ambientPlayer?.stop()
             self.ambientPlayer = nil
+        }
+        #endif
+    }
+
+    public func stopAllAudioImmediately() {
+        guard !Self.isRunningUnderXCTest else { return }
+        #if canImport(AVFoundation)
+        Task { @MainActor in
+            self.ambientPlayer?.stop()
+            self.ambientPlayer = nil
+            self.reelLoopPlayer?.stop()
+            for (_, player) in self.activeSfxPlayers {
+                player.stop()
+            }
+            self.activeSfxPlayers.removeAll()
         }
         #endif
     }
@@ -834,26 +978,36 @@ public final class LiveAudioPlaybackEngine: @unchecked Sendable {
         return encodeMono16BitPCMWAV(samples: samples, sampleRate: sampleRate)
     }
 
-    /// Gentle ambient nature loop (`pondsm.txt` day/night water & breeze).
-    private static func synthesizeAmbientLoopWAV(isDaylight: Bool, sampleRate: Int = 22050) -> Data {
-        let duration = 2.0
+    /// Gentle, squeak-free ambient water lapping & soft breeze loop (`pondsm.txt` day/night per-pond soundscape).
+    /// Uses a 3-stage cascaded low-pass filter (< 350 Hz) with zero high-frequency sine tones so there is no whistle/squeak,
+    /// and varies wave cadence across the 15 ponds (`pondIndex = 0..14`).
+    private static func synthesizeAmbientLoopWAV(isDaylight: Bool, pondIndex: Int = 0, sampleRate: Int = 22050) -> Data {
+        let duration = 4.0
         let count = Int(Double(sampleRate) * duration)
         var samples = [Int16](repeating: 0, count: count)
-        var lcg: UInt32 = isDaylight ? 0xCAFE_BABE : 0xDEAD_BEEF
-        var brown = 0.0
+        let seedOffset = UInt32(max(0, pondIndex) * 7919)
+        var lcg: UInt32 = (isDaylight ? 0xCAFE_BABE : 0xDEAD_BEEF) &+ seedOffset
+        var lp1 = 0.0
+        var lp2 = 0.0
+        var lp3 = 0.0
+        let waveCycles = Double(1 + (max(0, pondIndex) % 3)) // 1, 2, or 3 gentle shore waves per 4.0s loop
+        let filterAlpha = isDaylight ? 0.032 : 0.020
+
         for i in 0..<count {
             let t = Double(i) / Double(sampleRate)
             lcg = lcg &* 1664525 &+ 1013904223
             let white = (Double(lcg & 0xFFFF) / 32768.0) - 1.0
-            brown = (brown + 0.02 * white) / 1.02
-            let lfo = 0.65 + 0.35 * sin(2.0 * .pi * 0.5 * t)
-            var sig = brown * lfo * 0.35
-            if !isDaylight {
-                // Soft night cricket pulse
-                let cricketEnv = max(0.0, sin(2.0 * .pi * 2.0 * t))
-                sig += 0.04 * sin(2.0 * .pi * 3800.0 * t) * cricketEnv
-            }
-            samples[i] = Int16(max(-1.0, min(1.0, sig)) * 22000.0)
+            lp1 += filterAlpha * (white - lp1)
+            lp2 += filterAlpha * (lp1 - lp2)
+            lp3 += filterAlpha * (lp2 - lp3)
+
+            // Smooth periodic wave envelope (exact integer cycles over 4.0s for seamless loop boundary)
+            let waveLfo = 0.58 + 0.42 * sin(2.0 * .pi * (waveCycles / duration) * t)
+            let breezeLfo = 0.75 + 0.25 * cos(2.0 * .pi * (1.0 / duration) * t)
+            // Seamless crossfade envelope at loop edges
+            let edgeFade = min(1.0, min(Double(i) / 400.0, Double(count - 1 - i) / 400.0))
+            let sig = lp3 * waveLfo * breezeLfo * edgeFade * (isDaylight ? 0.42 : 0.30)
+            samples[i] = Int16(max(-1.0, min(1.0, sig)) * 18000.0)
         }
         return encodeMono16BitPCMWAV(samples: samples, sampleRate: sampleRate)
     }

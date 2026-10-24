@@ -231,6 +231,38 @@ public enum FishingHttpRequestBuilder: Sendable {
         req.setValue(languageCode, forHTTPHeaderField: "X-Fish-SetLng")
         return req
     }
+
+    /// Builds `GET http://fish-mob.ru/fff/achievs.php` (`F0.o$a.a`, `NETWORK.md` Section 2 #4 & Section 3.2):
+    /// Synchronizes all 14 achievements (`X-Fish-Fach`) and optionally all 44 quests (`X-Fish-Fqst`, when `fqstHeader != nil`) with `fish-mob.ru`.
+    public static func makeSyncAchievementsAndQuestsRequest(
+        login: String,
+        password: String,
+        installationUuid: String,
+        fachHeader: String,
+        fqstHeader: String? = nil,
+        languageCode: String = "ru"
+    ) -> URLRequest {
+        var req = URLRequest(url: URL(string: FishingHttpEndpoint.syncAchievementsAndQuests.rawValue)!)
+        req.httpMethod = "GET"
+        req.setValue("close", forHTTPHeaderField: "Connection")
+        req.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        req.setValue("text/plain", forHTTPHeaderField: "Accept")
+        req.setValue(
+            FishingNetworkCrypto.makeAuthOrAchievsFoplHeader(
+                login: login,
+                password: password,
+                installationUuid: installationUuid
+            ),
+            forHTTPHeaderField: "X-Fish-Fopl"
+        )
+        req.setValue(FishingNetworkCrypto.installationUuidMd5(installationUuid), forHTTPHeaderField: "X-Fish-Uuid")
+        req.setValue(fachHeader, forHTTPHeaderField: "X-Fish-Fach")
+        if let fqstHeader, !fqstHeader.isEmpty {
+            req.setValue(fqstHeader, forHTTPHeaderField: "X-Fish-Fqst")
+        }
+        req.setValue(languageCode, forHTTPHeaderField: "X-Fish-Lng")
+        return req
+    }
 }
 
 // MARK: - 2. Parsers for `auth_chat.php`, `fish.php`, `top.php` & `rek.php`
@@ -244,6 +276,11 @@ public enum FishCatchUploadResult: Sendable, Equatable {
     case accepted                       // status=1000
     case newWorldRecord                 // status=1100
     case rejected(statusCode: Int)
+}
+
+public enum AchievementsQuestsSyncResult: Sendable, Equatable {
+    case synchronized(serverMessage: String)
+    case rejected(statusCode: String, message: String)
 }
 
 public struct TopPlayerRatingEntry: Sendable, Equatable, Identifiable {
@@ -350,6 +387,49 @@ public enum FishingOnlineResponseParser: Sendable {
             }
         }
         return .rejected(statusCode: -1)
+    }
+
+    /// Parses `achievs.php` response (`F0.o$a.a`, `pc=01c3..029b` in `classes.dex`):
+    /// `"1000"` or `"status=1000,message=..."` -> `.synchronized`, `"2000".."9000"` / `"error"` -> `.rejected`.
+    public static func parseAchievementsQuestsSyncResponse(_ raw: String) -> AchievementsQuestsSyncResult {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            return .rejected(statusCode: "empty", message: "Пустой ответ от achievs.php")
+        }
+        if trimmed == "1000" || trimmed == "1100" {
+            return .synchronized(serverMessage: "Прогресс достижений и квестов синхронизирован (код \(trimmed)).")
+        }
+        if trimmed.contains("status") {
+            var codeStr = "1000"
+            var msgStr = ""
+            for token in trimmed.components(separatedBy: CharacterSet(charactersIn: ",;&\n\r")) {
+                let piece = token.trimmingCharacters(in: .whitespacesAndNewlines)
+                if piece.hasPrefix("status=") {
+                    codeStr = String(piece.dropFirst("status=".count))
+                } else if piece.hasPrefix("message=") {
+                    msgStr = String(piece.dropFirst("message=".count))
+                }
+            }
+            if codeStr == "1000" || codeStr == "1100" {
+                let text = msgStr.isEmpty ? "Прогресс синхронизирован с сервером (код \(codeStr))." : msgStr
+                return .synchronized(serverMessage: text)
+            }
+            return .rejected(statusCode: codeStr, message: msgStr.isEmpty ? "Код ответа achievs.php: \(codeStr)" : msgStr)
+        }
+        switch trimmed {
+        case "2000":
+            return .rejected(statusCode: "2000", message: "Неверный логин или пароль (код 2000).")
+        case "3000":
+            return .rejected(statusCode: "3000", message: "Аккаунт заблокирован (код 3000).")
+        case "4000":
+            return .rejected(statusCode: "4000", message: "Несовпадение UUID устройства (код 4000).")
+        case "5000":
+            return .rejected(statusCode: "5000", message: "Устаревшая версия протокола (код 5000).")
+        case "6000", "7000", "9000", "error":
+            return .rejected(statusCode: trimmed, message: "Сервер отклонил синхронизацию (код \(trimmed)).")
+        default:
+            return .synchronized(serverMessage: trimmed)
+        }
     }
 
     /// Parses `top.php` top players lines (`Lx0/p.onActivityCreated`, `LINK=4` in `classes.dex`):
@@ -961,6 +1041,26 @@ public struct FishingLiveNetworkClient: Sendable {
             raw,
             isCompleted: listType == "3"
         )
+    }
+
+    public func syncAchievementsAndQuests(
+        login: String,
+        password: String,
+        installationUuid: String,
+        fachHeader: String,
+        fqstHeader: String? = nil,
+        languageCode: String = "ru"
+    ) async throws -> AchievementsQuestsSyncResult {
+        let req = FishingHttpRequestBuilder.makeSyncAchievementsAndQuestsRequest(
+            login: login,
+            password: password,
+            installationUuid: installationUuid,
+            fachHeader: fachHeader,
+            fqstHeader: fqstHeader,
+            languageCode: languageCode
+        )
+        let raw = try await executeStringRequest(req)
+        return FishingOnlineResponseParser.parseAchievementsQuestsSyncResponse(raw)
     }
 }
 

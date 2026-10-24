@@ -1053,5 +1053,88 @@ final class FishingGameAppTests: XCTestCase {
             let headerPrefix = String(decoding: wavData.prefix(4), as: UTF8.self)
             XCTAssertEqual(headerPrefix, "RIFF")
         }
+
+        // Verify per-pond ambient loops (`pond0_day` .. `pond14_night`) are valid RIFF WAV and distinct across ponds
+        let pond0Day = engine.resolvedAudioData(forKey: "pond0_day")
+        let pond1Day = engine.resolvedAudioData(forKey: "pond1_day")
+        let pond0Night = engine.resolvedAudioData(forKey: "pond0_night")
+        XCTAssertEqual(String(decoding: pond0Day.prefix(4), as: UTF8.self), "RIFF")
+        XCTAssertEqual(String(decoding: pond1Day.prefix(4), as: UTF8.self), "RIFF")
+        XCTAssertEqual(String(decoding: pond0Night.prefix(4), as: UTF8.self), "RIFF")
+        XCTAssertNotEqual(pond0Day, pond1Day)
+        XCTAssertNotEqual(pond0Day, pond0Night)
+    }
+
+    @MainActor
+    func testSoundTogglePondScreenVisibilityWeightScaledBiteHapticsAndAchievsSync() throws {
+        let coordinator = try FishingAppCoordinator(
+            databasePath: ":memory:",
+            nowMs: 1_700_000_000_000,
+            notificationScheduling: NoopSystemNotifications()
+        )
+        XCTAssertEqual(coordinator.selectedTab, .fishingPond)
+        XCTAssertTrue(coordinator.audioHaptics.isOnPondScreen)
+
+        // Switching to BaseHub immediately marks `isOnPondScreen = false` and stops reel loop
+        coordinator.selectedTab = .baseHub
+        XCTAssertFalse(coordinator.audioHaptics.isOnPondScreen)
+        XCTAssertFalse(coordinator.audioHaptics.isReelLoopPlaying)
+
+        // Returning to FishingPond restores `isOnPondScreen = true`
+        coordinator.selectedTab = .fishingPond
+        XCTAssertTrue(coordinator.audioHaptics.isOnPondScreen)
+
+        // Disabling `soundEnabled` immediately stops reel loop
+        coordinator.audioHaptics.setReelLooping(true)
+        XCTAssertTrue(coordinator.audioHaptics.isReelLoopPlaying)
+        coordinator.audioHaptics.soundEnabled = false
+        XCTAssertFalse(coordinator.audioHaptics.isReelLoopPlaying)
+        coordinator.audioHaptics.soundEnabled = true
+
+        // Verify weight-scaled bite haptic profiles (`<500g`, `500..2999g`, `3000..14999g`, `>=15000g`)
+        coordinator.audioHaptics.handleBiteSignalWhat0(nowMs: 1_000, fishWeightGrams: 180)
+        XCTAssertEqual(coordinator.audioHaptics.lastBiteHapticProfile, .lightNibbler)
+        XCTAssertEqual(coordinator.audioHaptics.lastBiteHapticProfile.pulseCount, 1)
+
+        coordinator.audioHaptics.handleBiteSignalWhat0(nowMs: 2_000, fishWeightGrams: 1_450)
+        XCTAssertEqual(coordinator.audioHaptics.lastBiteHapticProfile, .mediumStrike)
+        XCTAssertEqual(coordinator.audioHaptics.lastBiteHapticProfile.pulseCount, 1)
+
+        coordinator.audioHaptics.handleBiteSignalWhat0(nowMs: 3_000, fishWeightGrams: 6_200)
+        XCTAssertEqual(coordinator.audioHaptics.lastBiteHapticProfile, .heavyPull)
+        XCTAssertEqual(coordinator.audioHaptics.lastBiteHapticProfile.pulseCount, 2)
+
+        coordinator.audioHaptics.handleBiteSignalWhat0(nowMs: 4_000, fishWeightGrams: 28_000)
+        XCTAssertEqual(coordinator.audioHaptics.lastBiteHapticProfile, .trophyGiant)
+        XCTAssertEqual(coordinator.audioHaptics.lastBiteHapticProfile.pulseCount, 3)
+
+        // Verify `doubleMd5Password` idempotence on already-hashed 32-char lowercase hex passwords
+        let plainPass = "my_secret_pass"
+        let firstDoubleHash = FishingNetworkCrypto.doubleMd5Password(plainPass)
+        XCTAssertTrue(FishingNetworkCrypto.isHexMd5Digest(firstDoubleHash))
+        let secondCallOnHash = FishingNetworkCrypto.doubleMd5Password(firstDoubleHash)
+        XCTAssertEqual(firstDoubleHash, secondCallOnHash)
+
+        // Verify `makeSyncAchievementsAndQuestsRequest` & `parseAchievementsQuestsSyncResponse` (`achievs.php`)
+        let fach = try coordinator.repository.buildFachHeader()
+        let fqst = try coordinator.repository.buildFqstHeader()
+        let req = FishingHttpRequestBuilder.makeSyncAchievementsAndQuestsRequest(
+            login: "angler_ios",
+            password: firstDoubleHash,
+            installationUuid: coordinator.installationUuid,
+            fachHeader: fach,
+            fqstHeader: fqst,
+            languageCode: "ru"
+        )
+        XCTAssertEqual(req.url?.absoluteString, "http://fish-mob.ru/fff/achievs.php")
+        XCTAssertEqual(req.value(forHTTPHeaderField: "X-Fish-Fach"), fach)
+        XCTAssertEqual(req.value(forHTTPHeaderField: "X-Fish-Fqst"), fqst)
+        XCTAssertEqual(req.value(forHTTPHeaderField: "X-Fish-Lng"), "ru")
+        XCTAssertNotNil(req.value(forHTTPHeaderField: "X-Fish-Fopl"))
+
+        let okSync = FishingOnlineResponseParser.parseAchievementsQuestsSyncResponse("status=1000,message=OK")
+        XCTAssertEqual(okSync, .synchronized(serverMessage: "OK"))
+        let errSync = FishingOnlineResponseParser.parseAchievementsQuestsSyncResponse("2000")
+        XCTAssertEqual(errSync, .rejected(statusCode: "2000", message: "Неверный логин или пароль (код 2000)."))
     }
 }

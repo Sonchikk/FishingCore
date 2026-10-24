@@ -148,7 +148,20 @@ public final class FishingAppCoordinator: ObservableObject {
 
     private var isLoadingPersistedSettings: Bool = false
 
-    @Published public var selectedTab: AppNavigationTab = .fishingPond
+    @Published public var selectedTab: AppNavigationTab = .fishingPond {
+        didSet {
+            audioHaptics.isOnPondScreen = (selectedTab == .fishingPond)
+            if selectedTab == .fishingPond {
+                audioHaptics.syncAmbientTrack(
+                    pondIndex: selectedPondIndex,
+                    hour: gameClock.hour,
+                    isPondScreenVisible: true
+                )
+            } else {
+                audioHaptics.setReelLooping(false)
+            }
+        }
+    }
     @Published public var selectedPondIndex: Int = 0 {
         didSet {
             if !isLoadingPersistedSettings {
@@ -289,6 +302,17 @@ public final class FishingAppCoordinator: ObservableObject {
     public var authLimiter = AuthAttemptLimiter()
     @Published public var audioHaptics = FishingAudioAndHapticsController() {
         didSet {
+            if audioHaptics.soundEnabled != oldValue.soundEnabled {
+                if !audioHaptics.soundEnabled {
+                    audioHaptics.stopAmbientAndReelAudio()
+                } else if selectedTab == .fishingPond {
+                    audioHaptics.syncAmbientTrack(
+                        pondIndex: selectedPondIndex,
+                        hour: gameClock.hour,
+                        isPondScreenVisible: true
+                    )
+                }
+            }
             if !isLoadingPersistedSettings,
                (audioHaptics.soundEnabled != oldValue.soundEnabled ||
                 audioHaptics.vibrationEnabled != oldValue.vibrationEnabled ||
@@ -444,7 +468,6 @@ public final class FishingAppCoordinator: ObservableObject {
         quests = try repository.listQuests()
         personalRecords = try repository.listPersonalRecords(onlyCaught: false)
         activeContract = try repository.loadActiveUserTaskContract()
-        audioHaptics.syncAmbientTrack(pondIndex: selectedPondIndex, hour: gameClock.hour)
 
         catalogRods = try catalog.listAllRodSpecs().filter { $0.price > 0 && $0.weight <= 179 }
         catalogCoils = try catalog.listAllCoilSpecs().filter { $0.price > 0 && $0.bearingCount <= 7 }
@@ -457,6 +480,11 @@ public final class FishingAppCoordinator: ObservableObject {
         stateMachine.tackle = assembledTackle
         stateMachine.fishCatalogById1Based = fishCatalogById
         loadPersistedSettingsFromDatabase()
+        audioHaptics.syncAmbientTrack(
+            pondIndex: selectedPondIndex,
+            hour: gameClock.hour,
+            isPondScreenVisible: selectedTab == .fishingPond
+        )
     }
 
     /// Saves all user settings (`WATER_SHADER`, `TASKS`, `SOUND`, `VIBRATION`, `CHECKMODE`, `ONLINE_MODE`, `DEV`,
@@ -544,7 +572,11 @@ public final class FishingAppCoordinator: ObservableObject {
            let pond = try? catalog.loadPondSimulationData(pondIndex: v) {
             selectedPondIndex = v
             stateMachine.pondData = pond
-            audioHaptics.syncAmbientTrack(pondIndex: v, hour: gameClock.hour)
+            audioHaptics.syncAmbientTrack(
+                pondIndex: v,
+                hour: gameClock.hour,
+                isPondScreenVisible: selectedTab == .fishingPond
+            )
         }
     }
 
@@ -772,6 +804,9 @@ public final class FishingAppCoordinator: ObservableObject {
             let result = try repository.sellAllFish(nowMs: nowMs)
             try repository.evaluateAchievementOnFishSale(newBalance: result.newBalance, nowMs: nowMs)
             try reloadAllStateFromDatabase()
+            if onlineModeEnabled {
+                syncAchievementsAndQuestsLive(includeQuests: false, silent: true)
+            }
             activeAlert = .fishSold(result: result)
         } catch let err as PlayerPersistenceError {
             activeAlert = .operationError(message: describePersistenceError(err))
@@ -1005,7 +1040,11 @@ public final class FishingAppCoordinator: ObservableObject {
         gameClock.tickOneGameMinute(isPaidPond: isPaidPond, activeCouponRemainingTicks: &couponTicks)
         dayNightLighting = DayNightLighting.forHour(gameClock.hour)
         stateMachine.timeOfDay = BiteTimeOfDay.from(hour: gameClock.hour, minute: gameClock.minute)
-        audioHaptics.syncAmbientTrack(pondIndex: selectedPondIndex, hour: gameClock.hour)
+        audioHaptics.syncAmbientTrack(
+            pondIndex: selectedPondIndex,
+            hour: gameClock.hour,
+            isPondScreenVisible: selectedTab == .fishingPond
+        )
         savePersistedSettingsToDatabase()
     }
 
@@ -1037,7 +1076,10 @@ public final class FishingAppCoordinator: ObservableObject {
                 if biteNotificationScheduler.isNotificationPending {
                     biteNotificationScheduler.cancelPendingBiteAlarm()
                 }
-                audioHaptics.handleBiteSignalWhat0(nowMs: nowMs)
+                audioHaptics.handleBiteSignalWhat0(
+                    nowMs: nowMs,
+                    fishWeightGrams: max(50, stateMachine.activeFishWeightGrams)
+                )
 
             case .fishCaught(let caughtFish):
                 audioHaptics.handleCatchSignalWhat1(nowMs: nowMs)
@@ -1066,6 +1108,7 @@ public final class FishingAppCoordinator: ObservableObject {
                     )
                     if onlineModeEnabled {
                         submitCaughtFishLive(caughtFish)
+                        syncAchievementsAndQuestsLive(includeQuests: true, silent: true)
                     }
                 } catch {
                     activeAlert = .operationError(message: "Ошибка сохранения улова: \(error)")
@@ -1080,6 +1123,9 @@ public final class FishingAppCoordinator: ObservableObject {
                 audioHaptics.playSoundEffect(.rodBreak)
                 try? repository.evaluateAchievementOnRodBroken(nowMs: nowMs)
                 try? reloadAllStateFromDatabase()
+                if onlineModeEnabled {
+                    syncAchievementsAndQuestsLive(includeQuests: false, silent: true)
+                }
                 activeAlert = .rodBroken
 
             case .coilBroken:
@@ -1266,7 +1312,11 @@ public final class FishingAppCoordinator: ObservableObject {
         if didCatchUp {
             dayNightLighting = DayNightLighting.forHour(gameClock.hour)
             stateMachine.timeOfDay = BiteTimeOfDay.from(hour: gameClock.hour, minute: gameClock.minute)
-            audioHaptics.syncAmbientTrack(pondIndex: selectedPondIndex, hour: gameClock.hour)
+            audioHaptics.syncAmbientTrack(
+            pondIndex: selectedPondIndex,
+            hour: gameClock.hour,
+            isPondScreenVisible: selectedTab == .fishingPond
+        )
         }
         return didCatchUp
     }
@@ -1630,6 +1680,76 @@ public final class FishingAppCoordinator: ObservableObject {
                     self.lastOnlineStatusMessage = "Новый мировой рекорд на fish.php! \(caughtFish.fish.name) — \(caughtFish.weightGrams) г (status=1100)."
                 case .rejected(let code):
                     self.lastOnlineStatusMessage = "Сервер fish.php вернул код \(code)."
+                }
+            }
+        }
+    }
+
+    /// Synchronizes all 14 achievements (`X-Fish-Fach`) and 44 quests (`X-Fish-Fqst`) with `http://fish-mob.ru/fff/achievs.php` (`F0.o$a.a`).
+    public func syncAchievementsAndQuestsLive(
+        login: String? = nil,
+        password: String? = nil,
+        includeQuests: Bool = true,
+        silent: Bool = false
+    ) {
+        let rawLogin = (login ?? savedOnlineLogin).trimmingCharacters(in: .whitespacesAndNewlines)
+        let effectiveLogin = rawLogin.isEmpty ? profile.login.trimmingCharacters(in: .whitespacesAndNewlines) : rawLogin
+        let rawPass = password ?? savedOnlinePassword
+        let effectivePass = rawPass.isEmpty ? profile.password : rawPass
+
+        guard !effectiveLogin.isEmpty, !effectivePass.isEmpty else {
+            if !silent {
+                activeAlert = .operationError(message: "Для синхронизации прогресса укажите логин и пароль.")
+            }
+            return
+        }
+
+        let fachHeader: String
+        let fqstHeader: String?
+        do {
+            fachHeader = try repository.buildFachHeader()
+            fqstHeader = includeQuests ? (try repository.buildFqstHeader()) : nil
+        } catch {
+            if !silent {
+                lastOnlineStatusMessage = "Ошибка подготовки заголовков синхронизации (achievs.php): \(error.localizedDescription)"
+            }
+            return
+        }
+
+        if !silent {
+            isOnlineRequestInFlight = true
+            lastOnlineStatusMessage = "Синхронизация достижений и квестов с fish-mob.ru (achievs.php)..."
+        }
+
+        let client = self.liveNetworkClient
+        let uuid = self.installationUuid
+        let currentLang = self.languageCode
+        Task { @MainActor in
+            defer {
+                if !silent {
+                    self.isOnlineRequestInFlight = false
+                }
+            }
+            do {
+                let outcome = try await client.syncAchievementsAndQuests(
+                    login: effectiveLogin,
+                    password: effectivePass,
+                    installationUuid: uuid,
+                    fachHeader: fachHeader,
+                    fqstHeader: fqstHeader,
+                    languageCode: currentLang
+                )
+                switch outcome {
+                case .synchronized(let msg):
+                    self.lastOnlineStatusMessage = msg
+                case .rejected(_, let msg):
+                    if !silent {
+                        self.lastOnlineStatusMessage = msg
+                    }
+                }
+            } catch {
+                if !silent {
+                    self.lastOnlineStatusMessage = "Не удалось синхронизировать прогресс с achievs.php: \(error.localizedDescription)"
                 }
             }
         }

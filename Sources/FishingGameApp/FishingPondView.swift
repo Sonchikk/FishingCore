@@ -34,7 +34,17 @@ public struct FishingPondView: View {
                 }
                 PondBottomControlsPanelView(
                     coordinator: coordinator,
-                    onPresentBaitChooser: { isBaitChooserPresented = true }
+                    onPresentBaitChooser: {
+                        // Match `GameActivity.onClick`: block bait chooser while rod is cast (`state != .idle`)
+                        guard coordinator.stateMachine.state == .idle else {
+                            return
+                        }
+                        if coordinator.ownedBaits.isEmpty {
+                            coordinator.activeAlert = .operationError(message: "В рюкзаке нет наживок.")
+                        } else {
+                            isBaitChooserPresented = true
+                        }
+                    }
                 )
             }
         }
@@ -360,8 +370,16 @@ private struct PondTopOverlayBarView: View {
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
             Button {
-                coordinator.resetCastToIdle()
-                coordinator.selectedTab = .baseHub
+                // Match `GameActivity.U()`: during fish fight (`state == .fishFight`) cannot exit directly;
+                // during waitingForBite (`state == .waitingForBite`), first tap reels in (`resetCastToIdle`),
+                // and when idle (`state == .idle`), returns to the base hub (`PondListActivity` / `MainActivity`).
+                if coordinator.stateMachine.state == .fishFight {
+                    return
+                } else if coordinator.stateMachine.state != .idle {
+                    coordinator.resetCastToIdle()
+                } else {
+                    coordinator.selectedTab = .baseHub
+                }
             } label: {
                 OriginalSpriteOrFallbackIcon(
                     drawableName: "pond_out",
@@ -369,6 +387,7 @@ private struct PondTopOverlayBarView: View {
                     width: 40,
                     height: 40
                 )
+                .opacity(coordinator.stateMachine.state == .fishFight ? 0.45 : 1.0)
             }
             .buttonStyle(.plain)
 
@@ -401,6 +420,7 @@ private struct PondTopOverlayBarView: View {
                 .buttonStyle(.plain)
 
                 Button {
+                    guard coordinator.stateMachine.state == .idle else { return }
                     coordinator.selectedTab = .progress
                 } label: {
                     OriginalSpriteOrFallbackIcon(
@@ -409,6 +429,7 @@ private struct PondTopOverlayBarView: View {
                         width: 38,
                         height: 38
                     )
+                    .opacity(coordinator.stateMachine.state == .idle ? 1.0 : 0.45)
                 }
                 .buttonStyle(.plain)
 
@@ -621,6 +642,7 @@ private struct PondBottomControlsPanelView: View {
                         .background(Color.black.opacity(0.75), in: RoundedRectangle(cornerRadius: 3))
                 }
             }
+            .opacity(coordinator.stateMachine.state == .idle ? 1.0 : 0.45)
         }
         .buttonStyle(.plain)
     }
@@ -659,6 +681,8 @@ private struct PondBottomControlsPanelView: View {
     private var lowerControlsRow: some View {
         HStack(spacing: 8) {
             Button {
+                // Match `GameActivity.onClick`: fishnet (`game_fishpond`) is locked while rod is cast (`state != .idle`)
+                guard coordinator.stateMachine.state == .idle else { return }
                 coordinator.selectedTab = .fishnet
             } label: {
                 OriginalSpriteOrFallbackIcon(
@@ -667,6 +691,7 @@ private struct PondBottomControlsPanelView: View {
                     width: 44,
                     height: 38
                 )
+                .opacity(coordinator.stateMachine.state == .idle ? 1.0 : 0.45)
             }
             .buttonStyle(.plain)
 
@@ -676,6 +701,8 @@ private struct PondBottomControlsPanelView: View {
                 .frame(minWidth: 28, minHeight: 36)
 
             Button {
+                // Match `GameActivity.onClick`: backpack (`game_backpack`) is locked while rod is cast (`state != .idle`)
+                guard coordinator.stateMachine.state == .idle else { return }
                 coordinator.selectedTab = .inventory
             } label: {
                 OriginalSpriteOrFallbackIcon(
@@ -684,6 +711,7 @@ private struct PondBottomControlsPanelView: View {
                     width: 44,
                     height: 38
                 )
+                .opacity(coordinator.stateMachine.state == .idle ? 1.0 : 0.45)
             }
             .buttonStyle(.plain)
 

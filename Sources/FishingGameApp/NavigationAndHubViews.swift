@@ -1868,6 +1868,18 @@ public struct OnlineAndChatView: View {
             .buttonStyle(.plain)
 
             Button {
+                coordinator.syncAchievementsAndQuestsLive(
+                    login: coordinator.savedOnlineLogin,
+                    password: coordinator.savedOnlinePassword,
+                    includeQuests: true,
+                    silent: false
+                )
+            } label: {
+                OriginalStyledActionButtonLabel(title: "Синхронизировать прогресс (achievs.php)", minWidth: 240)
+            }
+            .buttonStyle(.plain)
+
+            Button {
                 coordinator.claimServerRewardsLive(
                     login: coordinator.savedOnlineLogin,
                     password: coordinator.savedOnlinePassword
