@@ -486,8 +486,6 @@ public struct FishingAudioAndHapticsController: Sendable, Equatable {
             case .rodBreak, .coilBreak, .lineBreak:
                 let gen = UINotificationFeedbackGenerator()
                 gen.notificationOccurred(.error)
-            case .reelLoop:
-                break
             }
         }
         #endif

@@ -750,7 +750,7 @@ public final class FishingLiveTCPChatSession {
         self.connection = conn
 
         conn.stateUpdateHandler = { [weak self] newState in
-            Task { @MainActor in
+            Task { @MainActor [weak self] in
                 guard let self else { return }
                 switch newState {
                 case .ready:
@@ -832,7 +832,7 @@ public final class FishingLiveTCPChatSession {
     #if canImport(Network)
     private func receiveNextChunk() {
         connection?.receive(minimumIncompleteLength: 4, maximumLength: 65536) { [weak self] data, _, isComplete, error in
-            Task { @MainActor in
+            Task { @MainActor [weak self] in
                 guard let self else { return }
                 if let data, !data.isEmpty {
                     self.onPacketReceived?(data)

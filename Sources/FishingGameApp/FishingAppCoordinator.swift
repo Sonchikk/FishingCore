@@ -1144,13 +1144,15 @@ public final class FishingAppCoordinator: ObservableObject {
         isOnlineRequestInFlight = true
         lastOnlineStatusMessage = "Подключение к fish-mob.ru (auth.php)..."
 
+        let client = self.liveNetworkClient
+        let uuid = self.installationUuid
         Task { @MainActor in
             defer { self.isOnlineRequestInFlight = false }
             do {
-                let rawResponse = try await liveNetworkClient.authenticateProfile(
+                let rawResponse = try await client.authenticateProfile(
                     login: trimmedLogin,
                     password: password,
-                    installationUuid: installationUuid
+                    installationUuid: uuid
                 )
                 let summary = try restoreFromOnlineAuthResponse(
                     rawResponse,
@@ -1175,14 +1177,17 @@ public final class FishingAppCoordinator: ObservableObject {
         isOnlineRequestInFlight = true
         lastOnlineStatusMessage = "Проверка серверных наград (reaward.php)..."
 
+        let client = self.liveNetworkClient
+        let uuid = self.installationUuid
+        let currentLang = self.languageCode
         Task { @MainActor in
             defer { self.isOnlineRequestInFlight = false }
             do {
-                let raw = try await liveNetworkClient.claimServerRewards(
+                let raw = try await client.claimServerRewards(
                     login: trimmedLogin,
                     password: password,
-                    installationUuid: installationUuid,
-                    languageCode: languageCode
+                    installationUuid: uuid,
+                    languageCode: currentLang
                 )
                 let summary = try claimServerRewards(raw)
                 self.lastOnlineStatusMessage = "Награды получены: +\(summary.coinsAdded) руб., +\(summary.experienceAdded) XP."
@@ -1198,11 +1203,13 @@ public final class FishingAppCoordinator: ObservableObject {
         isOnlineRequestInFlight = true
         lastOnlineStatusMessage = "Загрузка рейтингов (top.php) и рекордов (rek.php)..."
 
+        let client = self.liveNetworkClient
+        let currentLang = self.languageCode
         Task { @MainActor in
             defer { self.isOnlineRequestInFlight = false }
             do {
-                async let topTask = liveNetworkClient.fetchTopPlayers(login: effectiveLogin, languageCode: languageCode)
-                async let rekTask = liveNetworkClient.fetchWorldSpeciesRecords(languageCode: languageCode)
+                async let topTask = client.fetchTopPlayers(login: effectiveLogin, languageCode: currentLang)
+                async let rekTask = client.fetchWorldSpeciesRecords(languageCode: currentLang)
                 let (topList, rekList) = try await (topTask, rekTask)
                 self.topPlayersRating = topList
                 self.worldSpeciesRecords = rekList
@@ -1236,12 +1243,15 @@ public final class FishingAppCoordinator: ObservableObject {
         chatConnectionState = .connecting
         lastOnlineStatusMessage = "Авторизация чата (auth_chat.php) и подключение к 15701..."
 
+        let client = self.liveNetworkClient
+        let uuid = self.installationUuid
+        let currentLang = self.languageCode
         Task { @MainActor in
             do {
-                let handshake = try await liveNetworkClient.authenticateChat(
+                let handshake = try await client.authenticateChat(
                     login: effectiveLogin,
-                    installationUuid: installationUuid,
-                    languageCode: languageCode
+                    installationUuid: uuid,
+                    languageCode: currentLang
                 )
                 switch handshake {
                 case .authenticated(let uid):
