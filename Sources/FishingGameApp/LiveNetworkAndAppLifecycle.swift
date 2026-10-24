@@ -379,7 +379,7 @@ public enum FishingOnlineResponseParser: Sendable {
                         } else {
                             cat = ProgressionCalculator.categoryForExperience(
                                 exp,
-                                thresholds: BalanceTables.playerRankExpThresholds
+                                balanceTables: BalanceTables()
                             )
                         }
                         result.append(

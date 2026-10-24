@@ -284,6 +284,8 @@ public final class FishingAppCoordinator: ObservableObject {
     @Published public private(set) var chatMessages: [ChatMess] = []
     @Published public private(set) var onlineTours: [ChatTourModel] = []
     @Published public private(set) var onlineUsers: [ChatUserOnline] = []
+    /// Reconstructs `com.evados.fishing.chat.Data.userData` (`ChatServerUserData`), populated by `"initialize"`, `"import value"`, and `"transaction"`.
+    @Published public private(set) var chatServerUserData: ChatServerUserData = ChatServerUserData()
     public var authLimiter = AuthAttemptLimiter()
     @Published public var audioHaptics = FishingAudioAndHapticsController() {
         didSet {
@@ -485,7 +487,7 @@ public final class FishingAppCoordinator: ObservableObject {
             ("pref_clock_minute", gameClock.minute)
         ]
         for (key, value) in entries {
-            try? connection.run("""
+            _ = try? connection.run("""
             INSERT INTO player_runtime_counters (counter_key, counter_value)
             VALUES (?, ?)
             ON CONFLICT(counter_key) DO UPDATE SET counter_value = excluded.counter_value;
@@ -550,7 +552,7 @@ public final class FishingAppCoordinator: ObservableObject {
     public func saveOnlineCredentialsToDatabase(login: String, password: String) {
         let trimmedLogin = login.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedLogin.isEmpty else { return }
-        try? connection.run("""
+        _ = try? connection.run("""
         UPDATE user_data SET login = ?, password = ? WHERE id = 1;
         """, bindings: [.text(trimmedLogin), .text(password)])
         if let updated = try? repository.loadPlayerProfile() {
@@ -1179,6 +1181,18 @@ public final class FishingAppCoordinator: ObservableObject {
         switch outcome {
         case .initialized(let initObj):
             self.onlineTours = initObj.tours
+            if let ud = initObj.userData {
+                self.chatServerUserData = ud
+            }
+        case .serverUserDataUpdated(let ud):
+            self.chatServerUserData = ud
+        case .transactionCompleted(_, let updatedInit):
+            if let updatedInit {
+                self.onlineTours = updatedInit.tours
+                if let ud = updatedInit.userData {
+                    self.chatServerUserData = ud
+                }
+            }
         case .userListReceived(let all, _):
             self.onlineUsers = all
         case .toursUpdated(let tours):

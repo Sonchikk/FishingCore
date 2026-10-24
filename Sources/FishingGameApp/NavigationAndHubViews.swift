@@ -2101,13 +2101,13 @@ public struct OnlineAndChatView: View {
         guard !text.isEmpty else { return }
         let mess = ChatMess(
             fromID: coordinator.authenticatedChatUserId,
-            prem: Int32(coordinator.profile.premium),
+            prem: coordinator.chatServerUserData.prem,
             room: Int32(coordinator.selectedPondIndex),
             from: coordinator.savedOnlineLogin,
             object: nil,
             text: text,
             timeEpochMs: Int64(Date().timeIntervalSince1970 * 1000),
-            to: nil
+            to: "all"
         )
         if coordinator.chatConnectionState == .connected {
             coordinator.tcpChatSession.sendMess(mess)

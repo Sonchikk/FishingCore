@@ -925,6 +925,43 @@ final class FishingGameAppTests: XCTestCase {
         XCTAssertTrue(combinedStream.isEmpty)
     }
 
+    @MainActor
+    func testChatServerUserDataPremSyncInCoordinator() throws {
+        let coordinator = try FishingAppCoordinator(
+            databasePath: ":memory:",
+            nowMs: 1_700_000_000_000,
+            notificationScheduling: NoopSystemNotifications()
+        )
+        XCTAssertEqual(coordinator.chatServerUserData.prem, 0)
+
+        let serverUD = ChatServerUserData(
+            bcap: 50,
+            curLevelXP: 1000,
+            fbcap: 50,
+            lv: 12,
+            mbcap: 50,
+            money: 25000,
+            prem: 3,
+            rmoney: 15,
+            toNextlv: 2000,
+            xp: 18500
+        )
+        let initMess = ChatMess(
+            fromID: -1,
+            prem: 0,
+            room: 0,
+            from: ChatMess.systemPeer,
+            object: .initObject(ChatInitObject(tours: [], userData: serverUD)),
+            text: "initialize",
+            timeEpochMs: nil,
+            to: "angler_ios"
+        )
+        let packet = JavaObjectStreamCodec.encodeMess(initMess)
+        _ = try coordinator.receiveChatStreamPacket(packet, currentUserId: 42)
+        XCTAssertEqual(coordinator.chatServerUserData.prem, 3)
+        XCTAssertEqual(coordinator.chatServerUserData.rmoney, 15)
+    }
+
     func testWaterHorizonClampAndNativeAudioEngineData() throws {
         // Verify bobber never steps above `viewHeight / 4 + halfBobberHeight` during fish fight escape
         let bt = BalanceTables()
