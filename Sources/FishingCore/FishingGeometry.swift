@@ -268,7 +268,8 @@ public struct FishingLineGeometry: Sendable, Equatable {
         )
     }
 
-    public mutating func stepAndBuildCurve(
+    /// Pure non-mutating curve builder for intermediate visual interpolation frames (`stepRipplesAndCast == false`).
+    public func buildCurrentCurve(
         rod: RodSpriteState,
         bobber: BobberState,
         jitterRandom: Float = 0.5
@@ -288,13 +289,6 @@ public struct FishingLineGeometry: Sendable, Equatable {
             let ctrlX = (start.x + endX) / 2.0
             let ctrlY = start.y - 150.0 * castProgress
             let alpha = Int(castProgress * 180.0)
-
-            castProgress += 0.08
-            if castProgress >= 1.0 {
-                isCastAnimating = false
-                castProgress = 1.0
-            }
-
             return QuadraticBezierCurve(
                 start: start,
                 control: Point2D(x: ctrlX, y: ctrlY),
@@ -302,16 +296,7 @@ public struct FishingLineGeometry: Sendable, Equatable {
                 alpha: alpha,
                 strokeWidth: 1.5
             )
-        }
-
-        // Per-frame line tautness ramp (`D0.b.d(Canvas)` in original bytecode)
-        if isPulled {
-            tensionFactor = min(1.0, tensionFactor + 0.1)
-        } else {
-            tensionFactor = max(0.0, tensionFactor - 0.05)
-        }
-
-        if isPulled && tensionFactor > 0.1 {
+        } else if isPulled && tensionFactor > 0.1 {
             let ctrlX = (start.x + targetX) / 2.0
             let lift = (tensionFactor * 0.3) * 20.0
             let ctrlY = ((start.y + targetY) / 2.0) - lift
@@ -339,5 +324,30 @@ public struct FishingLineGeometry: Sendable, Equatable {
                 strokeWidth: 1.5
             )
         }
+    }
+
+    public mutating func stepAndBuildCurve(
+        rod: RodSpriteState,
+        bobber: BobberState,
+        jitterRandom: Float = 0.5
+    ) -> QuadraticBezierCurve {
+        if isCastAnimating {
+            let curve = buildCurrentCurve(rod: rod, bobber: bobber, jitterRandom: jitterRandom)
+            castProgress += 0.08
+            if castProgress >= 1.0 {
+                isCastAnimating = false
+                castProgress = 1.0
+            }
+            return curve
+        }
+
+        // Per-frame line tautness ramp (`D0.b.d(Canvas)` in original bytecode)
+        if isPulled {
+            tensionFactor = min(1.0, tensionFactor + 0.1)
+        } else {
+            tensionFactor = max(0.0, tensionFactor - 0.05)
+        }
+
+        return buildCurrentCurve(rod: rod, bobber: bobber, jitterRandom: jitterRandom)
     }
 }

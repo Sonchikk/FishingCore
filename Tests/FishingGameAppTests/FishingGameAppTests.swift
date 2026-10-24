@@ -628,11 +628,20 @@ final class FishingGameAppTests: XCTestCase {
         XCTAssertFalse(coordinator.isDebugOverlayEnabled)
 
         coordinator.buyAndEquipStarterKit(nowMs: 1_700_000_001_000)
-        coordinator.castAt(x: 640, y: 500, nowMs: 1_700_000_002_000)
+
+        var rng = ScriptedFishingRandom(
+            ints: [10, 3, 10, 100, 50],
+            floats: [0.5, 0.5, 0.8, 0.8],
+            defaultInt: 50,
+            defaultFloat: 0.5
+        )
+        coordinator.castAt(x: 640, y: 500, nowMs: 1_700_000_002_000, rng: &rng)
         XCTAssertEqual(coordinator.stateMachine.state, .waitingForBite)
         XCTAssertNotNil(coordinator.renderedBobberPosition)
         XCTAssertEqual(coordinator.renderedBobberPosition?.x, 640)
         XCTAssertEqual(coordinator.renderedBobberPosition?.y, 500)
+        XCTAssertEqual(coordinator.stateMachine.lineGeometry?.isCastAnimating, true)
+        XCTAssertEqual(coordinator.currentLineCurve?.alpha, 0)
 
         let baseWallMs: Int64 = 1_700_000_010_000
         for step in 1...15 {
@@ -641,15 +650,23 @@ final class FishingGameAppTests: XCTestCase {
         XCTAssertEqual(coordinator.stateMachine.lineGeometry?.isCastAnimating, false)
         XCTAssertEqual(coordinator.currentLineCurve?.alpha, 180)
 
-        coordinator.fastForwardToScheduledBite()
-        if coordinator.stateMachine.state == .fishFight {
-            XCTAssertEqual(coordinator.stateMachine.bobber?.isBiteTexture, true)
-            coordinator.setReelPulled(true)
-            let tensionFactorAfterFirstPull = coordinator.stateMachine.lineGeometry?.tensionFactor ?? 0
-            // Repeatedly calling setReelPulled(true) (simulating DragGesture.onChanged touch samples) must be a no-op
-            coordinator.setReelPulled(true)
-            coordinator.setReelPulled(true)
-            XCTAssertEqual(coordinator.stateMachine.lineGeometry?.tensionFactor, tensionFactorAfterFirstPull)
+        let biteTimeMs = coordinator.stateMachine.scheduledBiteTimeMs + 100
+        coordinator.stepSimulationTick(nowMs: biteTimeMs, rng: &rng)
+        XCTAssertEqual(coordinator.stateMachine.state, .fishFight)
+        XCTAssertEqual(coordinator.stateMachine.bobber?.isBiteTexture, true)
+        if let bobberY = coordinator.stateMachine.bobber?.y,
+           let lineEndY = coordinator.currentLineCurve?.end.y {
+            XCTAssertEqual(lineEndY, bobberY, accuracy: 0.001)
         }
+
+        coordinator.setReelPulled(true)
+        XCTAssertTrue(coordinator.stateMachine.isPulled)
+        XCTAssertFalse(coordinator.stateMachine.isPreHookBobbing)
+        let tensionFactorAfterFirstPull = coordinator.stateMachine.lineGeometry?.tensionFactor ?? 0
+
+        // Repeatedly calling setReelPulled(true) (simulating DragGesture.onChanged touch samples) must be a no-op
+        coordinator.setReelPulled(true)
+        coordinator.setReelPulled(true)
+        XCTAssertEqual(coordinator.stateMachine.lineGeometry?.tensionFactor, tensionFactorAfterFirstPull)
     }
 }

@@ -592,9 +592,8 @@ public final class FishingAppCoordinator: ObservableObject {
             currentMinute: gameClock.minute,
             rng: &rng
         )
-        let wallMs = Int64(Date().timeIntervalSince1970 * 1000)
-        lastPhysicsTickWallMs = wallMs
-        lastRippleStepWallMs = wallMs
+        lastPhysicsTickWallMs = nowMs
+        lastRippleStepWallMs = nowMs
         if let bobber = stateMachine.bobber {
             let pt = Point2D(x: bobber.x, y: bobber.y)
             previousPhysicsBobberPos = pt
@@ -671,9 +670,8 @@ public final class FishingAppCoordinator: ObservableObject {
             previousPhysicsBobberPos = nil
             targetPhysicsBobberPos = nil
         default:
-            let wallMs = Int64(Date().timeIntervalSince1970 * 1000)
-            lastPhysicsTickWallMs = wallMs
-            lastRippleStepWallMs = wallMs
+            lastPhysicsTickWallMs = nowMs
+            lastRippleStepWallMs = nowMs
             _ = stateMachine.stepVisualFrame(
                 stepRipplesAndCast: true,
                 displayBobberPosition: nil,
@@ -700,6 +698,10 @@ public final class FishingAppCoordinator: ObservableObject {
     public func stepVisualFrameTick(wallNowMs: Int64 = Int64(Date().timeIntervalSince1970 * 1000)) {
         guard stateMachine.state != .idle, stateMachine.bobber != nil else { return }
 
+        if wallNowMs < lastPhysicsTickWallMs {
+            lastPhysicsTickWallMs = wallNowMs
+        }
+
         if stateMachine.state == .fishFight,
            let prev = previousPhysicsBobberPos,
            let target = targetPhysicsBobberPos {
@@ -713,7 +715,7 @@ public final class FishingAppCoordinator: ObservableObject {
         }
 
         // Step `D0.a.l()` ripples and `D0.b.c()` cast progress at the original 60ms cadence (`GameView$a`)
-        let shouldStep60ms = (wallNowMs - lastRippleStepWallMs) >= 60
+        let shouldStep60ms = (wallNowMs - lastRippleStepWallMs) >= 60 || wallNowMs < lastRippleStepWallMs
         if shouldStep60ms {
             lastRippleStepWallMs = wallNowMs
         }
