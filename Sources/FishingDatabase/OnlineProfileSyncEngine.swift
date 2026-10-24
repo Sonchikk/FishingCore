@@ -517,10 +517,13 @@ extension PlayerStateRepository {
                 } else {
                     let maxRows = try connection.query("SELECT COALESCE(MAX(id), 0) AS max_id FROM fishing_rods;")
                     baseRodId = (maxRows.first?.int("max_id") ?? 13) + 1
-                    let dummyMd5 = FishingChecksum.rodMd5(id: baseRodId, name: name, weight: max(1, weightKg), cat: 0, price: 0, date: nowMs)
                     try connection.run(
-                        "INSERT INTO fishing_rods (id, name, weight, cat, price, image, date, md5) VALUES (?, ?, ?, 0, 0, 0, ?, ?);",
-                        bindings: [.integer(Int64(baseRodId)), .text(name), .integer(Int64(max(1, weightKg))), .integer(nowMs), .text(dummyMd5)]
+                        "INSERT INTO fishing_rods (id, name, weight, price) VALUES (?, ?, ?, 0);",
+                        bindings: [
+                            .integer(Int64(baseRodId)),
+                            .text(name),
+                            .integer(Int64(max(1, weightKg)))
+                        ]
                     )
                 }
 
@@ -573,10 +576,13 @@ extension PlayerStateRepository {
                 } else {
                     let maxRows = try connection.query("SELECT COALESCE(MAX(id), 0) AS max_id FROM coils;")
                     baseCoilId = (maxRows.first?.int("max_id") ?? 10) + 1
-                    let dummyMd5 = FishingChecksum.coilMd5(id: baseCoilId, name: name, bearingCount: max(1, bearings), cat: 0, price: 0, date: nowMs)
                     try connection.run(
-                        "INSERT INTO coils (id, name, bearing_count, cat, price, image, date, md5) VALUES (?, ?, ?, 0, 0, 0, ?, ?);",
-                        bindings: [.integer(Int64(baseCoilId)), .text(name), .integer(Int64(max(1, bearings))), .integer(nowMs), .text(dummyMd5)]
+                        "INSERT INTO coils (id, name, bearing_count, price) VALUES (?, ?, ?, 0);",
+                        bindings: [
+                            .integer(Int64(baseCoilId)),
+                            .text(name),
+                            .integer(Int64(max(1, bearings)))
+                        ]
                     )
                 }
 
@@ -629,10 +635,14 @@ extension PlayerStateRepository {
                 } else {
                     let maxRows = try connection.query("SELECT COALESCE(MAX(id), 0) AS max_id FROM fishing_lines;")
                     baseLineId = (maxRows.first?.int("max_id") ?? 16) + 1
-                    let dummyMd5 = FishingChecksum.lineMd5(id: baseLineId, name: name, weight: max(1, weightKg), stockLength: max(100, lengthM), cat: 0, price: 0, date: nowMs)
                     try connection.run(
-                        "INSERT INTO fishing_lines (id, name, weight, stock_length, cat, price, image, date, md5) VALUES (?, ?, ?, ?, 0, 0, 0, ?, ?);",
-                        bindings: [.integer(Int64(baseLineId)), .text(name), .integer(Int64(max(1, weightKg))), .integer(Int64(max(100, lengthM))), .integer(nowMs), .text(dummyMd5)]
+                        "INSERT INTO fishing_lines (id, name, weight, price, stock_length) VALUES (?, ?, ?, 0, ?);",
+                        bindings: [
+                            .integer(Int64(baseLineId)),
+                            .text(name),
+                            .integer(Int64(max(1, weightKg))),
+                            .integer(Int64(max(100, lengthM)))
+                        ]
                     )
                 }
 
