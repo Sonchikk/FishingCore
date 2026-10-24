@@ -803,4 +803,55 @@ final class FishingGameAppTests: XCTestCase {
         XCTAssertEqual(coordinator.stateMachine.state, .idle)
         XCTAssertEqual(coordinator.activeAlert, .missedBiteDuringSleep)
     }
+
+    @MainActor
+    func testSettingsAndOnlineCredentialsPersistenceAcrossRestarts() throws {
+        let tempDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FishingSettingsPersistTest_\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: tempDir) }
+
+        let coordinator1 = try AppBundleDatabaseBootstrapper.bootstrapAppCoordinator(
+            appSupportDirectory: tempDir,
+            initialHour: 14,
+            initialMinute: 25,
+            nowMs: 1_700_000_000_000,
+            notificationScheduling: NoopSystemNotifications()
+        )
+        coordinator1.isWaterShaderEnabled = false
+        coordinator1.pondBackgroundSetIndex = 3
+        coordinator1.tasksEnabled = false
+        coordinator1.audioHaptics.soundEnabled = false
+        coordinator1.audioHaptics.vibrationEnabled = false
+        coordinator1.checkModeEnabled = true
+        coordinator1.onlineModeEnabled = true
+        coordinator1.isDebugOverlayEnabled = true
+        coordinator1.languageCode = "en"
+        coordinator1.savedOnlineLogin = "persisted_angler"
+        coordinator1.savedOnlinePassword = "persisted_secret"
+        coordinator1.stepGameClockMinute()
+
+        // Re-launch coordinator on the same Application Support directory
+        let coordinator2 = try AppBundleDatabaseBootstrapper.bootstrapAppCoordinator(
+            appSupportDirectory: tempDir,
+            initialHour: 6,
+            initialMinute: 0,
+            nowMs: 1_700_000_010_000,
+            notificationScheduling: NoopSystemNotifications()
+        )
+        XCTAssertFalse(coordinator2.isWaterShaderEnabled)
+        XCTAssertEqual(coordinator2.pondBackgroundSetIndex, 3)
+        XCTAssertFalse(coordinator2.tasksEnabled)
+        XCTAssertFalse(coordinator2.audioHaptics.soundEnabled)
+        XCTAssertFalse(coordinator2.audioHaptics.vibrationEnabled)
+        XCTAssertTrue(coordinator2.checkModeEnabled)
+        XCTAssertTrue(coordinator2.onlineModeEnabled)
+        XCTAssertTrue(coordinator2.isDebugOverlayEnabled)
+        XCTAssertEqual(coordinator2.languageCode, "en")
+        XCTAssertEqual(coordinator2.savedOnlineLogin, "persisted_angler")
+        XCTAssertEqual(coordinator2.savedOnlinePassword, "persisted_secret")
+        XCTAssertEqual(coordinator2.profile.login, "persisted_angler")
+        XCTAssertEqual(coordinator2.profile.password, "persisted_secret")
+        XCTAssertEqual(coordinator2.gameClock.hour, 14)
+        XCTAssertEqual(coordinator2.gameClock.minute, 26)
+    }
 }

@@ -42,6 +42,49 @@ targets:
     deploymentTarget: "18.0"
     info:
       path: App/Info.plist
+      properties:
+        CFBundleDevelopmentRegion: ru
+        CFBundleDisplayName: "Рыбалка для друзей"
+        CFBundleIconName: AppIcon
+        CFBundleLocalizations:
+          - ru
+          - en
+          - de
+          - es
+          - pt
+        CFBundleShortVersionString: "1.81"
+        CFBundleVersion: "203"
+        LSRequiresIPhoneOS: true
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: true
+          NSExceptionDomains:
+            fish-mob.ru:
+              NSIncludesSubdomains: true
+              NSExceptionAllowsInsecureHTTPLoads: true
+              NSTemporaryExceptionAllowsInsecureHTTPLoads: true
+              NSExceptionMinimumTLSVersion: "TLSv1.0"
+              NSExceptionRequiresForwardSecrecy: false
+            chat.fish-mob.ru:
+              NSIncludesSubdomains: true
+              NSExceptionAllowsInsecureHTTPLoads: true
+              NSTemporaryExceptionAllowsInsecureHTTPLoads: true
+              NSExceptionMinimumTLSVersion: "TLSv1.0"
+              NSExceptionRequiresForwardSecrecy: false
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UILaunchScreen: {}
+        UIRequiredDeviceCapabilities:
+          - arm64
+          - metal
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
     sources:
       - path: App/FishingIOSApp.swift
       - path: App/Resources/Assets.xcassets

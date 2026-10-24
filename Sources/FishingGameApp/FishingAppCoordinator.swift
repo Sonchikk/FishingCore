@@ -146,31 +146,82 @@ public final class FishingAppCoordinator: ObservableObject {
     public let repository: PlayerStateRepository
     public let balanceTables: BalanceTables
 
+    private var isLoadingPersistedSettings: Bool = false
+
     @Published public var selectedTab: AppNavigationTab = .fishingPond
-    @Published public var selectedPondIndex: Int = 0
+    @Published public var selectedPondIndex: Int = 0 {
+        didSet {
+            if !isLoadingPersistedSettings {
+                savePersistedSettingsToDatabase()
+            }
+        }
+    }
     @Published public private(set) var availablePonds: [PondCatalogItem] = []
 
     /// Corresponds to `SharedPreferences("FFF-ANDROID")["WATER_SHADER"]` (`GameActivity.b0()`).
-    @Published public var isWaterShaderEnabled: Bool = true
+    @Published public var isWaterShaderEnabled: Bool = true {
+        didSet {
+            if !isLoadingPersistedSettings {
+                savePersistedSettingsToDatabase()
+            }
+        }
+    }
     /// Corresponds to `SharedPreferences("pond_fons_pref")["pond_fon_set_" + pondIndex]` (`GameActivity.b0()`).
-    @Published public var pondBackgroundSetIndex: Int = 1
+    @Published public var pondBackgroundSetIndex: Int = 1 {
+        didSet {
+            if !isLoadingPersistedSettings {
+                savePersistedSettingsToDatabase()
+            }
+        }
+    }
 
     /// Controls visibility of developer debug tools on the pond screen (hidden by default for normal gameplay).
-    @Published public var isDebugOverlayEnabled: Bool = false
+    @Published public var isDebugOverlayEnabled: Bool = false {
+        didSet {
+            if !isLoadingPersistedSettings {
+                savePersistedSettingsToDatabase()
+            }
+        }
+    }
 
     /// Corresponds to `SharedPreferences("FFF-ANDROID")["CHECKMODE"]` (`GameView.q` background bite alarm).
     @Published public var checkModeEnabled: Bool = false {
         didSet {
-            if checkModeEnabled {
-                biteNotificationScheduler.requestAuthorization()
-            } else if biteNotificationScheduler.isNotificationPending {
-                biteNotificationScheduler.cancelPendingBiteAlarm()
+            if !isLoadingPersistedSettings {
+                if checkModeEnabled {
+                    biteNotificationScheduler.requestAuthorization()
+                } else if biteNotificationScheduler.isNotificationPending {
+                    biteNotificationScheduler.cancelPendingBiteAlarm()
+                }
+                savePersistedSettingsToDatabase()
             }
         }
     }
 
     /// Corresponds to `SharedPreferences("FFF-ANDROID")["ONLINE_MODE"]` (`FishingService$d`).
-    @Published public var onlineModeEnabled: Bool = false
+    @Published public var onlineModeEnabled: Bool = false {
+        didSet {
+            if !isLoadingPersistedSettings {
+                savePersistedSettingsToDatabase()
+            }
+        }
+    }
+
+    /// Persisted online credentials (`user_data.login` & `user_data.password`) for `fish-mob.ru` and `chat.fish-mob.ru`.
+    @Published public var savedOnlineLogin: String = "angler_ios" {
+        didSet {
+            if !isLoadingPersistedSettings {
+                saveOnlineCredentialsToDatabase(login: savedOnlineLogin, password: savedOnlinePassword)
+            }
+        }
+    }
+    @Published public var savedOnlinePassword: String = "secret123" {
+        didSet {
+            if !isLoadingPersistedSettings {
+                saveOnlineCredentialsToDatabase(login: savedOnlineLogin, password: savedOnlinePassword)
+            }
+        }
+    }
 
     public let installationUuid: String
     public let liveNetworkClient = FishingLiveNetworkClient()
@@ -192,9 +243,21 @@ public final class FishingAppCoordinator: ObservableObject {
     }
 
     /// Corresponds to `SharedPreferences("FFF-ANDROID")["TASKS"]` (`F0.o.b`).
-    @Published public var tasksEnabled: Bool = true
+    @Published public var tasksEnabled: Bool = true {
+        didSet {
+            if !isLoadingPersistedSettings {
+                savePersistedSettingsToDatabase()
+            }
+        }
+    }
     /// Active UI / quest evaluation language (`F0.g.b(ctx)`: `"ru"`, `"en"`, `"de"`, `"es"`, `"pt"`).
-    @Published public var languageCode: String = "ru"
+    @Published public var languageCode: String = "ru" {
+        didSet {
+            if !isLoadingPersistedSettings {
+                savePersistedSettingsToDatabase()
+            }
+        }
+    }
 
     @Published public private(set) var profile: PlayerProfileRecord = PlayerProfileRecord()
     @Published public private(set) var tackleSlots: UserTackleSlotRecord = UserTackleSlotRecord()
@@ -218,7 +281,16 @@ public final class FishingAppCoordinator: ObservableObject {
     @Published public private(set) var onlineTours: [ChatTourModel] = []
     @Published public private(set) var onlineUsers: [ChatUserOnline] = []
     public var authLimiter = AuthAttemptLimiter()
-    @Published public var audioHaptics = FishingAudioAndHapticsController()
+    @Published public var audioHaptics = FishingAudioAndHapticsController() {
+        didSet {
+            if !isLoadingPersistedSettings,
+               (audioHaptics.soundEnabled != oldValue.soundEnabled ||
+                audioHaptics.vibrationEnabled != oldValue.vibrationEnabled ||
+                audioHaptics.vibrationDurationMs != oldValue.vibrationDurationMs) {
+                savePersistedSettingsToDatabase()
+            }
+        }
+    }
     @Published public private(set) var activeContract: UserTaskContractRecord? = nil
 
     public var localeManager: FishingLocaleManager {
@@ -370,6 +442,108 @@ public final class FishingAppCoordinator: ObservableObject {
 
         stateMachine.tackle = assembledTackle
         stateMachine.fishCatalogById1Based = fishCatalogById
+        loadPersistedSettingsFromDatabase()
+    }
+
+    /// Saves all user settings (`WATER_SHADER`, `TASKS`, `SOUND`, `VIBRATION`, `CHECKMODE`, `ONLINE_MODE`, `DEV`,
+    /// `LANGUAGE`, `POND_INDEX`, and `HOUR`/`MINUTE`) into `player_runtime_counters` in SQLite (`fishing2.db`).
+    public func savePersistedSettingsToDatabase() {
+        guard !isLoadingPersistedSettings else { return }
+        let langIndex: Int
+        switch languageCode {
+        case "en": langIndex = 1
+        case "de": langIndex = 2
+        case "es": langIndex = 3
+        case "pt": langIndex = 4
+        default: langIndex = 0
+        }
+        let entries: [(String, Int)] = [
+            ("pref_water_shader", isWaterShaderEnabled ? 1 : 0),
+            ("pref_pond_fon_set", pondBackgroundSetIndex),
+            ("pref_debug_overlay", isDebugOverlayEnabled ? 1 : 0),
+            ("pref_check_mode", checkModeEnabled ? 1 : 0),
+            ("pref_online_mode", onlineModeEnabled ? 1 : 0),
+            ("pref_tasks_enabled", tasksEnabled ? 1 : 0),
+            ("pref_language_index", langIndex),
+            ("pref_sound_enabled", audioHaptics.soundEnabled ? 1 : 0),
+            ("pref_vibration_enabled", audioHaptics.vibrationEnabled ? 1 : 0),
+            ("pref_vibration_duration_ms", audioHaptics.vibrationDurationMs),
+            ("pref_selected_pond_index", selectedPondIndex),
+            ("pref_clock_hour", gameClock.hour),
+            ("pref_clock_minute", gameClock.minute)
+        ]
+        for (key, value) in entries {
+            try? connection.run("""
+            INSERT INTO player_runtime_counters (counter_key, counter_value)
+            VALUES (?, ?)
+            ON CONFLICT(counter_key) DO UPDATE SET counter_value = excluded.counter_value;
+            """, bindings: [.text(key), .integer(Int64(value))])
+        }
+    }
+
+    /// Loads saved user settings from `player_runtime_counters` and online credentials from `user_data`.
+    public func loadPersistedSettingsFromDatabase() {
+        isLoadingPersistedSettings = true
+        defer { isLoadingPersistedSettings = false }
+
+        if !profile.login.isEmpty {
+            savedOnlineLogin = profile.login
+        }
+        if !profile.password.isEmpty {
+            savedOnlinePassword = profile.password
+        }
+
+        guard let rows = try? connection.query("""
+        SELECT counter_key, counter_value FROM player_runtime_counters
+        WHERE counter_key LIKE 'pref_%';
+        """), !rows.isEmpty else {
+            return
+        }
+
+        var map: [String: Int] = [:]
+        for row in rows {
+            map[row.string("counter_key")] = row.int("counter_value")
+        }
+
+        if let v = map["pref_water_shader"] { isWaterShaderEnabled = (v != 0) }
+        if let v = map["pref_pond_fon_set"] { pondBackgroundSetIndex = v }
+        if let v = map["pref_debug_overlay"] { isDebugOverlayEnabled = (v != 0) }
+        if let v = map["pref_check_mode"] { checkModeEnabled = (v != 0) }
+        if let v = map["pref_online_mode"] { onlineModeEnabled = (v != 0) }
+        if let v = map["pref_tasks_enabled"] { tasksEnabled = (v != 0) }
+        if let v = map["pref_language_index"] {
+            switch v {
+            case 1: languageCode = "en"
+            case 2: languageCode = "de"
+            case 3: languageCode = "es"
+            case 4: languageCode = "pt"
+            default: languageCode = "ru"
+            }
+        }
+        if let v = map["pref_sound_enabled"] { audioHaptics.soundEnabled = (v != 0) }
+        if let v = map["pref_vibration_enabled"] { audioHaptics.vibrationEnabled = (v != 0) }
+        if let v = map["pref_vibration_duration_ms"], v > 0 { audioHaptics.vibrationDurationMs = v }
+        if let v = map["pref_selected_pond_index"],
+           v >= 0,
+           v < availablePonds.count,
+           v != selectedPondIndex,
+           let pond = try? catalog.loadPondSimulationData(pondIndex: v) {
+            selectedPondIndex = v
+            stateMachine.pondData = pond
+            audioHaptics.syncAmbientTrack(pondIndex: v, hour: gameClock.hour)
+        }
+    }
+
+    /// Persists online login and password into `user_data` (`id = 1`) without altering `UserDataMd5`.
+    public func saveOnlineCredentialsToDatabase(login: String, password: String) {
+        let trimmedLogin = login.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedLogin.isEmpty else { return }
+        try? connection.run("""
+        UPDATE user_data SET login = ?, password = ? WHERE id = 1;
+        """, bindings: [.text(trimmedLogin), .text(password)])
+        if let updated = try? repository.loadPlayerProfile() {
+            self.profile = updated
+        }
     }
 
     public var currentPondItem: PondCatalogItem? {
@@ -818,6 +992,7 @@ public final class FishingAppCoordinator: ObservableObject {
         dayNightLighting = DayNightLighting.forHour(gameClock.hour)
         stateMachine.timeOfDay = BiteTimeOfDay.from(hour: gameClock.hour, minute: gameClock.minute)
         audioHaptics.syncAmbientTrack(pondIndex: selectedPondIndex, hour: gameClock.hour)
+        savePersistedSettingsToDatabase()
     }
 
     // MARK: - Internal Helpers
@@ -875,6 +1050,9 @@ public final class FishingAppCoordinator: ObservableObject {
                         isRepdigit: ProgressionCalculator.isRepdigitWeight(caughtFish.weightGrams),
                         isCleanerTrash: ProgressionCalculator.isCleanerTrashCatch(fishId1Based: caughtFish.fish.id)
                     )
+                    if onlineModeEnabled {
+                        submitCaughtFishLive(caughtFish)
+                    }
                 } catch {
                     activeAlert = .operationError(message: "Ошибка сохранения улова: \(error)")
                 }
@@ -1141,6 +1319,9 @@ public final class FishingAppCoordinator: ObservableObject {
             activeAlert = .operationError(message: "Введите логин и пароль для входа.")
             return
         }
+        savedOnlineLogin = trimmedLogin
+        savedOnlinePassword = password
+        saveOnlineCredentialsToDatabase(login: trimmedLogin, password: password)
         isOnlineRequestInFlight = true
         lastOnlineStatusMessage = "Подключение к fish-mob.ru (auth.php)..."
 
@@ -1270,6 +1451,110 @@ public final class FishingAppCoordinator: ObservableObject {
             } catch {
                 self.chatConnectionState = .disconnected
                 self.lastOnlineStatusMessage = "Сервер чата 15701 недоступен — сообщения работают в локальном режиме комнаты."
+            }
+        }
+    }
+
+    /// Refreshes the online pearl shop catalog via `http://fish-mob.ru/fff/online.php` (`MainActivity$d.a`)
+    /// and falls back to the built-in 37-token CSV snapshot when offline.
+    public func refreshOnlineShopLive(login: String? = nil, password: String? = nil) {
+        let effectiveLogin = (login ?? savedOnlineLogin).trimmingCharacters(in: .whitespacesAndNewlines)
+        let effectivePass = password ?? savedOnlinePassword
+        let client = self.liveNetworkClient
+        let uuid = self.installationUuid
+        isOnlineRequestInFlight = true
+        lastOnlineStatusMessage = "Обновление каталога онлайн-магазина (online.php)..."
+
+        Task { @MainActor in
+            defer { self.isOnlineRequestInFlight = false }
+            do {
+                let csv = try await client.fetchOnlineShopCSV(
+                    login: effectiveLogin.isEmpty ? "angler_ios" : effectiveLogin,
+                    password: effectivePass,
+                    installationUuid: uuid
+                )
+                let snap = try self.syncOnlineShopFromCSV(csv)
+                self.lastOnlineStatusMessage = "Онлайн-магазин синхронизирован: жемчуг \(snap.pearlsBalance), уведомлений \(snap.unreadNotesCount)."
+            } catch {
+                var tokens: [String] = []
+                for idx in 0..<37 {
+                    switch idx {
+                    case 0: tokens.append("250")
+                    case 1, 2, 3: tokens.append("\(525 + (idx - 1) * 600)")
+                    case 4, 5, 6: tokens.append("\(45 + (idx - 4) * 35)")
+                    case 7, 8, 9: tokens.append("\(10 + (idx - 7) * 2)")
+                    case 10, 11, 12: tokens.append("\(30 + (idx - 10) * 20)")
+                    case 13, 14, 15: tokens.append("\(600 + (idx - 13) * 700)")
+                    case 16, 17, 18: tokens.append("250")
+                    case 19, 20, 21: tokens.append("\(25 + (idx - 19) * 15)")
+                    case 30...36: tokens.append("\((idx - 29) * 10)")
+                    default: tokens.append("0")
+                    }
+                }
+                let fallbackCSV = tokens.joined(separator: ",") + ",note=1"
+                _ = try? self.syncOnlineShopFromCSV(fallbackCSV)
+                self.lastOnlineStatusMessage = "Сервер online.php не ответил (\(error.localizedDescription)) — показан встроенный каталог."
+            }
+        }
+    }
+
+    /// Registers a new account or requests password recovery via `http://fish-mob.ru/registration_app.php` (`RegisterActivity$g.e`).
+    public func registerOnlineAccountLive(loginOrEmail: String, password: String) {
+        let trimmed = loginOrEmail.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, !password.isEmpty else {
+            activeAlert = .operationError(message: "Укажите логин (или email для восстановления) и пароль.")
+            return
+        }
+        savedOnlineLogin = trimmed
+        savedOnlinePassword = password
+        saveOnlineCredentialsToDatabase(login: trimmed, password: password)
+        isOnlineRequestInFlight = true
+        lastOnlineStatusMessage = "Отправка запроса в registration_app.php..."
+
+        let client = self.liveNetworkClient
+        let currentLang = self.languageCode
+        let currentCat = self.profile.category
+        Task { @MainActor in
+            defer { self.isOnlineRequestInFlight = false }
+            do {
+                let response = try await client.registerOrRecoverAccount(
+                    loginOrEmail: trimmed,
+                    plainPassword: password,
+                    languageCode: currentLang,
+                    categoryRank: currentCat
+                )
+                self.lastOnlineStatusMessage = "Ответ сервера регистрации: \(response)"
+            } catch {
+                self.lastOnlineStatusMessage = "Не удалось выполнить регистрацию на fish-mob.ru: \(error.localizedDescription)"
+            }
+        }
+    }
+
+    /// Uploads a caught fish to `http://fish-mob.ru/fff/fish.php` (`FishingService$d.a`) when `onlineModeEnabled` is active.
+    public func submitCaughtFishLive(_ caughtFish: CaughtUserFish) {
+        let login = savedOnlineLogin.trimmingCharacters(in: .whitespacesAndNewlines)
+        let password = savedOnlinePassword
+        guard !login.isEmpty, !password.isEmpty else { return }
+        let client = self.liveNetworkClient
+        let uuid = self.installationUuid
+        let tourType = resolveCurrentCatchTourType()
+
+        Task { @MainActor in
+            if let result = try? await client.submitCaughtFish(
+                login: login,
+                password: password,
+                installationUuid: uuid,
+                caughtFish: caughtFish,
+                tourType: tourType
+            ) {
+                switch result {
+                case .accepted:
+                    self.lastOnlineStatusMessage = "Улов (\(caughtFish.fish.name), \(caughtFish.weightGrams) г) отправлен на fish.php (status=1000)."
+                case .newWorldRecord:
+                    self.lastOnlineStatusMessage = "Новый мировой рекорд на fish.php! \(caughtFish.fish.name) — \(caughtFish.weightGrams) г (status=1100)."
+                case .rejected(let code):
+                    self.lastOnlineStatusMessage = "Сервер fish.php вернул код \(code)."
+                }
             }
         }
     }

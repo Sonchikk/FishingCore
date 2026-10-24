@@ -846,10 +846,20 @@ private struct OnlineShopSubView: View {
 
                 ScrollView {
                     VStack(spacing: 10) {
-                        Button(action: syncDemoCatalog) {
+                        Button {
+                            coordinator.refreshOnlineShopLive()
+                        } label: {
                             OriginalStyledActionButtonLabel(title: "Обновить каталог (online.php)", minWidth: 260)
                         }
                         .buttonStyle(.plain)
+
+                        if !coordinator.lastOnlineStatusMessage.isEmpty {
+                            Text(coordinator.lastOnlineStatusMessage)
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(.cyan)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 8)
+                        }
 
                         if let snap = coordinator.onlineShopSnapshot {
                             ForEach(0..<min(3, snap.onlineRodWeightsKg.count), id: \.self) { idx in
@@ -863,6 +873,11 @@ private struct OnlineShopSubView: View {
                     }
                     .padding(12)
                 }
+            }
+        }
+        .onAppear {
+            if coordinator.onlineShopSnapshot == nil {
+                syncDemoCatalog()
             }
         }
     }
@@ -1739,8 +1754,6 @@ public struct OnlineAndChatView: View {
 
     @ObservedObject public var coordinator: FishingAppCoordinator
     @State private var selectedSection: OnlineSection = .profile
-    @State private var loginInput: String = "angler_ios"
-    @State private var passwordInput: String = "secret123"
     @State private var chatDraft: String = ""
 
     public init(coordinator: FishingAppCoordinator) {
@@ -1811,20 +1824,36 @@ public struct OnlineAndChatView: View {
             Text("Авторизация и синхронизация (auth.php / reaward.php)")
                 .font(.system(size: 15, weight: .bold))
                 .foregroundStyle(OriginalGameTheme.goldText)
-            TextField("Логин", text: $loginInput)
+            TextField("Логин", text: $coordinator.savedOnlineLogin)
                 .textFieldStyle(.roundedBorder)
-            SecureField("Пароль", text: $passwordInput)
+            SecureField("Пароль", text: $coordinator.savedOnlinePassword)
                 .textFieldStyle(.roundedBorder)
 
             Button {
-                coordinator.authenticateOnlineProfileLive(login: loginInput, password: passwordInput)
+                coordinator.authenticateOnlineProfileLive(
+                    login: coordinator.savedOnlineLogin,
+                    password: coordinator.savedOnlinePassword
+                )
             } label: {
                 OriginalStyledActionButtonLabel(title: "Войти через fish-mob.ru (auth.php)", minWidth: 240)
             }
             .buttonStyle(.plain)
 
             Button {
-                coordinator.claimServerRewardsLive(login: loginInput, password: passwordInput)
+                coordinator.registerOnlineAccountLive(
+                    loginOrEmail: coordinator.savedOnlineLogin,
+                    password: coordinator.savedOnlinePassword
+                )
+            } label: {
+                OriginalStyledActionButtonLabel(title: "Регистрация / Пароль (registration_app.php)", minWidth: 240)
+            }
+            .buttonStyle(.plain)
+
+            Button {
+                coordinator.claimServerRewardsLive(
+                    login: coordinator.savedOnlineLogin,
+                    password: coordinator.savedOnlinePassword
+                )
             } label: {
                 OriginalStyledActionButtonLabel(title: "Проверить награды (reaward.php)", minWidth: 240)
             }
@@ -1847,7 +1876,7 @@ public struct OnlineAndChatView: View {
                     .foregroundStyle(OriginalGameTheme.goldText)
                 Spacer()
                 Button {
-                    coordinator.connectLiveTCPChat(login: loginInput)
+                    coordinator.connectLiveTCPChat(login: coordinator.savedOnlineLogin)
                 } label: {
                     Text("Подключить 15701")
                         .font(.system(size: 12, weight: .bold))
@@ -1889,7 +1918,7 @@ public struct OnlineAndChatView: View {
                     .foregroundStyle(OriginalGameTheme.goldText)
                 Spacer()
                 Button {
-                    coordinator.refreshOnlineRatingsAndRecordsLive(login: loginInput)
+                    coordinator.refreshOnlineRatingsAndRecordsLive(login: coordinator.savedOnlineLogin)
                 } label: {
                     Text("Обновить")
                         .font(.system(size: 12, weight: .bold))
@@ -1964,8 +1993,8 @@ public struct OnlineAndChatView: View {
         let sampleAuth = "15000;8500;Pantera:24:98|not|not|not|not;Kobra:3:95|not|not|not|not;Aligator:15:100|not|not|not|not;1:5:1|2:25:1;2|2|0"
         _ = try? coordinator.restoreFromOnlineAuthResponse(
             sampleAuth,
-            login: loginInput,
-            password: passwordInput
+            login: coordinator.savedOnlineLogin,
+            password: coordinator.savedOnlinePassword
         )
     }
 
@@ -1976,7 +2005,7 @@ public struct OnlineAndChatView: View {
             fromID: 1,
             prem: 0,
             room: Int32(coordinator.selectedPondIndex),
-            from: loginInput,
+            from: coordinator.savedOnlineLogin,
             object: nil,
             text: text,
             timeEpochMs: Int64(Date().timeIntervalSince1970 * 1000),

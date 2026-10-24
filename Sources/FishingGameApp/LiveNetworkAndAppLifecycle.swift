@@ -459,12 +459,30 @@ public enum AppBundleDatabaseBootstrapper: Sendable {
             jsonDirForInit = resolvedGameDataURL
         }
 
+        var resolvedHour = initialHour
+        var resolvedMinute = initialMinute
+        if FileManager.default.fileExists(atPath: dbPath),
+           let existingConn = try? SQLiteConnection(path: dbPath),
+           let rows = try? existingConn.query(
+               "SELECT counter_key, counter_value FROM player_runtime_counters WHERE counter_key IN ('pref_clock_hour', 'pref_clock_minute');"
+           ) {
+            for row in rows {
+                let key = row.string("counter_key")
+                let val = row.int("counter_value")
+                if key == "pref_clock_hour", (0..<24).contains(val) {
+                    resolvedHour = val
+                } else if key == "pref_clock_minute", (0..<60).contains(val) {
+                    resolvedMinute = val
+                }
+            }
+        }
+
         return try FishingAppCoordinator(
             databasePath: dbPath,
             jsonDataDirectoryURL: jsonDirForInit,
             installationUuid: installationUuid,
-            initialHour: initialHour,
-            initialMinute: initialMinute,
+            initialHour: resolvedHour,
+            initialMinute: resolvedMinute,
             viewWidth: viewWidth,
             viewHeight: viewHeight,
             nowMs: nowMs,
@@ -558,6 +576,7 @@ public enum FishingLiveNetworkError: Error, LocalizedError, Sendable, Equatable 
     case invalidServerResponse(statusCode: Int)
     case emptyPayload
     case serverStatusRejected(code: String)
+    case appTransportSecurityBlocked
     case transportError(description: String)
 
     public var errorDescription: String? {
@@ -567,7 +586,20 @@ public enum FishingLiveNetworkError: Error, LocalizedError, Sendable, Equatable 
         case .emptyPayload:
             return "Пустой ответ от сервера fish-mob.ru."
         case .serverStatusRejected(let code):
-            return "Сервер отклонил запрос (код: \(code))."
+            switch code {
+            case "2000":
+                return "Неверный логин или пароль на fish-mob.ru (код 2000)."
+            case "3000":
+                return "Аккаунт заблокирован или не активирован (код 3000)."
+            case "4000":
+                return "Профиль привязан к другому устройству UUID (код 4000)."
+            case "5000":
+                return "Сервер отклонил версию протокола (код 5000)."
+            default:
+                return "Сервер отклонил запрос (код: \(code))."
+            }
+        case .appTransportSecurityBlocked:
+            return "iOS App Transport Security заблокировал HTTP-соединение с fish-mob.ru. Перегенерируйте проект через xcodegen из обновлённого project.yml (или включите Allow Arbitrary Loads в Info.plist таргета)."
         case .transportError(let desc):
             return "Сервер недоступен: \(desc)"
         }
@@ -598,6 +630,10 @@ public struct FishingLiveNetworkClient: Sendable {
         } catch let err as FishingLiveNetworkError {
             throw err
         } catch {
+            let nsErr = error as NSError
+            if nsErr.domain == NSURLErrorDomain && nsErr.code == NSURLErrorAppTransportSecurityRequiresSecureConnection {
+                throw FishingLiveNetworkError.appTransportSecurityBlocked
+            }
             throw FishingLiveNetworkError.transportError(description: error.localizedDescription)
         }
     }
@@ -695,6 +731,21 @@ public struct FishingLiveNetworkClient: Sendable {
         let req = FishingHttpRequestBuilder.makeWorldRecordsRequest(languageCode: languageCode)
         let raw = try await executeStringRequest(req)
         return FishingOnlineResponseParser.parseWorldSpeciesRecordsResponse(raw)
+    }
+
+    public func registerOrRecoverAccount(
+        loginOrEmail: String,
+        plainPassword: String,
+        languageCode: String = "ru",
+        categoryRank: Int = 0
+    ) async throws -> String {
+        let req = FishingHttpRequestBuilder.makeAccountRegistrationOrRecoveryRequest(
+            loginOrEmail: loginOrEmail,
+            plainPassword: plainPassword,
+            languageCode: languageCode,
+            categoryRank: categoryRank
+        )
+        return try await executeStringRequest(req)
     }
 
     public func fetchTournamentTimetable(

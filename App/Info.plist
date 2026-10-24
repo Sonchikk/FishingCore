@@ -35,7 +35,7 @@
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
-		<false/>
+		<true/>
 		<key>NSExceptionDomains</key>
 		<dict>
 			<key>fish-mob.ru</key>
@@ -44,6 +44,12 @@
 				<true/>
 				<key>NSExceptionAllowsInsecureHTTPLoads</key>
 				<true/>
+				<key>NSTemporaryExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+				<key>NSExceptionMinimumTLSVersion</key>
+				<string>TLSv1.0</string>
+				<key>NSExceptionRequiresForwardSecrecy</key>
+				<false/>
 			</dict>
 			<key>chat.fish-mob.ru</key>
 			<dict>
@@ -51,6 +57,12 @@
 				<true/>
 				<key>NSExceptionAllowsInsecureHTTPLoads</key>
 				<true/>
+				<key>NSTemporaryExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+				<key>NSExceptionMinimumTLSVersion</key>
+				<string>TLSv1.0</string>
+				<key>NSExceptionRequiresForwardSecrecy</key>
+				<false/>
 			</dict>
 		</dict>
 	</dict>
