@@ -813,7 +813,7 @@ public final class FishingAppCoordinator: ObservableObject {
             let hasOnlineCreds = !savedOnlineLogin.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                 && !savedOnlinePassword.isEmpty
             if onlineModeEnabled || hasOnlineCreds {
-                syncAchievementsAndQuestsLive(includeQuests: true, silent: true)
+                syncAchievementsAndQuestsLive(includeQuests: false, silent: true)
                 if let lastFish = lastCaughtFishForSync {
                     submitCaughtFishLive(lastFish)
                 }
@@ -1122,7 +1122,7 @@ public final class FishingAppCoordinator: ObservableObject {
                         && !savedOnlinePassword.isEmpty
                     if onlineModeEnabled || hasOnlineCreds {
                         submitCaughtFishLive(caughtFish)
-                        syncAchievementsAndQuestsLive(includeQuests: true, silent: true)
+                        syncAchievementsAndQuestsLive(includeQuests: false, silent: true)
                     }
                 } catch {
                     activeAlert = .operationError(message: "Ошибка сохранения улова: \(error)")
@@ -1441,6 +1441,12 @@ public final class FishingAppCoordinator: ObservableObject {
                 )
                 self.onlineModeEnabled = true
                 self.lastOnlineStatusMessage = "Профиль синхронизирован: опыт \(summary.experience), баланс \(summary.balanceCoins) руб."
+                self.syncAchievementsAndQuestsLive(
+                    login: trimmedLogin,
+                    password: password,
+                    includeQuests: false,
+                    silent: true
+                )
             } catch {
                 self.lastOnlineStatusMessage = "Сервер временно недоступен (\(error.localizedDescription))."
             }
@@ -1690,7 +1696,7 @@ public final class FishingAppCoordinator: ObservableObject {
 
         Task { @MainActor in
             do {
-                let result = try await client.submitCaughtFish(
+                var result = try await client.submitCaughtFish(
                     login: login,
                     password: password,
                     installationUuid: uuid,
@@ -1703,6 +1709,30 @@ public final class FishingAppCoordinator: ObservableObject {
                     antiCheatBiteDelaySeconds: biteDelaySec,
                     inventoryFolpHeader: invFolp
                 )
+                // Status 9000 (`no_auth` = "Пожалуйста, авторизуйтесь!") means `X-Fish-Uuid` is not yet bound via `auth.php`.
+                // Automatically call `auth.php` to bind `X-Fish-Uuid` on `fish-mob.ru` and retry `fish.php`:
+                if case .rejected(let code) = result, code == 9000 {
+                    if (try? await client.authenticateProfile(
+                        login: login,
+                        password: password,
+                        installationUuid: uuid
+                    )) != nil {
+                        self.onlineModeEnabled = true
+                        result = try await client.submitCaughtFish(
+                            login: login,
+                            password: password,
+                            installationUuid: uuid,
+                            caughtFish: caughtFish,
+                            tourType: tourType,
+                            playerCategory: cat,
+                            playerExperience: exp,
+                            playerBalance: bal,
+                            antiCheatCatchDeltaMs: catchDeltaMs,
+                            antiCheatBiteDelaySeconds: biteDelaySec,
+                            inventoryFolpHeader: invFolp
+                        )
+                    }
+                }
                 switch result {
                 case .accepted:
                     self.lastOnlineStatusMessage = "Улов (\(caughtFish.fish.name), \(caughtFish.weightGrams) г) синхронизирован с сервером."
@@ -1781,11 +1811,14 @@ public final class FishingAppCoordinator: ObservableObject {
         }
     }
 
-    /// Synchronizes all 14 achievements (`X-Fish-Fach`) and 44 quests (`X-Fish-Fqst`) with `http://fish-mob.ru/fff/achievs.php` (`F0.o$a.a`).
+    /// Synchronizes all 14 achievements (`X-Fish-Fach`) and optionally 44 quests (`X-Fish-Fqst`, when `includeQuests == true`, `mode == 2`)
+    /// with `http://fish-mob.ru/fff/achievs.php` (`F0.o$a.a`).
+    /// If the server responds with `9000` (`no_auth` = `"Пожалуйста, авторизуйтесь!"`), automatically executes `auth.php`
+    /// to bind the current `installationUuid` session on `fish-mob.ru` and retries synchronization.
     public func syncAchievementsAndQuestsLive(
         login: String? = nil,
         password: String? = nil,
-        includeQuests: Bool = true,
+        includeQuests: Bool = false,
         silent: Bool = false
     ) {
         let rawLogin = (login ?? savedOnlineLogin).trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1799,6 +1832,10 @@ public final class FishingAppCoordinator: ObservableObject {
             }
             return
         }
+
+        savedOnlineLogin = effectiveLogin
+        savedOnlinePassword = effectivePass
+        saveOnlineCredentialsToDatabase(login: effectiveLogin, password: effectivePass)
 
         let fachHeader: String
         let fqstHeader: String?
@@ -1814,7 +1851,7 @@ public final class FishingAppCoordinator: ObservableObject {
 
         if !silent {
             isOnlineRequestInFlight = true
-            lastOnlineStatusMessage = "Синхронизация достижений и квестов с сервером..."
+            lastOnlineStatusMessage = "Синхронизация прогресса с сервером..."
         }
 
         let client = self.liveNetworkClient
@@ -1827,7 +1864,7 @@ public final class FishingAppCoordinator: ObservableObject {
                 }
             }
             do {
-                let outcome = try await client.syncAchievementsAndQuests(
+                var outcome = try await client.syncAchievementsAndQuests(
                     login: effectiveLogin,
                     password: effectivePass,
                     installationUuid: uuid,
@@ -1835,15 +1872,57 @@ public final class FishingAppCoordinator: ObservableObject {
                     fqstHeader: fqstHeader,
                     languageCode: currentLang
                 )
+                // If `achievs.php` returns `"9000"` (`no_auth` = `"Пожалуйста, авторизуйтесь!"`), bind `installationUuid`
+                // on `fish-mob.ru` via `auth.php` (`client.authenticateProfile`) and immediately retry `achievs.php`:
+                if case .rejected(let code, _) = outcome, code == "9000" {
+                    let authPayload = try await client.authenticateProfile(
+                        login: effectiveLogin,
+                        password: effectivePass,
+                        installationUuid: uuid
+                    )
+                    if self.profile.experience == 0 && authPayload.contains(";") {
+                        _ = try? self.restoreFromOnlineAuthResponse(
+                            authPayload,
+                            login: effectiveLogin,
+                            password: effectivePass
+                        )
+                    }
+                    self.onlineModeEnabled = true
+                    let refreshedFach = (try? self.repository.buildFachHeader()) ?? fachHeader
+                    let refreshedFqst = includeQuests ? (try? self.repository.buildFqstHeader()) : nil
+                    outcome = try await client.syncAchievementsAndQuests(
+                        login: effectiveLogin,
+                        password: effectivePass,
+                        installationUuid: uuid,
+                        fachHeader: refreshedFach,
+                        fqstHeader: refreshedFqst,
+                        languageCode: currentLang
+                    )
+                }
+
                 switch outcome {
                 case .synchronized(let msg):
+                    self.onlineModeEnabled = true
                     let nowMs = Int64(Date().timeIntervalSince1970 * 1000)
                     let bonusXp = (try? self.repository.claimPendingAchievementLevelRewards(nowMs: nowMs)) ?? 0
                     if bonusXp > 0 {
                         try? self.reloadAllStateFromDatabase()
                     }
-                    if !silent, let lastFish = self.lastCaughtFishForSync {
-                        self.submitCaughtFishLive(lastFish)
+                    if !silent {
+                        if let lastFish = self.lastCaughtFishForSync {
+                            self.submitCaughtFishLive(lastFish)
+                        } else if let fishnetLast = self.fishnetEntries.last,
+                                  let species = self.fishCatalogById[fishnetLast.fishId] {
+                            let reconstructed = CaughtUserFish(
+                                fish: species,
+                                weightGrams: fishnetLast.weightGrams,
+                                pondIndex: max(0, fishnetLast.pondId),
+                                baitIndex: max(0, fishnetLast.baitId),
+                                rodWeightKg: self.assembledTackle.userRod?.rod.weight ?? 3,
+                                catchTimeMs: fishnetLast.catchTime > 0 ? fishnetLast.catchTime : nowMs
+                            )
+                            self.submitCaughtFishLive(reconstructed)
+                        }
                     }
                     if bonusXp > 0 {
                         self.lastOnlineStatusMessage = "\(msg) Начислена награда за достижения: +\(bonusXp) XP."

@@ -450,8 +450,9 @@ public enum FishingOnlineResponseParser: Sendable {
         return .rejected(statusCode: code, message: message)
     }
 
-    /// Parses `fish.php` response (`FishingService$d.a`, `NETWORK.md` Section 2 #3):
-    /// `"status=1000"` -> `.accepted`, `"status=1100"` -> `.newWorldRecord`.
+    /// Parses `fish.php` response (`FishingService$d.a`, `pc=02bf..0447` in `classes.dex`, `NETWORK.md` Section 2 #3):
+    /// Supports both `"1000,status=...,message=..."` (real `fish-mob.ru` format where `arr[0]` is the status code)
+    /// and `"status=1000"` / `"status=1100"`.
     public static func parseFishCatchUploadResponse(_ raw: String) -> FishCatchUploadResult {
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         if let directCode = Int(trimmed) {
@@ -459,6 +460,15 @@ public enum FishingOnlineResponseParser: Sendable {
             case 1000: return .accepted
             case 1100, 1300: return .newWorldRecord
             default: return .rejected(statusCode: directCode)
+            }
+        }
+        let commaParts = trimmed.components(separatedBy: ",")
+        if let firstPart = commaParts.first?.trimmingCharacters(in: .whitespacesAndNewlines),
+           let firstCode = Int(firstPart) {
+            switch firstCode {
+            case 1000: return .accepted
+            case 1100, 1300: return .newWorldRecord
+            default: return .rejected(statusCode: firstCode)
             }
         }
         for token in trimmed.components(separatedBy: CharacterSet(charactersIn: ",;&\n\r")) {
@@ -476,8 +486,9 @@ public enum FishingOnlineResponseParser: Sendable {
         return .rejected(statusCode: -1)
     }
 
-    /// Parses `achievs.php` response (`F0.o$a.a`, `pc=01c3..029b` in `classes.dex`):
-    /// `"1000"` or `"status=1000,message=..."` -> `.synchronized`, `"2000".."9000"` / `"error"` -> `.rejected`.
+    /// Parses `achievs.php` response (`F0.o$a.a`, `pc=01c3..0326` in `classes.dex`):
+    /// Real `fish-mob.ru` format `"1000,status=0,message=..."` (`arr[0]` is code `"1000".."9000"`)
+    /// as well as `"1000"` or `"status=1000,message=..."`.
     public static func parseAchievementsQuestsSyncResponse(_ raw: String) -> AchievementsQuestsSyncResult {
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
@@ -486,36 +497,55 @@ public enum FishingOnlineResponseParser: Sendable {
         if trimmed == "1000" || trimmed == "1100" {
             return .synchronized(serverMessage: "Прогресс достижений и квестов синхронизирован (код \(trimmed)).")
         }
+        var effectiveCode = trimmed
+        var msgStr = ""
         if trimmed.contains("status") {
-            var codeStr = "1000"
-            var msgStr = ""
-            for token in trimmed.components(separatedBy: CharacterSet(charactersIn: ",;&\n\r")) {
-                let piece = token.trimmingCharacters(in: .whitespacesAndNewlines)
+            let tokens = trimmed.components(separatedBy: CharacterSet(charactersIn: ",;&\n\r"))
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+            var statusKV: String? = nil
+            for piece in tokens {
                 if piece.hasPrefix("status=") {
-                    codeStr = String(piece.dropFirst("status=".count))
+                    statusKV = String(piece.dropFirst("status=".count))
                 } else if piece.hasPrefix("message=") {
                     msgStr = String(piece.dropFirst("message=".count))
                 }
             }
-            if codeStr == "1000" || codeStr == "1100" {
-                let text = msgStr.isEmpty ? "Прогресс синхронизирован с сервером (код \(codeStr))." : msgStr
+            // In `F0.o$a.a` (`pc=01cd..01d2`), `arr[0]` is the status code (`"1000"`, `"1100"`, `"2000"`, ..., `"9000"`)
+            if let first = tokens.first, !first.contains("=") {
+                effectiveCode = first
+            } else if let statusKV {
+                effectiveCode = statusKV
+            }
+            if effectiveCode == "1000" || effectiveCode == "1100" {
+                let text = msgStr.isEmpty ? "Прогресс синхронизирован с сервером (код \(effectiveCode))." : msgStr
                 return .synchronized(serverMessage: text)
             }
-            return .rejected(statusCode: codeStr, message: msgStr.isEmpty ? "Код ответа сервера: \(codeStr)" : msgStr)
+            if !msgStr.isEmpty && !["2000", "3000", "4000", "5000", "6000", "7000", "9000", "error"].contains(effectiveCode) {
+                return .rejected(statusCode: effectiveCode, message: msgStr)
+            }
         }
-        switch trimmed {
+        switch effectiveCode {
+        case "1000", "1100":
+            let text = msgStr.isEmpty ? "Прогресс достижений и квестов синхронизирован (код \(effectiveCode))." : msgStr
+            return .synchronized(serverMessage: text)
         case "2000":
             return .rejected(statusCode: "2000", message: "Неверный логин или пароль (код 2000).")
         case "3000":
-            return .rejected(statusCode: "3000", message: "Аккаунт заблокирован (код 3000).")
+            return .rejected(statusCode: "3000", message: "Неверный логин на fish-mob.ru (код 3000).")
         case "4000":
-            return .rejected(statusCode: "4000", message: "Несовпадение UUID устройства (код 4000).")
+            return .rejected(statusCode: "4000", message: "Несовпадение версии/подписи клиента (код 4000).")
         case "5000":
-            return .rejected(statusCode: "5000", message: "Устаревшая версия протокола (код 5000).")
-        case "6000", "7000", "9000", "error":
-            return .rejected(statusCode: trimmed, message: "Сервер отклонил синхронизацию (код \(trimmed)).")
+            return .rejected(statusCode: "5000", message: "Аккаунт заблокирован в игре (код 5000).")
+        case "6000":
+            let waitSuffix = msgStr.isEmpty ? "" : " Подождите \(msgStr) сек."
+            return .rejected(statusCode: "6000", message: "Слишком частые запросы (код 6000).\(waitSuffix)")
+        case "9000":
+            return .rejected(statusCode: "9000", message: "Пожалуйста, авторизуйтесь в профиле (код 9000).")
+        case "7000", "error":
+            return .rejected(statusCode: effectiveCode, message: "Сервер отклонил синхронизацию (код \(effectiveCode)).")
         default:
-            return .synchronized(serverMessage: trimmed)
+            return .synchronized(serverMessage: msgStr.isEmpty ? effectiveCode : msgStr)
         }
     }
 
@@ -1050,11 +1080,17 @@ public struct FishingLiveNetworkClient: Sendable {
             installationUuid: installationUuid
         )
         let raw = try await executeStringRequest(req)
-        // Check if server returned a numeric rejection status `2000..7000` instead of a 7-section `;` payload
-        if !raw.contains(";") {
-            throw FishingLiveNetworkError.serverStatusRejected(code: raw)
+        // In `C0.a$h.b` (`pc=0158..0175`), if `raw.contains("status")`, `raw.split(",")[0]` is either
+        // a status code (`"2000".."7000"`) or the 7-section `;`-delimited profile string (`"7000"` = new account with no prior save).
+        let primaryPayload = raw
+            .components(separatedBy: ",status")
+            .first?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            ?? raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !primaryPayload.contains(";") && primaryPayload != "7000" {
+            throw FishingLiveNetworkError.serverStatusRejected(code: primaryPayload)
         }
-        return raw
+        return primaryPayload
     }
 
     public func authenticateChat(

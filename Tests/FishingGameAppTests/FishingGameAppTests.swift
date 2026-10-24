@@ -1134,8 +1134,14 @@ final class FishingGameAppTests: XCTestCase {
 
         let okSync = FishingOnlineResponseParser.parseAchievementsQuestsSyncResponse("status=1000,message=OK")
         XCTAssertEqual(okSync, .synchronized(serverMessage: "OK"))
+        let realOkSync = FishingOnlineResponseParser.parseAchievementsQuestsSyncResponse("1000,status=0,message=")
+        XCTAssertEqual(realOkSync, .synchronized(serverMessage: "Прогресс синхронизирован с сервером (код 1000)."))
         let errSync = FishingOnlineResponseParser.parseAchievementsQuestsSyncResponse("2000")
         XCTAssertEqual(errSync, .rejected(statusCode: "2000", message: "Неверный логин или пароль (код 2000)."))
+        let err9000 = FishingOnlineResponseParser.parseAchievementsQuestsSyncResponse("9000,status=0,message=")
+        XCTAssertEqual(err9000, .rejected(statusCode: "9000", message: "Пожалуйста, авторизуйтесь в профиле (код 9000)."))
+        XCTAssertEqual(FishingOnlineResponseParser.parseFishCatchUploadResponse("1000,status=0,message="), .accepted)
+        XCTAssertEqual(FishingOnlineResponseParser.parseFishCatchUploadResponse("9000,status=0,message="), .rejected(statusCode: 9000))
 
         // Verify Dalvik-exact 15-field `X-Fish-Fopl` and 5-slot inventory `X-Fish-Folp` for `fish.php` (`FishingService$d.a` / `b()`)
         let sampleFish = CaughtUserFish(

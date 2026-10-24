@@ -450,18 +450,46 @@ extension PlayerStateRepository {
         password: String,
         nowMs: Int64
     ) throws -> AuthRestoreSummary {
-        let sections = response.components(separatedBy: ";")
+        // In `C0.a$h.b` (`pc=0158..0175`), if `response.contains("status")`, `response.split(",")[0]`
+        // is the 7-section `;`-delimited payload (or `"7000"` for a newly registered account with no server backup yet).
+        let primaryPayload = response
+            .components(separatedBy: ",status")
+            .first?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            ?? response.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if primaryPayload == "7000" {
+            return try connection.transaction {
+                try connection.run(
+                    "UPDATE user_data SET login = ?, password = ? WHERE id = 1;",
+                    bindings: [.text(login), .text(password)]
+                )
+                let currentProfile = try loadPlayerProfile()
+                return AuthRestoreSummary(
+                    experience: currentProfile.experience,
+                    categoryRank: currentProfile.category,
+                    balanceCoins: currentProfile.balance,
+                    restoredRodsCount: (try? listUserRods().count) ?? 0,
+                    restoredCoilsCount: (try? listUserCoils().count) ?? 0,
+                    restoredLinesCount: (try? listUserLines().count) ?? 0,
+                    restoredAchievementsCount: (try? listAchievements().count) ?? 0,
+                    restoredQuestsCount: (try? listQuests().count) ?? 0
+                )
+            }
+        }
+
+        let sections = primaryPayload.components(separatedBy: ";")
         guard sections.count >= 7,
               let exp = Int(sections[0].trimmingCharacters(in: .whitespacesAndNewlines)),
               let balance = Int(sections[1].trimmingCharacters(in: .whitespacesAndNewlines)) else {
             throw PlayerPersistenceError.invalidInventoryItem("Malformed 7-section auth.php response")
         }
 
-        let passHash = FishingNetworkCrypto.doubleMd5Password(password)
         let newRank = ProgressionCalculator.categoryForExperience(exp, balanceTables: balanceTables)
 
         return try connection.transaction {
             // 1 & 2: Restore `user_data` (`experience`, `category`, `balance`, `login`, `password`)
+            // Matches `AboutMeActivity.b` & `C0.a.l`: stores `password` in `user_data.password` so UI fields stay intact.
             let userDataMd5 = FishingChecksum.userDataMd5(
                 balance: balance,
                 experience: exp,
@@ -481,7 +509,7 @@ extension PlayerStateRepository {
             WHERE id = 1;
             """, bindings: [
                 .text(login),
-                .text(passHash),
+                .text(password),
                 .integer(Int64(balance)),
                 .integer(Int64(exp)),
                 .integer(Int64(newRank)),

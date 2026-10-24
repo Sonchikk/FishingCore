@@ -1894,7 +1894,7 @@ public struct OnlineAndChatView: View {
                 coordinator.syncAchievementsAndQuestsLive(
                     login: coordinator.savedOnlineLogin,
                     password: coordinator.savedOnlinePassword,
-                    includeQuests: true,
+                    includeQuests: false,
                     silent: false
                 )
             } label: {
