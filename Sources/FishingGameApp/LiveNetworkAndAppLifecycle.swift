@@ -1,6 +1,12 @@
 import Foundation
 import FishingCore
 import FishingDatabase
+#if canImport(UserNotifications)
+import UserNotifications
+#endif
+#if canImport(Network)
+import Network
+#endif
 
 // MARK: - 1. Complete `URLRequest` Factory for All 17 `fish-mob.ru` & `chat.fish-mob.ru` Endpoints (`NETWORK.md` Section 2)
 
@@ -141,6 +147,65 @@ public enum FishingHttpRequestBuilder: Sendable {
         req.setValue(FishingNetworkCrypto.versionMeeks4_15, forHTTPHeaderField: "X-Fish-Version")
         req.setValue(languageCode, forHTTPHeaderField: "X-Fish-SetLng")
         req.setValue(String(utcOffsetSeconds), forHTTPHeaderField: "X-Fish-OffsetUTC")
+        return req
+    }
+
+    /// Builds `GET http://fish-mob.ru/fff/online.php` (`MainActivity$d.a`, `NETWORK.md` Section 2 #5).
+    public static func makeOnlineShopRequest(
+        login: String,
+        password: String,
+        installationUuid: String
+    ) -> URLRequest {
+        var req = URLRequest(url: URL(string: FishingHttpEndpoint.onlineShop.rawValue)!)
+        req.httpMethod = "GET"
+        req.setValue(FishingNetworkCrypto.versionMeeks4Y2Q, forHTTPHeaderField: "X-Fish-Version")
+        req.setValue(login, forHTTPHeaderField: "X-Fish-Login")
+        req.setValue(FishingNetworkCrypto.doubleMd5Password(password), forHTTPHeaderField: "X-Fish-Pass")
+        req.setValue(FishingNetworkCrypto.installationUuidMd5(installationUuid), forHTTPHeaderField: "X-Fish-Uuid")
+        req.setValue("1", forHTTPHeaderField: "X-Fish-Notes")
+        return req
+    }
+
+    /// Builds `GET http://fish-mob.ru/fff/reaward.php` (`OnlineGameActivity$f.a`, `NETWORK.md` Section 2 #7).
+    public static func makeServerRewardsRequest(
+        login: String,
+        password: String,
+        installationUuid: String,
+        languageCode: String = "ru"
+    ) -> URLRequest {
+        var req = URLRequest(url: URL(string: FishingHttpEndpoint.serverRewards.rawValue)!)
+        req.httpMethod = "GET"
+        req.setValue(FishingNetworkCrypto.versionMeeks4Y2Q, forHTTPHeaderField: "X-Fish-Version")
+        req.setValue(login, forHTTPHeaderField: "X-Fish-Login")
+        req.setValue(FishingNetworkCrypto.doubleMd5Password(password), forHTTPHeaderField: "X-Fish-Pass")
+        req.setValue("1", forHTTPHeaderField: "X-Fish-Notes")
+        req.setValue(languageCode, forHTTPHeaderField: "X-Fish-SetLng")
+        req.setValue(FishingNetworkCrypto.expectedAppSignConstant, forHTTPHeaderField: "X-Fish-AppSign")
+        req.setValue(FishingNetworkCrypto.installationUuidMd5(installationUuid), forHTTPHeaderField: "X-Fish-Uuid")
+        return req
+    }
+
+    /// Builds `GET http://fish-mob.ru/fff/top.php` (`OnlineGameActivity$b.a`, `NETWORK.md` Section 2 #15).
+    public static func makeTopPlayersRequest(
+        login: String,
+        languageCode: String = "ru"
+    ) -> URLRequest {
+        var req = URLRequest(url: URL(string: FishingHttpEndpoint.topPlayers.rawValue)!)
+        req.httpMethod = "GET"
+        req.setValue(FishingNetworkCrypto.versionMeeks4_15, forHTTPHeaderField: "X-Fish-Version")
+        req.setValue(languageCode, forHTTPHeaderField: "X-Fish-SetLng")
+        req.setValue(login, forHTTPHeaderField: "X-Fish-Login")
+        return req
+    }
+
+    /// Builds `GET http://fish-mob.ru/fff/rek.php` (`OnlineGameActivity$c.a`, `NETWORK.md` Section 2 #16).
+    public static func makeWorldRecordsRequest(
+        languageCode: String = "ru"
+    ) -> URLRequest {
+        var req = URLRequest(url: URL(string: FishingHttpEndpoint.worldRecords.rawValue)!)
+        req.httpMethod = "GET"
+        req.setValue(FishingNetworkCrypto.versionMeeks4_15, forHTTPHeaderField: "X-Fish-Version")
+        req.setValue(languageCode, forHTTPHeaderField: "X-Fish-SetLng")
         return req
     }
 }
@@ -378,8 +443,8 @@ public enum AppBundleDatabaseBootstrapper: Sendable {
         bundledGameDataURL: URL? = nil,
         initialHour: Int = 6,
         initialMinute: Int = 0,
-        viewWidth: Int = 1280,
-        viewHeight: Int = 800,
+        viewWidth: Int = 393,
+        viewHeight: Int = 600,
         nowMs: Int64 = Int64(Date().timeIntervalSince1970 * 1000)
     ) throws -> FishingAppCoordinator {
         let supportDir = appSupportDirectory ?? defaultAppSupportDirectoryURL()
@@ -407,4 +472,385 @@ public enum AppBundleDatabaseBootstrapper: Sendable {
             nowMs: nowMs
         )
     }
+}
+
+// MARK: - 5. Background Bite Alarm Notification Scheduler (`CHECKMODE` / `AlarmManagerBroadcastReceiver`, `MECHANICS.md` Sections 2.2 & 3.1)
+
+/// Reconstructs Android's `AlarmManager` + `AlarmManagerBroadcastReceiver` scheduled by `GameView.q(x, y)`
+/// at `BEGINTIME` (`scheduledBiteTimeMs`) when `CHECKMODE` («Фоновый будильник поклёвки») is active.
+public struct FishingBiteNotificationScheduler: Sendable, Equatable {
+    public static let biteAlarmNotificationIdentifier = "com.evados.fishing.bite_alarm"
+
+    public var authorizationGranted: Bool
+    public private(set) var scheduledBiteTimeMs: Int64? = nil
+    public private(set) var scheduledPondTitle: String? = nil
+    public private(set) var scheduledCount: Int = 0
+    public private(set) var cancelledCount: Int = 0
+
+    public init(authorizationGranted: Bool = true) {
+        self.authorizationGranted = authorizationGranted
+    }
+
+    public var isNotificationPending: Bool {
+        scheduledBiteTimeMs != nil
+    }
+
+    /// Schedules a local iOS notification for `scheduledBiteTimeMs` (`BEGINTIME`).
+    public mutating func scheduleBiteAlarm(
+        scheduledBiteTimeMs: Int64,
+        nowMs: Int64,
+        pondTitle: String
+    ) {
+        guard authorizationGranted else { return }
+        self.scheduledBiteTimeMs = scheduledBiteTimeMs
+        self.scheduledPondTitle = pondTitle
+        self.scheduledCount += 1
+
+        let delaySeconds = max(1.0, Double(scheduledBiteTimeMs - nowMs) / 1000.0)
+        Self.postSystemLocalNotification(pondTitle: pondTitle, delaySeconds: delaySeconds)
+    }
+
+    /// Cancels any pending or delivered local bite notification.
+    public mutating func cancelPendingBiteAlarm() {
+        if scheduledBiteTimeMs != nil {
+            scheduledBiteTimeMs = nil
+            scheduledPondTitle = nil
+            cancelledCount += 1
+        }
+        Self.removeSystemLocalNotification()
+    }
+
+    public static func requestSystemNotificationAuthorization() {
+        #if canImport(UserNotifications)
+        guard Bundle.main.bundleIdentifier != nil else { return }
+        let center = UNUserNotificationCenter.current()
+        center.requestAuthorization(options: [.alert, .sound, .badge]) { _, _ in }
+        #endif
+    }
+
+    private static func postSystemLocalNotification(pondTitle: String, delaySeconds: TimeInterval) {
+        #if canImport(UserNotifications)
+        guard Bundle.main.bundleIdentifier != nil else { return }
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: [biteAlarmNotificationIdentifier])
+
+        let content = UNMutableNotificationContent()
+        content.title = "Рыбалка для друзей"
+        content.body = "Клюёт на водоёме «\(pondTitle)»! Скорее подсекайте!"
+        content.sound = .default
+
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: max(1.0, delaySeconds), repeats: false)
+        let request = UNNotificationRequest(
+            identifier: biteAlarmNotificationIdentifier,
+            content: content,
+            trigger: trigger
+        )
+        center.add(request, withCompletionHandler: nil)
+        #endif
+    }
+
+    private static func removeSystemLocalNotification() {
+        #if canImport(UserNotifications)
+        guard Bundle.main.bundleIdentifier != nil else { return }
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: [biteAlarmNotificationIdentifier])
+        center.removeDeliveredNotifications(withIdentifiers: [biteAlarmNotificationIdentifier])
+        #endif
+    }
+}
+
+// MARK: - 6. Live Async HTTP Network Client for `fish-mob.ru` & `chat.fish-mob.ru` (`NETWORK.md` Section 2)
+
+public enum FishingLiveNetworkError: Error, LocalizedError, Sendable, Equatable {
+    case invalidServerResponse(statusCode: Int)
+    case emptyPayload
+    case serverStatusRejected(code: String)
+    case transportError(description: String)
+
+    public var errorDescription: String? {
+        switch self {
+        case .invalidServerResponse(let code):
+            return "Сервер вернул код HTTP \(code)."
+        case .emptyPayload:
+            return "Пустой ответ от сервера fish-mob.ru."
+        case .serverStatusRejected(let code):
+            return "Сервер отклонил запрос (код: \(code))."
+        case .transportError(let desc):
+            return "Сервер недоступен: \(desc)"
+        }
+    }
+}
+
+public struct FishingLiveNetworkClient: Sendable {
+    public let timeoutInterval: TimeInterval
+
+    public init(timeoutInterval: TimeInterval = 12.0) {
+        self.timeoutInterval = timeoutInterval
+    }
+
+    public func executeStringRequest(_ request: URLRequest) async throws -> String {
+        var configured = request
+        configured.timeoutInterval = timeoutInterval
+        do {
+            let (data, response) = try await URLSession.shared.data(for: configured)
+            if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
+                throw FishingLiveNetworkError.invalidServerResponse(statusCode: http.statusCode)
+            }
+            guard let text = String(data: data, encoding: .utf8)?
+                .trimmingCharacters(in: .whitespacesAndNewlines),
+                  !text.isEmpty else {
+                throw FishingLiveNetworkError.emptyPayload
+            }
+            return text
+        } catch let err as FishingLiveNetworkError {
+            throw err
+        } catch {
+            throw FishingLiveNetworkError.transportError(description: error.localizedDescription)
+        }
+    }
+
+    public func authenticateProfile(
+        login: String,
+        password: String,
+        installationUuid: String
+    ) async throws -> String {
+        let req = FishingHttpRequestBuilder.makeAuthProfileRequest(
+            login: login,
+            password: password,
+            installationUuid: installationUuid
+        )
+        let raw = try await executeStringRequest(req)
+        // Check if server returned a numeric rejection status `2000..7000` instead of a 7-section `;` payload
+        if !raw.contains(";") {
+            throw FishingLiveNetworkError.serverStatusRejected(code: raw)
+        }
+        return raw
+    }
+
+    public func authenticateChat(
+        login: String,
+        installationUuid: String,
+        languageCode: String = "ru"
+    ) async throws -> ChatAuthHandshakeResult {
+        let req = FishingHttpRequestBuilder.makeChatAuthRequest(
+            login: login,
+            installationUuid: installationUuid,
+            languageCode: languageCode
+        )
+        let raw = try await executeStringRequest(req)
+        return FishingOnlineResponseParser.parseChatAuthResponse(raw)
+    }
+
+    public func fetchOnlineShopCSV(
+        login: String,
+        password: String,
+        installationUuid: String
+    ) async throws -> String {
+        let req = FishingHttpRequestBuilder.makeOnlineShopRequest(
+            login: login,
+            password: password,
+            installationUuid: installationUuid
+        )
+        return try await executeStringRequest(req)
+    }
+
+    public func claimServerRewards(
+        login: String,
+        password: String,
+        installationUuid: String,
+        languageCode: String = "ru"
+    ) async throws -> String {
+        let req = FishingHttpRequestBuilder.makeServerRewardsRequest(
+            login: login,
+            password: password,
+            installationUuid: installationUuid,
+            languageCode: languageCode
+        )
+        return try await executeStringRequest(req)
+    }
+
+    public func submitCaughtFish(
+        login: String,
+        password: String,
+        installationUuid: String,
+        caughtFish: CaughtUserFish,
+        tourType: Int
+    ) async throws -> FishCatchUploadResult {
+        let req = FishingHttpRequestBuilder.makeSubmitFishCatchRequest(
+            login: login,
+            password: password,
+            installationUuid: installationUuid,
+            caughtFish: caughtFish,
+            tourType: tourType
+        )
+        let raw = try await executeStringRequest(req)
+        return FishingOnlineResponseParser.parseFishCatchUploadResponse(raw)
+    }
+
+    public func fetchTopPlayers(
+        login: String,
+        languageCode: String = "ru"
+    ) async throws -> [TopPlayerRatingEntry] {
+        let req = FishingHttpRequestBuilder.makeTopPlayersRequest(login: login, languageCode: languageCode)
+        let raw = try await executeStringRequest(req)
+        return FishingOnlineResponseParser.parseTopPlayersResponse(raw)
+    }
+
+    public func fetchWorldSpeciesRecords(
+        languageCode: String = "ru"
+    ) async throws -> [WorldSpeciesRecordEntry] {
+        let req = FishingHttpRequestBuilder.makeWorldRecordsRequest(languageCode: languageCode)
+        let raw = try await executeStringRequest(req)
+        return FishingOnlineResponseParser.parseWorldSpeciesRecordsResponse(raw)
+    }
+
+    public func fetchTournamentTimetable(
+        languageCode: String = "ru"
+    ) async throws -> [String] {
+        let req = FishingHttpRequestBuilder.makeTournamentTimetableRequest(languageCode: languageCode)
+        let raw = try await executeStringRequest(req)
+        return raw
+            .components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+    }
+}
+
+// MARK: - 7. Live TCP Chat Session (`chat.fish-mob.ru:15701`, `Client` & `Handler`, `NETWORK.md` Section 5)
+
+@MainActor
+public final class FishingLiveTCPChatSession {
+    public enum ConnectionState: String, Sendable, Equatable {
+        case disconnected = "Отключён"
+        case connecting = "Подключение..."
+        case connected = "В сети (15701)"
+        case failed = "Ошибка сети"
+    }
+
+    public private(set) var state: ConnectionState = .disconnected
+    public var onPacketReceived: ((Data) -> Void)?
+
+    #if canImport(Network)
+    private var connection: NWConnection?
+    #endif
+
+    public init() {}
+
+    public func connect(
+        host: String = FishingIOSAppConfiguration.chatServerHost,
+        port: UInt16 = FishingIOSAppConfiguration.chatServerPort,
+        userId: Int32,
+        login: String,
+        pondIndex: Int32,
+        installationUuid: String
+    ) {
+        disconnect()
+        state = .connecting
+
+        #if canImport(Network)
+        let nwHost = NWEndpoint.Host(host)
+        guard let nwPort = NWEndpoint.Port(rawValue: port) else {
+            state = .failed
+            return
+        }
+        let conn = NWConnection(host: nwHost, port: nwPort, using: .tcp)
+        self.connection = conn
+
+        conn.stateUpdateHandler = { [weak self] newState in
+            Task { @MainActor in
+                guard let self else { return }
+                switch newState {
+                case .ready:
+                    self.state = .connected
+                    self.sendInitialHandshake(
+                        userId: userId,
+                        login: login,
+                        pondIndex: pondIndex,
+                        installationUuid: installationUuid
+                    )
+                    self.receiveNextChunk()
+                case .failed, .cancelled:
+                    self.state = .failed
+                default:
+                    break
+                }
+            }
+        }
+        conn.start(queue: .global(qos: .userInitiated))
+        #else
+        state = .failed
+        #endif
+    }
+
+    public func disconnect() {
+        #if canImport(Network)
+        connection?.cancel()
+        connection = nil
+        #endif
+        state = .disconnected
+    }
+
+    public func sendMess(_ mess: ChatMess) {
+        let packet = JavaObjectStreamCodec.encodeMess(mess)
+        #if canImport(Network)
+        connection?.send(content: packet, completion: .contentProcessed { _ in })
+        #endif
+    }
+
+    private func sendInitialHandshake(
+        userId: Int32,
+        login: String,
+        pondIndex: Int32,
+        installationUuid: String
+    ) {
+        let openMess = ChatProtocolSelector.makeOpenHandshakeMess(
+            userId: userId,
+            login: login,
+            pond: pondIndex,
+            installationUuid: installationUuid
+        )
+        sendMess(openMess)
+
+        let initMess = ChatProtocolSelector.makeSystemCommandMess(
+            command: "initialize",
+            userId: userId,
+            login: login,
+            pond: pondIndex
+        )
+        sendMess(initMess)
+
+        let usersMess = ChatProtocolSelector.makeSystemCommandMess(
+            command: "getUserList3",
+            userId: userId,
+            login: login,
+            pond: pondIndex
+        )
+        sendMess(usersMess)
+
+        let toursMess = ChatProtocolSelector.makeSystemCommandMess(
+            command: "tours",
+            userId: userId,
+            login: login,
+            pond: pondIndex
+        )
+        sendMess(toursMess)
+    }
+
+    #if canImport(Network)
+    private func receiveNextChunk() {
+        connection?.receive(minimumIncompleteLength: 4, maximumLength: 65536) { [weak self] data, _, isComplete, error in
+            Task { @MainActor in
+                guard let self else { return }
+                if let data, !data.isEmpty {
+                    self.onPacketReceived?(data)
+                }
+                if isComplete || error != nil {
+                    self.state = .disconnected
+                } else {
+                    self.receiveNextChunk()
+                }
+            }
+        }
+    }
+    #endif
 }

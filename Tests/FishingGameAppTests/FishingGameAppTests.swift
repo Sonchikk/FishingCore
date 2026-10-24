@@ -700,4 +700,60 @@ final class FishingGameAppTests: XCTestCase {
         }
         XCTAssertGreaterThan(coordinator.stateMachine.tension, 0)
     }
+
+    @MainActor
+    func testPortraitViewportRodAndLinePlacementOnRightSide() throws {
+        let coordinator = try FishingAppCoordinator(databasePath: ":memory:", nowMs: 1_700_000_000_000)
+        coordinator.buyAndEquipStarterKit(nowMs: 1_700_000_001_000)
+
+        // Simulate portrait iPhone pond canvas size (393 x 600)
+        coordinator.updateViewportSize(width: 393, height: 600)
+        let rod = coordinator.stateMachine.rodSprite
+        XCTAssertEqual(rod.height, 300)
+        XCTAssertEqual(rod.width, 117)
+        // Right edge of rod butt is at (393 / 5) * 4 = 312, originX = 312 - 117 = 195 (well inside 0..<393)
+        XCTAssertEqual(rod.originX, 195, accuracy: 0.01)
+        XCTAssertEqual(rod.originY, 300, accuracy: 0.01)
+        XCTAssertLessThan(rod.originX + Float(rod.width), 393)
+
+        coordinator.castAt(x: 180, y: 360, nowMs: 1_700_000_002_000)
+        XCTAssertEqual(coordinator.stateMachine.state, .waitingForBite)
+
+        let expectedTip = FishingLineGeometry.rodTipPoint(for: rod)
+        XCTAssertNotNil(coordinator.currentLineCurve)
+        if let start = coordinator.currentLineCurve?.start {
+            XCTAssertEqual(start.x, expectedTip.x, accuracy: 0.01)
+            XCTAssertEqual(start.y, expectedTip.y, accuracy: 0.01)
+            XCTAssertLessThan(start.x, 393)
+            XCTAssertGreaterThan(start.x, 195)
+        }
+    }
+
+    @MainActor
+    func testCheckModeBiteNotificationAndSleepWakeup() throws {
+        let coordinator = try FishingAppCoordinator(databasePath: ":memory:", nowMs: 1_700_000_000_000)
+        coordinator.buyAndEquipStarterKit(nowMs: 1_700_000_001_000)
+        coordinator.updateViewportSize(width: 393, height: 600)
+        coordinator.checkModeEnabled = true
+
+        let castMs: Int64 = 1_700_000_010_000
+        coordinator.castAt(x: 200, y: 380, nowMs: castMs)
+        XCTAssertEqual(coordinator.stateMachine.state, .waitingForBite)
+        XCTAssertTrue(coordinator.biteNotificationScheduler.isNotificationPending)
+        XCTAssertEqual(
+            coordinator.biteNotificationScheduler.scheduledBiteTimeMs,
+            coordinator.stateMachine.scheduledBiteTimeMs
+        )
+
+        // Enter background -> arms castActiveFlag = 1 (`GameView.u = 1`)
+        coordinator.handleAppDidEnterBackground(nowMs: castMs + 1_000)
+        XCTAssertEqual(coordinator.stateMachine.castActiveFlag, 1)
+
+        // Return to foreground 15 seconds after scheduledBiteTimeMs (> 11s CHECKMODE limit) -> missedBiteDuringSleep
+        let lateWakeMs = coordinator.stateMachine.scheduledBiteTimeMs + 15_000
+        coordinator.handleAppDidBecomeActive(nowMs: lateWakeMs)
+        XCTAssertFalse(coordinator.biteNotificationScheduler.isNotificationPending)
+        XCTAssertEqual(coordinator.stateMachine.state, .idle)
+        XCTAssertEqual(coordinator.activeAlert, .missedBiteDuringSleep)
+    }
 }

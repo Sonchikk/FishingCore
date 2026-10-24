@@ -1,5 +1,8 @@
 import Foundation
 import FishingCore
+#if canImport(UIKit)
+import UIKit
+#endif
 import FishingDatabase
 
 // MARK: - 1. 5-Language Localization Manager (`F0.g` / `LocaleHelper` & `data/localization.json`)
@@ -430,8 +433,12 @@ public struct FishingAudioAndHapticsController: Sendable, Equatable {
     }
 
     public mutating func playSoundEffect(_ sfx: FishingSoundEffect) {
-        guard soundEnabled else { return }
-        playedSoundEffects.append(sfx)
+        if soundEnabled {
+            playedSoundEffects.append(sfx)
+        }
+        if vibrationEnabled {
+            Self.triggerPlatformHapticForSoundEffect(sfx)
+        }
     }
 
     public mutating func setReelLooping(_ looping: Bool) {
@@ -452,7 +459,38 @@ public struct FishingAudioAndHapticsController: Sendable, Equatable {
         }
         if vibrationEnabled && vibrationDurationMs > 0 {
             vibrationTriggerCount += 1
+            Self.triggerPlatformBiteAlarmHaptic()
         }
+    }
+
+    private static func triggerPlatformBiteAlarmHaptic() {
+        #if canImport(UIKit) && !os(watchOS)
+        Task { @MainActor in
+            let generator = UINotificationFeedbackGenerator()
+            generator.prepare()
+            generator.notificationOccurred(.warning)
+        }
+        #endif
+    }
+
+    private static func triggerPlatformHapticForSoundEffect(_ sfx: FishingSoundEffect) {
+        #if canImport(UIKit) && !os(watchOS)
+        Task { @MainActor in
+            switch sfx {
+            case .castBobber:
+                let gen = UIImpactFeedbackGenerator(style: .light)
+                gen.impactOccurred()
+            case .fishSplash:
+                let gen = UIImpactFeedbackGenerator(style: .medium)
+                gen.impactOccurred()
+            case .rodBreak, .coilBreak, .lineBreak:
+                let gen = UINotificationFeedbackGenerator()
+                gen.notificationOccurred(.error)
+            case .reelLoop:
+                break
+            }
+        }
+        #endif
     }
 
     /// Reconstructs `FishingService$e.handleMessage(what = 1)` (`MECHANICS.md` Section 7.3):

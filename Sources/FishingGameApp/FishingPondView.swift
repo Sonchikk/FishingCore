@@ -97,9 +97,10 @@ public struct FishingPondView: View {
 
     private func pondCanvasLayer(viewportWidth: Int, viewportHeight: Int) -> some View {
         Canvas { context, size in
+            let activeRod = resolvedRodSprite(for: size)
+            drawFishingLine(in: &context, rod: activeRod)
             drawRipplesAndBobber(in: &context, canvasWidth: max(1, Int(size.width)))
-            drawRodSprite(in: &context)
-            drawFishingLine(in: &context)
+            drawRodSprite(in: &context, rod: activeRod)
         }
         .contentShape(Rectangle())
         .gesture(
@@ -116,10 +117,34 @@ public struct FishingPondView: View {
         )
     }
 
-    // MARK: - Modular Canvas Drawing Helpers (`GameView.u()`)
+    // MARK: - Modular Canvas Drawing Helpers (`GameView.draw(Canvas)`)
+
+    private func resolvedRodSprite(for canvasSize: CGSize) -> RodSpriteState {
+        let w = max(1, Int(canvasSize.width.rounded()))
+        let h = max(1, Int(canvasSize.height.rounded()))
+        var rod = coordinator.stateMachine.rodSprite
+        let expectedDims = RodSpriteState.scaledRodDimensions(forViewWidth: w, viewHeight: h)
+        if coordinator.stateMachine.viewWidth != w
+            || coordinator.stateMachine.viewHeight != h
+            || rod.width != expectedDims.width
+            || rod.height != expectedDims.height {
+            rod.updateLayout(
+                viewWidth: w,
+                viewHeight: h,
+                scaledRodWidth: expectedDims.width,
+                scaledRodHeight: expectedDims.height
+            )
+        }
+        return rod
+    }
 
     private func drawRipplesAndBobber(in context: inout GraphicsContext, canvasWidth: Int) {
         guard let bobber = coordinator.stateMachine.bobber else { return }
+        // Match `GameView.draw(Canvas)` (`pc=0067..008d`): only draw bobber & ripples once `!isCastAnimating || castProgress > 0.95`
+        if let lineGeo = coordinator.stateMachine.lineGeometry,
+           lineGeo.isCastAnimating && lineGeo.castProgress <= 0.95 {
+            return
+        }
 
         for oval in bobber.ripples {
             let rect = CGRect(
@@ -170,8 +195,7 @@ public struct FishingPondView: View {
         }
     }
 
-    private func drawRodSprite(in context: inout GraphicsContext) {
-        let rod = coordinator.stateMachine.rodSprite
+    private func drawRodSprite(in context: inout GraphicsContext, rod: RodSpriteState) {
         let clampedFrame = min(15, max(0, rod.frameIndex))
         let rodFrameName = "fishing_rod_\(clampedFrame)"
         let rodWidthCG = CGFloat(rod.width)
@@ -203,10 +227,11 @@ public struct FishingPondView: View {
         }
     }
 
-    private func drawFishingLine(in context: inout GraphicsContext) {
+    private func drawFishingLine(in context: inout GraphicsContext, rod: RodSpriteState) {
         guard let curve = coordinator.currentLineCurve else { return }
+        let startTip = FishingLineGeometry.rodTipPoint(for: rod)
         var linePath = Path()
-        linePath.move(to: CGPoint(x: CGFloat(curve.start.x), y: CGFloat(curve.start.y)))
+        linePath.move(to: CGPoint(x: CGFloat(startTip.x), y: CGFloat(startTip.y)))
         linePath.addQuadCurve(
             to: CGPoint(x: CGFloat(curve.end.x), y: CGFloat(curve.end.y)),
             control: CGPoint(x: CGFloat(curve.control.x), y: CGFloat(curve.control.y))

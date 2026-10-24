@@ -944,6 +944,10 @@ private struct SettingsSubView: View {
                             .foregroundStyle(OriginalGameTheme.goldText)
                         Toggle("Вибрация (VIBRATION)", isOn: $coordinator.audioHaptics.vibrationEnabled)
                             .foregroundStyle(OriginalGameTheme.goldText)
+                        Toggle("Будильник поклёвки в фоне (CHECKMODE)", isOn: $coordinator.checkModeEnabled)
+                            .foregroundStyle(OriginalGameTheme.goldText)
+                        Toggle("Онлайн-режим (ONLINE_MODE)", isOn: $coordinator.onlineModeEnabled)
+                            .foregroundStyle(OriginalGameTheme.goldText)
                         Toggle("Панель отладки на водоёме (DEV)", isOn: $coordinator.isDebugOverlayEnabled)
                             .foregroundStyle(OriginalGameTheme.goldText)
 
@@ -1724,7 +1728,17 @@ private struct PersonalRecordRowView: View {
 // MARK: - 6. Authentic `OnlineGameActivity` (`res/layout/online_game.xml` `res/74.xml`) & TCP Chat (`res/QM.xml`)
 
 public struct OnlineAndChatView: View {
+    public enum OnlineSection: String, CaseIterable, Identifiable {
+        case profile = "Профиль"
+        case chat = "Чат"
+        case ratings = "Рейтинг"
+        case tours = "Турниры"
+
+        public var id: String { rawValue }
+    }
+
     @ObservedObject public var coordinator: FishingAppCoordinator
+    @State private var selectedSection: OnlineSection = .profile
     @State private var loginInput: String = "angler_ios"
     @State private var passwordInput: String = "secret123"
     @State private var chatDraft: String = ""
@@ -1740,15 +1754,36 @@ public struct OnlineAndChatView: View {
             VStack(spacing: 8) {
                 OriginalScreenTopBar(
                     title: "Онлайн-игра и Чат",
-                    subtitle: "\(FishingIOSAppConfiguration.chatServerHost):\(FishingIOSAppConfiguration.chatServerPort)"
+                    subtitle: "\(FishingIOSAppConfiguration.chatServerHost):\(FishingIOSAppConfiguration.chatServerPort) • \(coordinator.chatConnectionState.rawValue)"
                 ) {
                     coordinator.selectedTab = .baseHub
                 }
 
+                onlineSectionPicker
+
+                if !coordinator.lastOnlineStatusMessage.isEmpty {
+                    Text(coordinator.lastOnlineStatusMessage)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.cyan)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color.black.opacity(0.6), in: RoundedRectangle(cornerRadius: 6))
+                        .padding(.horizontal, 10)
+                }
+
                 ScrollView {
                     VStack(spacing: 12) {
-                        onlineAuthSectionCard
-                        onlineChatSectionCard
+                        switch selectedSection {
+                        case .profile:
+                            onlineAuthSectionCard
+                        case .chat:
+                            onlineChatSectionCard
+                        case .ratings:
+                            onlineRatingsSectionCard
+                        case .tours:
+                            onlineToursSectionCard
+                        }
                     }
                     .padding(10)
                 }
@@ -1756,17 +1791,47 @@ public struct OnlineAndChatView: View {
         }
     }
 
+    private var onlineSectionPicker: some View {
+        HStack(spacing: 6) {
+            ForEach(OnlineSection.allCases) { sec in
+                Button {
+                    selectedSection = sec
+                } label: {
+                    OriginalStyledActionButtonLabel(title: sec.rawValue, minWidth: 78)
+                        .opacity(selectedSection == sec ? 1.0 : 0.65)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 8)
+    }
+
     private var onlineAuthSectionCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Авторизация профиля (auth.php)")
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Авторизация и синхронизация (auth.php / reaward.php)")
                 .font(.system(size: 15, weight: .bold))
                 .foregroundStyle(OriginalGameTheme.goldText)
             TextField("Логин", text: $loginInput)
                 .textFieldStyle(.roundedBorder)
             SecureField("Пароль", text: $passwordInput)
                 .textFieldStyle(.roundedBorder)
+
+            Button {
+                coordinator.authenticateOnlineProfileLive(login: loginInput, password: passwordInput)
+            } label: {
+                OriginalStyledActionButtonLabel(title: "Войти через fish-mob.ru (auth.php)", minWidth: 240)
+            }
+            .buttonStyle(.plain)
+
+            Button {
+                coordinator.claimServerRewardsLive(login: loginInput, password: passwordInput)
+            } label: {
+                OriginalStyledActionButtonLabel(title: "Проверить награды (reaward.php)", minWidth: 240)
+            }
+            .buttonStyle(.plain)
+
             Button(action: performSampleAuthRestore) {
-                OriginalStyledActionButtonLabel(title: "Войти и синхронизировать профиль", minWidth: 240)
+                OriginalStyledActionButtonLabel(title: "Демо-восстановление (офлайн-тест)", minWidth: 240)
             }
             .buttonStyle(.plain)
         }
@@ -1776,9 +1841,23 @@ public struct OnlineAndChatView: View {
 
     private var onlineChatSectionCard: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Чат водоёма #\(coordinator.selectedPondIndex + 1)")
-                .font(.system(size: 15, weight: .bold))
-                .foregroundStyle(OriginalGameTheme.goldText)
+            HStack {
+                Text("Чат водоёма #\(coordinator.selectedPondIndex + 1)")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(OriginalGameTheme.goldText)
+                Spacer()
+                Button {
+                    coordinator.connectLiveTCPChat(login: loginInput)
+                } label: {
+                    Text("Подключить 15701")
+                        .font(.system(size: 12, weight: .bold))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(OriginalGameTheme.goldText, in: Capsule())
+                        .foregroundStyle(.black)
+                }
+                .buttonStyle(.plain)
+            }
 
             ForEach(coordinator.chatMessages) { msg in
                 ChatMessageRowView(message: msg)
@@ -1802,6 +1881,85 @@ public struct OnlineAndChatView: View {
         .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 8))
     }
 
+    private var onlineRatingsSectionCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("Топ игроков (top.php) и Рекорды (rek.php)")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(OriginalGameTheme.goldText)
+                Spacer()
+                Button {
+                    coordinator.refreshOnlineRatingsAndRecordsLive(login: loginInput)
+                } label: {
+                    Text("Обновить")
+                        .font(.system(size: 12, weight: .bold))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(OriginalGameTheme.goldText, in: Capsule())
+                        .foregroundStyle(.black)
+                }
+                .buttonStyle(.plain)
+            }
+
+            ForEach(coordinator.topPlayersRating) { entry in
+                HStack {
+                    Text("#\(entry.rankPosition) \(entry.login)")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(OriginalGameTheme.goldText)
+                    Spacer()
+                    Text("Разр. \(entry.categoryRank) • \(entry.experience) XP")
+                        .font(.system(size: 12).monospacedDigit())
+                        .foregroundStyle(.white)
+                }
+                .padding(.vertical, 3)
+            }
+
+            ForEach(coordinator.worldSpeciesRecords) { rec in
+                HStack {
+                    Text(rec.fishName)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(.green)
+                    Spacer()
+                    Text("\(rec.weightGrams) г (\(rec.holderLogin))")
+                        .font(.system(size: 12).monospacedDigit())
+                        .foregroundStyle(.white)
+                }
+                .padding(.vertical, 2)
+            }
+        }
+        .padding(12)
+        .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 8))
+    }
+
+    private var onlineToursSectionCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Онлайн-турниры (Tours / tt.php)")
+                .font(.system(size: 15, weight: .bold))
+                .foregroundStyle(OriginalGameTheme.goldText)
+
+            if coordinator.onlineTours.isEmpty {
+                Text("Нет активных турниров. Подключитесь к серверу чата 15701 для загрузки списка турниров.")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.white.opacity(0.8))
+            } else {
+                ForEach(coordinator.onlineTours, id: \.id) { tour in
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(tour.title ?? "Турнир #\(tour.id)")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundStyle(OriginalGameTheme.goldText)
+                        Text(tour.desc ?? "")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.white)
+                    }
+                    .padding(8)
+                    .background(Color.black.opacity(0.45), in: RoundedRectangle(cornerRadius: 6))
+                }
+            }
+        }
+        .padding(12)
+        .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 8))
+    }
+
     private func performSampleAuthRestore() {
         let sampleAuth = "15000;8500;Pantera:24:98|not|not|not|not;Kobra:3:95|not|not|not|not;Aligator:15:100|not|not|not|not;1:5:1|2:25:1;2|2|0"
         _ = try? coordinator.restoreFromOnlineAuthResponse(
@@ -1814,18 +1972,20 @@ public struct OnlineAndChatView: View {
     private func sendDraftChatMessage() {
         let text = chatDraft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
-        let packet = JavaObjectStreamCodec.encodeMess(
-            ChatMess(
-                fromID: 1,
-                prem: 0,
-                room: Int32(coordinator.selectedPondIndex),
-                from: loginInput,
-                object: nil,
-                text: text,
-                timeEpochMs: Int64(Date().timeIntervalSince1970 * 1000),
-                to: ""
-            )
+        let mess = ChatMess(
+            fromID: 1,
+            prem: 0,
+            room: Int32(coordinator.selectedPondIndex),
+            from: loginInput,
+            object: nil,
+            text: text,
+            timeEpochMs: Int64(Date().timeIntervalSince1970 * 1000),
+            to: ""
         )
+        if coordinator.chatConnectionState == .connected {
+            coordinator.tcpChatSession.sendMess(mess)
+        }
+        let packet = JavaObjectStreamCodec.encodeMess(mess)
         _ = try? coordinator.receiveChatStreamPacket(packet)
         chatDraft = ""
     }

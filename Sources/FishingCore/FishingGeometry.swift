@@ -152,6 +152,10 @@ public struct BobberState: Sendable, Equatable {
 }
 
 public struct RodSpriteState: Sendable, Equatable {
+    /// Original PNG dimensions of `fishing_rod_0.png .. fishing_rod_15.png` (`res/sb.png .. res/Us.png`) in `fishing181.apk`.
+    public static let nativeBitmapWidth: Int = 164
+    public static let nativeBitmapHeight: Int = 419
+
     public static let drawableResourceIds: [Int] = [
         2131231188, 2131231189, 2131231196, 2131231197,
         2131231198, 2131231199, 2131231200, 2131231201,
@@ -164,6 +168,16 @@ public struct RodSpriteState: Sendable, Equatable {
     public private(set) var originY: Float = 0
     public private(set) var width: Int = 0
     public private(set) var height: Int = 0
+
+    /// Reconstructs `D0.c.i()` (`pc=001b..006f`): uniform `Matrix.postScale(v3, v3)` where `v3 = (viewHeight / 2) / 419.0`.
+    public static func scaledRodDimensions(forViewWidth viewWidth: Int, viewHeight: Int) -> (width: Int, height: Int) {
+        let targetHeight = max(1, viewHeight / 2)
+        let aspectScale = Float(targetHeight) / Float(nativeBitmapHeight)
+        let rawWidth = max(1, Int((Float(nativeBitmapWidth) * aspectScale).rounded()))
+        let maxRightAnchor = max(1, (viewWidth / 5) * 4)
+        let clampedWidth = min(rawWidth, maxRightAnchor)
+        return (width: clampedWidth, height: targetHeight)
+    }
 
     public init(
         viewWidth: Int = 1280,

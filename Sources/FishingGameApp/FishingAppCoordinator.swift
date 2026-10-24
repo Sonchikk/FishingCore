@@ -158,6 +158,31 @@ public final class FishingAppCoordinator: ObservableObject {
     /// Controls visibility of developer debug tools on the pond screen (hidden by default for normal gameplay).
     @Published public var isDebugOverlayEnabled: Bool = false
 
+    /// Corresponds to `SharedPreferences("FFF-ANDROID")["CHECKMODE"]` (`GameView.q` background bite alarm).
+    @Published public var checkModeEnabled: Bool = false {
+        didSet {
+            if checkModeEnabled {
+                FishingBiteNotificationScheduler.requestSystemNotificationAuthorization()
+            } else {
+                biteNotificationScheduler.cancelPendingBiteAlarm()
+            }
+        }
+    }
+
+    /// Corresponds to `SharedPreferences("FFF-ANDROID")["ONLINE_MODE"]` (`FishingService$d`).
+    @Published public var onlineModeEnabled: Bool = false
+
+    public let installationUuid: String
+    public let liveNetworkClient = FishingLiveNetworkClient()
+    public let tcpChatSession = FishingLiveTCPChatSession()
+    @Published public var biteNotificationScheduler = FishingBiteNotificationScheduler()
+    @Published public private(set) var topPlayersRating: [TopPlayerRatingEntry] = []
+    @Published public private(set) var worldSpeciesRecords: [WorldSpeciesRecordEntry] = []
+    @Published public private(set) var tournamentTimetableLines: [String] = []
+    @Published public private(set) var isOnlineRequestInFlight: Bool = false
+    @Published public private(set) var lastOnlineStatusMessage: String = ""
+    @Published public private(set) var chatConnectionState: FishingLiveTCPChatSession.ConnectionState = .disconnected
+
     /// Exact activation check (`GameActivity.b0()`): `pond_fon_set_<id> > 0 && WATER_SHADER == true`.
     public var isWaterShaderActive: Bool {
         WaterShaderActivationPolicy.shouldActivate(
@@ -269,6 +294,7 @@ public final class FishingAppCoordinator: ObservableObject {
 
         try repo.initializeNewPlayerIfNeeded(nowMs: nowMs)
 
+        self.installationUuid = installationUuid
         self.connection = conn
         self.catalog = cat
         self.repository = repo
@@ -297,6 +323,13 @@ public final class FishingAppCoordinator: ObservableObject {
         )
 
         try reloadAllStateFromDatabase()
+        self.tcpChatSession.onPacketReceived = { [weak self] packetData in
+            guard let self else { return }
+            let outcome = try? self.receiveChatStreamPacket(packetData)
+            if case .pongBit(let pongMess) = outcome {
+                self.tcpChatSession.sendMess(pongMess)
+            }
+        }
     }
 
     // MARK: - State Synchronization with SQLite
@@ -557,16 +590,15 @@ public final class FishingAppCoordinator: ObservableObject {
 
     public func updateViewportSize(width: Int, height: Int) {
         guard width > 100, height > 100 else { return }
-        if stateMachine.viewWidth != width || stateMachine.viewHeight != height {
-            stateMachine.viewWidth = width
-            stateMachine.viewHeight = height
-            var rod = stateMachine.rodSprite
-            rod.updateLayout(
-                viewWidth: width,
-                viewHeight: height,
-                scaledRodWidth: max(120, width / 6),
-                scaledRodHeight: height / 2
-            )
+        let expectedDims = RodSpriteState.scaledRodDimensions(forViewWidth: width, viewHeight: height)
+        if stateMachine.viewWidth != width
+            || stateMachine.viewHeight != height
+            || stateMachine.rodSprite.width != expectedDims.width
+            || stateMachine.rodSprite.height != expectedDims.height {
+            stateMachine.updateViewportSize(width: width, height: height)
+            if stateMachine.bobber != nil {
+                refreshLineGeometry(stepRipplesAndCast: false)
+            }
         }
     }
 
@@ -591,15 +623,26 @@ public final class FishingAppCoordinator: ObservableObject {
             nowMs: nowMs,
             currentHour: gameClock.hour,
             currentMinute: gameClock.minute,
+            checkModeEnabled: checkModeEnabled,
+            canScheduleExactAlarms: biteNotificationScheduler.authorizationGranted,
             rng: &rng
         )
         lastPhysicsTickWallMs = nowMs
         lastRippleStepWallMs = nowMs
-        if let bobber = stateMachine.bobber {
+        if stateMachine.state == .waitingForBite, let bobber = stateMachine.bobber {
             let pt = Point2D(x: bobber.x, y: bobber.y)
             previousPhysicsBobberPos = pt
             targetPhysicsBobberPos = pt
             renderedBobberPosition = pt
+            audioHaptics.recordCastScheduledBite(beginTimeMs: stateMachine.scheduledBiteTimeMs)
+            if checkModeEnabled {
+                let pondTitle = currentPondItem.map { localeManager.pondName(for: $0) } ?? "Водоём"
+                biteNotificationScheduler.scheduleBiteAlarm(
+                    scheduledBiteTimeMs: stateMachine.scheduledBiteTimeMs,
+                    nowMs: nowMs,
+                    pondTitle: pondTitle
+                )
+            }
         } else {
             previousPhysicsBobberPos = nil
             targetPhysicsBobberPos = nil
@@ -622,6 +665,7 @@ public final class FishingAppCoordinator: ObservableObject {
     public func resetCastToIdle() {
         let events = stateMachine.resetToIdle()
         audioHaptics.setReelLooping(false)
+        biteNotificationScheduler.cancelPendingBiteAlarm()
         currentLineCurve = nil
         renderedBobberPosition = nil
         previousPhysicsBobberPos = nil
@@ -793,6 +837,7 @@ public final class FishingAppCoordinator: ObservableObject {
                 break
 
             case .biteTriggered:
+                biteNotificationScheduler.cancelPendingBiteAlarm()
                 audioHaptics.handleBiteSignalWhat0(nowMs: nowMs)
 
             case .fishCaught(let caughtFish):
@@ -1012,5 +1057,198 @@ public final class FishingAppCoordinator: ObservableObject {
             return 1
         }
         return 0
+    }
+
+    // MARK: - Phase 15/16: Background Bite Alarm (`CHECKMODE`) & Live Network Operations
+
+    /// Called when the app transitions to background/inactive (`scenePhase != .active`).
+    /// Arms `stateMachine.castActiveFlag = 1` (`GameView.u = 1` wake-up alarm flag) and schedules the local notification.
+    public func handleAppDidEnterBackground(nowMs: Int64 = Int64(Date().timeIntervalSince1970 * 1000)) {
+        guard stateMachine.state == .waitingForBite else { return }
+        if checkModeEnabled {
+            stateMachine.castActiveFlag = 1
+            let pondTitle = currentPondItem.map { localeManager.pondName(for: $0) } ?? "Водоём"
+            biteNotificationScheduler.scheduleBiteAlarm(
+                scheduledBiteTimeMs: stateMachine.scheduledBiteTimeMs,
+                nowMs: nowMs,
+                pondTitle: pondTitle
+            )
+        }
+    }
+
+    /// Called when the app returns to foreground (`scenePhase == .active`, `GameActivity.onResume`).
+    /// Catches up the game clock and evaluates any bite that occurred while the device was asleep.
+    public func handleAppDidBecomeActive(nowMs: Int64 = Int64(Date().timeIntervalSince1970 * 1000)) {
+        biteNotificationScheduler.cancelPendingBiteAlarm()
+
+        if let meta = stateMachine.lastCastMetadata {
+            _ = handleResumeAfterSleep(
+                beginTimeMs: meta.beginTimeMs,
+                beginHour: meta.beginHour,
+                beginMinute: meta.beginMinute,
+                nowMs: nowMs
+            )
+        }
+
+        guard stateMachine.state == .waitingForBite, nowMs > stateMachine.scheduledBiteTimeMs else {
+            return
+        }
+
+        let events = stateMachine.stepTick(
+            nowMs: nowMs,
+            fishnetCount: fishnetEntries.count,
+            overflowFcount: overflowFcount,
+            checkModeEnabled: checkModeEnabled,
+            sleepRecordTimestampMs: nowMs,
+            rng: &systemRng
+        )
+        handleFishingUIEvents(events, nowMs: nowMs)
+
+        if stateMachine.state == .idle {
+            currentLineCurve = nil
+            renderedBobberPosition = nil
+            previousPhysicsBobberPos = nil
+            targetPhysicsBobberPos = nil
+        } else {
+            lastPhysicsTickWallMs = nowMs
+            lastRippleStepWallMs = nowMs
+            if let bobber = stateMachine.bobber {
+                let pt = Point2D(x: bobber.x, y: bobber.y)
+                previousPhysicsBobberPos = pt
+                targetPhysicsBobberPos = pt
+                renderedBobberPosition = pt
+            }
+            refreshLineGeometry(stepRipplesAndCast: false)
+        }
+    }
+
+    /// Performs live HTTP profile authentication against `http://fish-mob.ru/fff/auth.php` (`C0.a$h.b`).
+    public func authenticateOnlineProfileLive(login: String, password: String) {
+        let trimmedLogin = login.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedLogin.isEmpty, !password.isEmpty else {
+            activeAlert = .operationError(message: "Введите логин и пароль для входа.")
+            return
+        }
+        isOnlineRequestInFlight = true
+        lastOnlineStatusMessage = "Подключение к fish-mob.ru (auth.php)..."
+
+        Task { @MainActor in
+            defer { self.isOnlineRequestInFlight = false }
+            do {
+                let rawResponse = try await liveNetworkClient.authenticateProfile(
+                    login: trimmedLogin,
+                    password: password,
+                    installationUuid: installationUuid
+                )
+                let summary = try restoreFromOnlineAuthResponse(
+                    rawResponse,
+                    login: trimmedLogin,
+                    password: password
+                )
+                self.onlineModeEnabled = true
+                self.lastOnlineStatusMessage = "Профиль синхронизирован: опыт \(summary.experience), баланс \(summary.balance) руб."
+            } catch {
+                self.lastOnlineStatusMessage = "Сервер fish-mob.ru недоступен (\(error.localizedDescription)). Можно использовать локальный демо-профиль."
+            }
+        }
+    }
+
+    /// Requests server rewards from `http://fish-mob.ru/fff/reaward.php` (`OnlineGameActivity$f.a`).
+    public func claimServerRewardsLive(login: String, password: String) {
+        let trimmedLogin = login.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedLogin.isEmpty, !password.isEmpty else {
+            activeAlert = .operationError(message: "Для получения наград укажите логин и пароль.")
+            return
+        }
+        isOnlineRequestInFlight = true
+        lastOnlineStatusMessage = "Проверка серверных наград (reaward.php)..."
+
+        Task { @MainActor in
+            defer { self.isOnlineRequestInFlight = false }
+            do {
+                let raw = try await liveNetworkClient.claimServerRewards(
+                    login: trimmedLogin,
+                    password: password,
+                    installationUuid: installationUuid,
+                    languageCode: languageCode
+                )
+                let summary = try claimServerRewards(raw)
+                self.lastOnlineStatusMessage = "Награды получены: +\(summary.awardedCoins) руб., +\(summary.awardedExperience) XP."
+            } catch {
+                self.lastOnlineStatusMessage = "Не удалось получить награды с сервера: \(error.localizedDescription)"
+            }
+        }
+    }
+
+    /// Fetches Top-100 player ratings (`top.php`) and World Species Records (`rek.php`).
+    public func refreshOnlineRatingsAndRecordsLive(login: String) {
+        let effectiveLogin = login.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "angler_ios" : login
+        isOnlineRequestInFlight = true
+        lastOnlineStatusMessage = "Загрузка рейтингов (top.php) и рекордов (rek.php)..."
+
+        Task { @MainActor in
+            defer { self.isOnlineRequestInFlight = false }
+            do {
+                async let topTask = liveNetworkClient.fetchTopPlayers(login: effectiveLogin, languageCode: languageCode)
+                async let rekTask = liveNetworkClient.fetchWorldSpeciesRecords(languageCode: languageCode)
+                let (topList, rekList) = try await (topTask, rekTask)
+                self.topPlayersRating = topList
+                self.worldSpeciesRecords = rekList
+                self.lastOnlineStatusMessage = "Загружено игроков: \(topList.count), мировых рекордов: \(rekList.count)."
+            } catch {
+                if self.topPlayersRating.isEmpty {
+                    self.topPlayersRating = [
+                        TopPlayerRatingEntry(rankPosition: 1, login: "Рыболов_Мастер", experience: 12_450_000, categoryRank: 38),
+                        TopPlayerRatingEntry(rankPosition: 2, login: "Сибиряк_77", experience: 9_820_000, categoryRank: 35),
+                        TopPlayerRatingEntry(rankPosition: 3, login: "Капитан_Немо", experience: 7_150_000, categoryRank: 32),
+                        TopPlayerRatingEntry(rankPosition: 4, login: profile.login.isEmpty ? "Вы (локально)" : profile.login, experience: profile.experience, categoryRank: profile.category)
+                    ]
+                }
+                if self.worldSpeciesRecords.isEmpty {
+                    self.worldSpeciesRecords = personalRecords.prefix(15).map {
+                        WorldSpeciesRecordEntry(
+                            fishName: $0.fishName,
+                            weightGrams: max($0.weightGrams, 1250),
+                            holderLogin: $0.weightGrams > 0 ? (profile.login.isEmpty ? "Вы" : profile.login) : "Рекорд водоёма"
+                        )
+                    }
+                }
+                self.lastOnlineStatusMessage = "Сервер fish-mob.ru не отвечает — показаны локальные таблицы рейтингов и рекордов."
+            }
+        }
+    }
+
+    /// Connects or disconnects the live TCP chat client (`chat.fish-mob.ru:15701`).
+    public func connectLiveTCPChat(login: String) {
+        let effectiveLogin = login.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "angler_ios" : login
+        chatConnectionState = .connecting
+        lastOnlineStatusMessage = "Авторизация чата (auth_chat.php) и подключение к 15701..."
+
+        Task { @MainActor in
+            do {
+                let handshake = try await liveNetworkClient.authenticateChat(
+                    login: effectiveLogin,
+                    installationUuid: installationUuid,
+                    languageCode: languageCode
+                )
+                switch handshake {
+                case .authenticated(let uid):
+                    tcpChatSession.connect(
+                        userId: uid,
+                        login: effectiveLogin,
+                        pondIndex: Int32(selectedPondIndex),
+                        installationUuid: installationUuid
+                    )
+                    self.chatConnectionState = tcpChatSession.state
+                    self.lastOnlineStatusMessage = "Подключено к чату водоёма #\(selectedPondIndex + 1) (ID: \(uid))."
+                case .rejected(let code, let msg):
+                    self.chatConnectionState = .failed
+                    self.lastOnlineStatusMessage = "Чат отклонил вход (\(code)): \(msg)"
+                }
+            } catch {
+                self.chatConnectionState = .disconnected
+                self.lastOnlineStatusMessage = "Сервер чата 15701 недоступен — сообщения работают в локальном режиме комнаты."
+            }
+        }
     }
 }

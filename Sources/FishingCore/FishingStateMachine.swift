@@ -108,11 +108,12 @@ public struct FishingStateMachine: Sendable, Equatable {
         self.timeOfDay = timeOfDay
         self.fishCatalogById1Based = fishCatalogById1Based
         self.tackle = tackle
+        let initialRodDims = RodSpriteState.scaledRodDimensions(forViewWidth: viewWidth, viewHeight: viewHeight)
         self.rodSprite = RodSpriteState(
             viewWidth: viewWidth,
             viewHeight: viewHeight,
-            rodWidth: 200,
-            rodHeight: viewHeight / 2
+            rodWidth: initialRodDims.width,
+            rodHeight: initialRodDims.height
         )
     }
 
@@ -129,6 +130,20 @@ public struct FishingStateMachine: Sendable, Equatable {
     public var activeFishWeightKg: Double {
         guard obfuscationMultiplier > 0 else { return 0.0 }
         return Double(obfuscatedWeightGrams) / (Double(obfuscationMultiplier) * 1000.0)
+    }
+
+    /// Updates viewport dimensions and recalculates `rodSprite` layout (`D0.c.i()` & `D0.c.g()`).
+    public mutating func updateViewportSize(width: Int, height: Int) {
+        guard width > 0, height > 0 else { return }
+        self.viewWidth = width
+        self.viewHeight = height
+        let dims = RodSpriteState.scaledRodDimensions(forViewWidth: width, viewHeight: height)
+        self.rodSprite.updateLayout(
+            viewWidth: width,
+            viewHeight: height,
+            scaledRodWidth: dims.width,
+            scaledRodHeight: dims.height
+        )
     }
 
     public var horizonMinY: Float {
