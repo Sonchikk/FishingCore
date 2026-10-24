@@ -967,27 +967,39 @@ final class FishingGameAppTests: XCTestCase {
         let bt = BalanceTables()
         let pondData = PondSimulationData(
             pondIndex: 0,
-            fishIds1Based: [1],
-            preferredBaitIds0BasedByFish: [1: [0]],
-            timeMaskByFish: [1: 0b1111]
+            activeBaitIndices0Based: [0],
+            catchableFishByBaitSlot: [[0]],
+            fishWeightRanges: [
+                PondFishWeightRange(fishIndex0Based: 0, minWeightGrams: 100, maxWeightGrams: 3000)
+            ],
+            factorsMorning: [
+                [PondFishBiteFactor(fishIndex0Based: 0, probabilityPercent: 100)]
+            ],
+            factorsAfternoon: [
+                [PondFishBiteFactor(fishIndex0Based: 0, probabilityPercent: 100)]
+            ],
+            factorsEvening: [
+                [PondFishBiteFactor(fishIndex0Based: 0, probabilityPercent: 100)]
+            ],
+            factorsNight: [
+                [PondFishBiteFactor(fishIndex0Based: 0, probabilityPercent: 100)]
+            ]
         )
         let fish = FishSpecies(
             id: 1,
             name: "Карась",
-            maxWeightGrams: 3000,
-            minWeightGrams: 100,
-            pricePer100g: 10,
-            experiencePer100g: 10,
-            rarityRank: 1,
+            unitWeight: 500,
+            unitPrice: 55,
             strength: 10,
             stamina: 10,
             intelligence: 10,
-            aggression: 10
+            aggression: 10,
+            md5Valid: true
         )
         let tackle = AssembledTackle(
             userRod: UserRodItem(id: 1, rod: FishingRodSpec(id: 1, name: "Rod", weight: 25, price: 100), strength: 100),
-            userCoil: UserCoilItem(id: 1, coil: CoilSpec(id: 1, name: "Coil", bearingCount: 3, price: 100), strength: 100),
             userLine: UserLineItem(id: 1, line: FishingLineSpec(id: 1, name: "Line", weight: 25, stockLength: 100, price: 100), length: 100),
+            userCoil: UserCoilItem(id: 1, coil: CoilSpec(id: 1, name: "Coil", bearingCount: 3, price: 100), strength: 100),
             userHook: UserHookItem(id: 1, hook: HookSpec(id: 1, name: "Hook"), amount: 5),
             userBait: UserBaitItem(id: 1, bait: BaitSpec(id: 1, name: "Bait"), amount: 20)
         )
@@ -1003,18 +1015,30 @@ final class FishingGameAppTests: XCTestCase {
             fishCatalogById1Based: [1: fish],
             tackle: tackle
         )
-        var rng = ScriptedFishingRandom(ints: [5, 0, 50], floats: [0.99], defaultInt: 2, defaultFloat: 0.99)
+        var rng = ScriptedFishingRandom(ints: [5, 0, 10, 500, 100], floats: [0.99], defaultInt: 2, defaultFloat: 0.99)
         _ = sm.cast(x: 200, y: 185, nowMs: 1_000, rng: &rng)
+        XCTAssertEqual(sm.state, FishingState.waitingForBite)
+
         let biteMs = sm.scheduledBiteTimeMs + 100
-        _ = sm.stepTick(nowMs: biteMs, rng: &rng)
-        XCTAssertEqual(sm.state, .fishFight)
+        let biteEvents = sm.stepTick(nowMs: biteMs, rng: &rng)
+        XCTAssertEqual(sm.state, FishingState.fishFight)
+        XCTAssertEqual(biteEvents, [FishingUIEvent.biteTriggered])
+
+        // Transition out of pre-hook bobbing into active fight, then release reel so the fish swims away (`isPulled == false`)
+        sm.setPulled(true)
+        sm.setPulled(false)
+        XCTAssertFalse(sm.isPreHookBobbing)
+        XCTAssertFalse(sm.isPulled)
 
         // Let the fish pull away (`isPulled == false`) for 40 ticks: bobber must stay >= 600/4 + 20 = 170
+        let rod = sm.tackle.userRod!.rod
         let minAllowedWaterY = Float(600 / 4) + Float(40 / 2)
         for tick in 1...40 {
-            sm.stepBobberMovement(nowMs: biteMs + Int64(tick * 200), rng: &rng)
+            sm.stepBobberMovement(rod: rod, nowMs: biteMs + Int64(tick * 200), rng: &rng)
             XCTAssertGreaterThanOrEqual(sm.bobber?.y ?? 0, minAllowedWaterY)
         }
+        // Verify bobber actually reached and stayed clamped at the upper water horizon (170.0)
+        XCTAssertEqual(sm.bobber?.y ?? 0, minAllowedWaterY, accuracy: 0.01)
 
         // Verify Phase 17 audio engine embedded `.m4a` and procedural `.wav` assets are non-empty and valid
         let engine = LiveAudioPlaybackEngine.shared
