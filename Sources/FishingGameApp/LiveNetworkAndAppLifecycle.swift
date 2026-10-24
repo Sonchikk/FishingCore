@@ -446,7 +446,7 @@ public enum FishingOnlineResponseParser: Sendable {
             case 3: message = "Аккаунт заблокирован в чате (код 3)."
             case 4: message = "Слишком частые подключения к чату (код 4)."
             case 5: message = "Требуется повторная авторизация профиля (код 5)."
-            default: message = "Код ответа auth_chat.php: \(code)"
+            default: message = "Код ответа сервера чата: \(code)"
             }
         }
         return .rejected(statusCode: code, message: message)
@@ -476,7 +476,7 @@ public enum FishingOnlineResponseParser: Sendable {
     public static func parseAchievementsQuestsSyncResponse(_ raw: String) -> AchievementsQuestsSyncResult {
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
-            return .rejected(statusCode: "empty", message: "Пустой ответ от achievs.php")
+            return .rejected(statusCode: "empty", message: "Пустой ответ от сервера синхронизации")
         }
         if trimmed == "1000" || trimmed == "1100" {
             return .synchronized(serverMessage: "Прогресс достижений и квестов синхронизирован (код \(trimmed)).")
@@ -496,7 +496,7 @@ public enum FishingOnlineResponseParser: Sendable {
                 let text = msgStr.isEmpty ? "Прогресс синхронизирован с сервером (код \(codeStr))." : msgStr
                 return .synchronized(serverMessage: text)
             }
-            return .rejected(statusCode: codeStr, message: msgStr.isEmpty ? "Код ответа achievs.php: \(codeStr)" : msgStr)
+            return .rejected(statusCode: codeStr, message: msgStr.isEmpty ? "Код ответа сервера: \(codeStr)" : msgStr)
         }
         switch trimmed {
         case "2000":
@@ -940,7 +940,7 @@ public struct FishingBiteNotificationScheduler: Sendable, Equatable {
         let delaySeconds = max(1.0, Double(scheduledBiteTimeMs - nowMs) / 1000.0)
         notificationScheduling.scheduleLocal(
             id: Self.biteAlarmNotificationIdentifier,
-            title: "Рыбалка для друзей",
+            title: "Рыбалка для Друзей",
             body: "Клюёт на водоёме «\(pondTitle)»! Скорее подсекайте!",
             delaySeconds: delaySeconds
         )
@@ -1251,7 +1251,7 @@ public final class FishingLiveTCPChatSession {
     public enum ConnectionState: String, Sendable, Equatable {
         case disconnected = "Отключён"
         case connecting = "Подключение..."
-        case connected = "В сети (15701)"
+        case connected = "В сети"
         case failed = "Ошибка сети"
     }
 

@@ -202,13 +202,31 @@ public enum FishingNetworkCrypto: Sendable {
 
     /// Formats `X-Fish-Date` for `fish.php` (`new java.util.Date(catchTimeMs).toString()` at `pc=00fe..0101`),
     /// e.g. `"Sat Oct 24 12:34:56 GMT 2026"`.
+    /// Uses deterministic Gregorian UTC calendar components so `'GMT'` is never mangled by ICU pattern letters.
     public static func formatJavaDateToString(epochMs: Int64) -> String {
         let date = Date(timeIntervalSince1970: Double(epochMs) / 1000.0)
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = TimeZone(secondsFromGMT: 0)
-        formatter.dateFormat = "EEE MMM dd HH:mm:ss GMT yyyy"
-        return formatter.string(from: date)
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let comps = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second, .weekday], from: date)
+        let weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+        let months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+        let wdIndex = max(1, min(7, comps.weekday ?? 1)) - 1
+        let moIndex = max(1, min(12, comps.month ?? 1)) - 1
+        let day = comps.day ?? 1
+        let hour = comps.hour ?? 0
+        let minute = comps.minute ?? 0
+        let second = comps.second ?? 0
+        let year = comps.year ?? 1970
+        return String(
+            format: "%@ %@ %02d %02d:%02d:%02d GMT %04d",
+            weekdays[wdIndex],
+            months[moIndex],
+            day,
+            hour,
+            minute,
+            second,
+            year
+        )
     }
 
     /// `X-Fish-Folp` for `fish.php` (`FishingService$d.b()` at `pc=021a`, or legacy 5-field `F0.t.a` fallback):

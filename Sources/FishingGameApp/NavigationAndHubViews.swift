@@ -109,11 +109,19 @@ public struct OriginalSplashScreenView: View {
         ZStack(alignment: .bottom) {
             splashArtworkBackground
 
-            VStack(spacing: 8) {
+            VStack(spacing: 6) {
+                Text("Рыбалка для Друзей")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(OriginalGameTheme.goldText)
+                    .shadow(color: .black, radius: 3, x: 0, y: 1)
+                Text("Порт Android-версии на iOS • v\(versionString)")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.9))
                 ProgressView()
                     .tint(OriginalGameTheme.goldText)
-                Text("Загрузка... (v\(versionString))")
-                    .font(.system(size: 16, weight: .bold))
+                    .padding(.top, 2)
+                Text("Загрузка...")
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(OriginalGameTheme.goldText)
                     .shadow(color: .black, radius: 3, x: 0, y: 1)
             }
@@ -551,7 +559,7 @@ private struct BaseDashboardSubView: View {
             }
             DashboardTileButton(drawable: "about_game", fallbackIcon: "info.circle.fill", title: "Об игре") {
                 coordinator.activeAlert = .operationError(
-                    message: "Рыбалка для Друзей — мобильный рыболовный симулятор! (версия 1.81)"
+                    message: "Рыбалка для Друзей — мобильный рыболовный симулятор!\nВерсия 1.81 • Порт Android-версии на iOS"
                 )
             }
             DashboardTileButton(drawable: "exit", fallbackIcon: "play.circle.fill", title: "На водоём") {
@@ -849,7 +857,7 @@ private struct OnlineShopSubView: View {
                         Button {
                             coordinator.refreshOnlineShopLive()
                         } label: {
-                            OriginalStyledActionButtonLabel(title: "Обновить каталог (online.php)", minWidth: 260)
+                            OriginalStyledActionButtonLabel(title: "Обновить каталог", minWidth: 260)
                         }
                         .buttonStyle(.plain)
 
@@ -951,19 +959,19 @@ private struct SettingsSubView: View {
 
                 ScrollView {
                     VStack(spacing: 12) {
-                        Toggle("Шейдер воды (WATER_SHADER)", isOn: $coordinator.isWaterShaderEnabled)
+                        Toggle("Анимация воды", isOn: $coordinator.isWaterShaderEnabled)
                             .foregroundStyle(OriginalGameTheme.goldText)
-                        Toggle("Квесты и задания (TASKS)", isOn: $coordinator.tasksEnabled)
+                        Toggle("Квесты и задания", isOn: $coordinator.tasksEnabled)
                             .foregroundStyle(OriginalGameTheme.goldText)
-                        Toggle("Звуки (SOUND)", isOn: $coordinator.audioHaptics.soundEnabled)
+                        Toggle("Звуки", isOn: $coordinator.audioHaptics.soundEnabled)
                             .foregroundStyle(OriginalGameTheme.goldText)
-                        Toggle("Вибрация (VIBRATION)", isOn: $coordinator.audioHaptics.vibrationEnabled)
+                        Toggle("Вибрация", isOn: $coordinator.audioHaptics.vibrationEnabled)
                             .foregroundStyle(OriginalGameTheme.goldText)
-                        Toggle("Будильник поклёвки в фоне (CHECKMODE)", isOn: $coordinator.checkModeEnabled)
+                        Toggle("Уведомление о поклёвке в фоне", isOn: $coordinator.checkModeEnabled)
                             .foregroundStyle(OriginalGameTheme.goldText)
-                        Toggle("Онлайн-режим (ONLINE_MODE)", isOn: $coordinator.onlineModeEnabled)
+                        Toggle("Онлайн-режим", isOn: $coordinator.onlineModeEnabled)
                             .foregroundStyle(OriginalGameTheme.goldText)
-                        Toggle("Панель отладки на водоёме (DEV)", isOn: $coordinator.isDebugOverlayEnabled)
+                        Toggle("Режим отладки", isOn: $coordinator.isDebugOverlayEnabled)
                             .foregroundStyle(OriginalGameTheme.goldText)
 
                         HStack {
@@ -977,6 +985,21 @@ private struct SettingsSubView: View {
                             }
                             .pickerStyle(.menu)
                         }
+
+                        Divider()
+                            .background(Color.white.opacity(0.2))
+                            .padding(.top, 4)
+
+                        VStack(spacing: 4) {
+                            Text("Рыбалка для Друзей (v1.81)")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundStyle(OriginalGameTheme.goldText)
+                            Text("Порт Android-версии на iOS")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(.white.opacity(0.75))
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 2)
                     }
                     .font(.system(size: 15, weight: .bold))
                     .padding(16)
@@ -1839,7 +1862,7 @@ public struct OnlineAndChatView: View {
 
     private var onlineAuthSectionCard: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Авторизация и синхронизация (auth.php / reaward.php)")
+            Text("Профиль и синхронизация")
                 .font(.system(size: 15, weight: .bold))
                 .foregroundStyle(OriginalGameTheme.goldText)
             TextField("Логин", text: $coordinator.savedOnlineLogin)
@@ -1853,7 +1876,7 @@ public struct OnlineAndChatView: View {
                     password: coordinator.savedOnlinePassword
                 )
             } label: {
-                OriginalStyledActionButtonLabel(title: "Войти через fish-mob.ru (auth.php)", minWidth: 240)
+                OriginalStyledActionButtonLabel(title: "Войти в аккаунт", minWidth: 240)
             }
             .buttonStyle(.plain)
 
@@ -1863,7 +1886,7 @@ public struct OnlineAndChatView: View {
                     password: coordinator.savedOnlinePassword
                 )
             } label: {
-                OriginalStyledActionButtonLabel(title: "Регистрация / Пароль (registration_app.php)", minWidth: 240)
+                OriginalStyledActionButtonLabel(title: "Регистрация / Восстановление пароля", minWidth: 240)
             }
             .buttonStyle(.plain)
 
@@ -1875,7 +1898,7 @@ public struct OnlineAndChatView: View {
                     silent: false
                 )
             } label: {
-                OriginalStyledActionButtonLabel(title: "Синхронизировать прогресс (achievs.php)", minWidth: 240)
+                OriginalStyledActionButtonLabel(title: "Синхронизировать прогресс", minWidth: 240)
             }
             .buttonStyle(.plain)
 
@@ -1885,14 +1908,16 @@ public struct OnlineAndChatView: View {
                     password: coordinator.savedOnlinePassword
                 )
             } label: {
-                OriginalStyledActionButtonLabel(title: "Проверить награды (reaward.php)", minWidth: 240)
+                OriginalStyledActionButtonLabel(title: "Получить награды", minWidth: 240)
             }
             .buttonStyle(.plain)
 
-            Button(action: performSampleAuthRestore) {
-                OriginalStyledActionButtonLabel(title: "Демо-восстановление (офлайн-тест)", minWidth: 240)
+            if coordinator.isDebugOverlayEnabled {
+                Button(action: performSampleAuthRestore) {
+                    OriginalStyledActionButtonLabel(title: "Демо-восстановление (офлайн-тест)", minWidth: 240)
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
         }
         .padding(12)
         .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 8))
@@ -1908,7 +1933,7 @@ public struct OnlineAndChatView: View {
                 Button {
                     coordinator.connectLiveTCPChat(login: coordinator.savedOnlineLogin)
                 } label: {
-                    Text("Подключить 15701")
+                    Text("Подключиться")
                         .font(.system(size: 12, weight: .bold))
                         .padding(.horizontal, 10)
                         .padding(.vertical, 5)
@@ -1943,7 +1968,7 @@ public struct OnlineAndChatView: View {
     private var onlineRatingsSectionCard: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("Топ игроков (top.php) и Рекорды (rek.php)")
+                Text("Лучшие игроки и рекорды рыб")
                     .font(.system(size: 15, weight: .bold))
                     .foregroundStyle(OriginalGameTheme.goldText)
                 Spacer()
@@ -1993,7 +2018,7 @@ public struct OnlineAndChatView: View {
     private var onlineToursSectionCard: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("Онлайн-турниры (index.php / tt.php)")
+                Text("Онлайн-турниры")
                     .font(.system(size: 15, weight: .bold))
                     .foregroundStyle(OriginalGameTheme.goldText)
                 Spacer()
@@ -2121,7 +2146,7 @@ public struct OnlineAndChatView: View {
             }
 
             if !coordinator.tournamentTimetableLines.isEmpty {
-                Text("Расписание турниров (tt.php):")
+                Text("Расписание турниров:")
                     .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(.cyan)
                 ForEach(Array(coordinator.tournamentTimetableLines.enumerated()), id: \.offset) { _, line in
@@ -2137,7 +2162,7 @@ public struct OnlineAndChatView: View {
                 && coordinator.httpCompletedTournaments.isEmpty
                 && coordinator.onlineTours.isEmpty
                 && coordinator.tournamentTimetableLines.isEmpty {
-                Text("Нажмите «Обновить», чтобы загрузить текущие и завершённые турниры и расписание с fish-mob.ru (index.php / tt.php).")
+                Text("Нажмите «Обновить», чтобы загрузить текущие и завершённые турниры и расписание.")
                     .font(.system(size: 13))
                     .foregroundStyle(.white.opacity(0.8))
             }

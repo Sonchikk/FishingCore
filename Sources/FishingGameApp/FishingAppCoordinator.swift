@@ -1411,7 +1411,7 @@ public final class FishingAppCoordinator: ObservableObject {
         savedOnlinePassword = password
         saveOnlineCredentialsToDatabase(login: trimmedLogin, password: password)
         isOnlineRequestInFlight = true
-        lastOnlineStatusMessage = "Подключение к fish-mob.ru (auth.php)..."
+        lastOnlineStatusMessage = "Подключение к серверу..."
 
         let client = self.liveNetworkClient
         let uuid = self.installationUuid
@@ -1431,7 +1431,7 @@ public final class FishingAppCoordinator: ObservableObject {
                 self.onlineModeEnabled = true
                 self.lastOnlineStatusMessage = "Профиль синхронизирован: опыт \(summary.experience), баланс \(summary.balanceCoins) руб."
             } catch {
-                self.lastOnlineStatusMessage = "Сервер fish-mob.ru недоступен (\(error.localizedDescription)). Можно использовать локальный демо-профиль."
+                self.lastOnlineStatusMessage = "Сервер временно недоступен (\(error.localizedDescription))."
             }
         }
     }
@@ -1444,7 +1444,7 @@ public final class FishingAppCoordinator: ObservableObject {
             return
         }
         isOnlineRequestInFlight = true
-        lastOnlineStatusMessage = "Проверка серверных наград (reaward.php)..."
+        lastOnlineStatusMessage = "Проверка наград на сервере..."
 
         let client = self.liveNetworkClient
         let uuid = self.installationUuid
@@ -1470,7 +1470,7 @@ public final class FishingAppCoordinator: ObservableObject {
     public func refreshOnlineRatingsAndRecordsLive(login: String) {
         let effectiveLogin = login.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "angler_ios" : login
         isOnlineRequestInFlight = true
-        lastOnlineStatusMessage = "Загрузка рейтингов (top.php) и рекордов (rek.php)..."
+        lastOnlineStatusMessage = "Загрузка таблиц лидеров и рекордов..."
 
         let client = self.liveNetworkClient
         let currentLang = self.languageCode
@@ -1501,7 +1501,7 @@ public final class FishingAppCoordinator: ObservableObject {
                         )
                     }
                 }
-                self.lastOnlineStatusMessage = "Сервер fish-mob.ru не отвечает — показаны локальные таблицы рейтингов и рекордов."
+                self.lastOnlineStatusMessage = "Сервер не отвечает — показаны сохранённые таблицы рейтингов и рекордов."
             }
         }
     }
@@ -1513,7 +1513,7 @@ public final class FishingAppCoordinator: ObservableObject {
             : login.trimmingCharacters(in: .whitespacesAndNewlines)
         tcpChatReceiveBuffer.removeAll()
         chatConnectionState = .connecting
-        lastOnlineStatusMessage = "Авторизация чата (auth_chat.php) и подключение к 15701..."
+        lastOnlineStatusMessage = "Подключение к игровому чату..."
 
         let client = self.liveNetworkClient
         let uuid = self.installationUuid
@@ -1542,7 +1542,7 @@ public final class FishingAppCoordinator: ObservableObject {
                 }
             } catch {
                 self.chatConnectionState = .disconnected
-                self.lastOnlineStatusMessage = "Сервер чата 15701 недоступен (\(error.localizedDescription)) — сообщения работают в локальном режиме комнаты."
+                self.lastOnlineStatusMessage = "Сервер чата недоступен (\(error.localizedDescription)) — сообщения работают в локальном режиме."
             }
         }
     }
@@ -1555,7 +1555,7 @@ public final class FishingAppCoordinator: ObservableObject {
         let client = self.liveNetworkClient
         let currentLang = self.languageCode
         isOnlineRequestInFlight = true
-        lastOnlineStatusMessage = "Загрузка турниров (index.php) и расписания (tt.php)..."
+        lastOnlineStatusMessage = "Загрузка турниров и расписания..."
 
         Task { @MainActor in
             defer { self.isOnlineRequestInFlight = false }
@@ -1579,7 +1579,7 @@ public final class FishingAppCoordinator: ObservableObject {
             if !activeResult.isEmpty || !completedResult.isEmpty || !timetableResult.isEmpty {
                 self.lastOnlineStatusMessage = "Турниры обновлены: активных \(activeResult.count), завершённых \(completedResult.count), строк расписания \(timetableResult.count)."
             } else {
-                self.lastOnlineStatusMessage = "Сейчас нет активных турниров на сервере index.php."
+                self.lastOnlineStatusMessage = "Сейчас нет активных турниров."
             }
         }
     }
@@ -1592,7 +1592,7 @@ public final class FishingAppCoordinator: ObservableObject {
         let client = self.liveNetworkClient
         let uuid = self.installationUuid
         isOnlineRequestInFlight = true
-        lastOnlineStatusMessage = "Обновление каталога онлайн-магазина (online.php)..."
+        lastOnlineStatusMessage = "Обновление каталога онлайн-магазина..."
 
         Task { @MainActor in
             defer { self.isOnlineRequestInFlight = false }
@@ -1622,7 +1622,7 @@ public final class FishingAppCoordinator: ObservableObject {
                 }
                 let fallbackCSV = tokens.joined(separator: ",") + ",note=1"
                 _ = try? self.syncOnlineShopFromCSV(fallbackCSV)
-                self.lastOnlineStatusMessage = "Сервер online.php не ответил (\(error.localizedDescription)) — показан встроенный каталог."
+                self.lastOnlineStatusMessage = "Сервер магазина не ответил — показан встроенный каталог."
             }
         }
     }
@@ -1638,7 +1638,7 @@ public final class FishingAppCoordinator: ObservableObject {
         savedOnlinePassword = password
         saveOnlineCredentialsToDatabase(login: trimmed, password: password)
         isOnlineRequestInFlight = true
-        lastOnlineStatusMessage = "Отправка запроса в registration_app.php..."
+        lastOnlineStatusMessage = "Отправка запроса регистрации..."
 
         let client = self.liveNetworkClient
         let currentLang = self.languageCode
@@ -1694,14 +1694,14 @@ public final class FishingAppCoordinator: ObservableObject {
                 )
                 switch result {
                 case .accepted:
-                    self.lastOnlineStatusMessage = "Улов (\(caughtFish.fish.name), \(caughtFish.weightGrams) г) отправлен на fish.php (status=1000)."
+                    self.lastOnlineStatusMessage = "Улов (\(caughtFish.fish.name), \(caughtFish.weightGrams) г) синхронизирован с сервером."
                 case .newWorldRecord:
-                    self.lastOnlineStatusMessage = "Новый рекорд на fish.php! \(caughtFish.fish.name) — \(caughtFish.weightGrams) г."
+                    self.lastOnlineStatusMessage = "Новый мировой рекорд! \(caughtFish.fish.name) — \(caughtFish.weightGrams) г."
                 case .rejected(let code):
-                    self.lastOnlineStatusMessage = "Сервер fish.php вернул код \(code)."
+                    self.lastOnlineStatusMessage = "Ответ сервера по улову: код \(code)."
                 }
             } catch {
-                self.lastOnlineStatusMessage = "Ошибка отправки улова на fish.php: \(error.localizedDescription)"
+                self.lastOnlineStatusMessage = "Не удалось отправить улов на сервер: \(error.localizedDescription)"
             }
         }
     }
@@ -1716,7 +1716,7 @@ public final class FishingAppCoordinator: ObservableObject {
             return
         }
         isOnlineRequestInFlight = true
-        lastOnlineStatusMessage = "Отправка заявки в турнир #\(tournamentId) (tour_regin.php)..."
+        lastOnlineStatusMessage = "Отправка заявки в турнир #\(tournamentId)..."
         let client = self.liveNetworkClient
         let uuid = self.installationUuid
         let lang = self.languageCode
@@ -1747,7 +1747,7 @@ public final class FishingAppCoordinator: ObservableObject {
         let password = savedOnlinePassword.isEmpty ? profile.password : savedOnlinePassword
         let listType = isCompleted ? "3" : "2"
         isOnlineRequestInFlight = true
-        lastOnlineStatusMessage = "Загрузка итогов турнира #\(tournamentId) (tour_results.php)..."
+        lastOnlineStatusMessage = "Загрузка таблицы турнира #\(tournamentId)..."
         let client = self.liveNetworkClient
         let lang = self.languageCode
 
@@ -1796,14 +1796,14 @@ public final class FishingAppCoordinator: ObservableObject {
             fqstHeader = includeQuests ? (try repository.buildFqstHeader()) : nil
         } catch {
             if !silent {
-                lastOnlineStatusMessage = "Ошибка подготовки заголовков синхронизации (achievs.php): \(error.localizedDescription)"
+                lastOnlineStatusMessage = "Ошибка подготовки данных синхронизации: \(error.localizedDescription)"
             }
             return
         }
 
         if !silent {
             isOnlineRequestInFlight = true
-            lastOnlineStatusMessage = "Синхронизация достижений и квестов с fish-mob.ru (achievs.php)..."
+            lastOnlineStatusMessage = "Синхронизация достижений и квестов с сервером..."
         }
 
         let client = self.liveNetworkClient
@@ -1834,7 +1834,7 @@ public final class FishingAppCoordinator: ObservableObject {
                 }
             } catch {
                 if !silent {
-                    self.lastOnlineStatusMessage = "Не удалось синхронизировать прогресс с achievs.php: \(error.localizedDescription)"
+                    self.lastOnlineStatusMessage = "Не удалось синхронизировать прогресс с сервером: \(error.localizedDescription)"
                 }
             }
         }

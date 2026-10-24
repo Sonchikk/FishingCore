@@ -44,7 +44,7 @@ targets:
       path: App/Info.plist
       properties:
         CFBundleDevelopmentRegion: ru
-        CFBundleDisplayName: "Рыбалка для друзей"
+        CFBundleDisplayName: "Рыбалка для Друзей"
         CFBundleIconName: AppIcon
         CFBundleLocalizations:
           - ru
