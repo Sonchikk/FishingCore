@@ -1,4 +1,4 @@
-name: Swift 6 Build & Test (macOS 15 / iOS 18)
+name: Swift 6 Build & Test + iOS Device IPA
 
 on:
   push:
@@ -17,34 +17,9 @@ jobs:
       - name: Select Xcode 16.2
         run: |
           sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
-          xcodebuild -version
-
-      - name: Install iOS Simulator platform
-        run: |
           sudo xcodebuild -runFirstLaunch || true
-          xcrun simctl list > /dev/null
-
-          for attempt in 1 2 3; do
-            echo "Download attempt $attempt"
-            if sudo xcodebuild -downloadPlatform iOS -buildVersion 18.2; then
-              echo "iOS Simulator platform installed."
-              break
-            fi
-
-            if [ "$attempt" -eq 3 ]; then
-              echo "Failed to install iOS Simulator platform."
-              exit 1
-            fi
-
-            sleep 15
-            xcrun simctl list > /dev/null
-          done
-
-          xcodebuild -showsdks
-          xcrun simctl list devices available
-
-      - name: Swift version
-        run: swift --version
+          xcodebuild -version
+          swift --version
 
       - name: Extract original APK sprites, textures & iOS AppIcon (if fishing181.apk is present)
         run: |
@@ -59,69 +34,59 @@ jobs:
           echo "Drawables count in App/Resources/GameData/Drawables: $(ls -1 App/Resources/GameData/Drawables 2>/dev/null | wc -l)"
           ls -la App/Resources/Assets.xcassets/AppIcon.appiconset || true
 
-      - name: Build all targets (FishingCore, FishingDatabase, FishingGameApp)
+      - name: Fast Fail — Build all Swift targets (FishingCore, FishingDatabase, FishingGameApp)
         run: swift build -v
 
-      - name: Run unit & integration tests (FishingCoreTests, FishingDatabaseTests, FishingGameAppTests)
+      - name: Fast Fail — Run unit & integration tests (FishingCoreTests, FishingDatabaseTests, FishingGameAppTests)
         env:
           FISHING_DATA_DIR: ${{ github.workspace }}/data
         run: swift test --parallel
 
-      - name: Build for iOS 18 Simulator (Generic iOS Simulator)
-        run: |
-          xcodebuild build \
-            -scheme FishingCore-Package \
-            -destination 'generic/platform=iOS Simulator'
-
-      - name: Generate Xcode project & build FishingIOSApp.app (iOS 18 Simulator)
+      - name: Generate Xcode project & build iOS Device .ipa (arm64 iPhone / iPad)
         run: |
           if ! command -v xcodegen >/dev/null 2>&1; then
             brew install xcodegen
           fi
           xcodegen generate
-          xcodebuild \
-            -project FishingIOSApp.xcodeproj \
-            -scheme FishingIOSApp \
-            -configuration Debug \
-            -destination 'generic/platform=iOS Simulator' \
-            -derivedDataPath build/DerivedData \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
-            build
-          APP_PATH="build/DerivedData/Build/Products/Debug-iphonesimulator/FishingIOSApp.app"
-          ls -la "$APP_PATH"
-          ls -la "$APP_PATH/GameData"
-          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" FishingIOSApp-iOS18-Simulator.app.zip
-          ls -lh FishingIOSApp-iOS18-Simulator.app.zip
 
-      - name: Build iOS Device .ipa (arm64 iPhone / iPad — Sideloadly / AltStore / Xcode)
-        run: |
-          xcodebuild \
+          # Try building directly with the bundled iPhoneOS SDK first (no 8 GB Simulator runtime download!).
+          # Only download the iOS platform if Xcode 16.2 explicitly requires it for destination resolution.
+          if ! xcodebuild \
             -project FishingIOSApp.xcodeproj \
             -scheme FishingIOSApp \
             -configuration Release \
+            -sdk iphoneos \
             -destination 'generic/platform=iOS' \
             -derivedDataPath build/DerivedDataDevice \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
             AD_HOC_CODE_SIGNING_ALLOWED=YES \
-            build
+            build; then
+            echo "Direct iphoneos build requested platform components — downloading iOS 18.2 platform..."
+            sudo xcodebuild -downloadPlatform iOS -buildVersion 18.2
+            xcodebuild \
+              -project FishingIOSApp.xcodeproj \
+              -scheme FishingIOSApp \
+              -configuration Release \
+              -sdk iphoneos \
+              -destination 'generic/platform=iOS' \
+              -derivedDataPath build/DerivedDataDevice \
+              CODE_SIGNING_ALLOWED=NO \
+              CODE_SIGNING_REQUIRED=NO \
+              CODE_SIGN_IDENTITY="" \
+              AD_HOC_CODE_SIGNING_ALLOWED=YES \
+              build
+          fi
+
           DEVICE_APP_PATH="build/DerivedDataDevice/Build/Products/Release-iphoneos/FishingIOSApp.app"
           ls -la "$DEVICE_APP_PATH"
+          ls -la "$DEVICE_APP_PATH/GameData"
           rm -rf build/ipa_stage
           mkdir -p build/ipa_stage/Payload
           cp -R "$DEVICE_APP_PATH" build/ipa_stage/Payload/FishingIOSApp.app
           (cd build/ipa_stage && ditto -c -k --sequesterRsrc --keepParent Payload "${GITHUB_WORKSPACE}/FishingIOSApp-iOS18-Device.ipa")
           ls -lh FishingIOSApp-iOS18-Device.ipa
-
-      - name: Upload FishingIOSApp.app Simulator Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: FishingIOSApp-iOS18-Simulator
-          path: FishingIOSApp-iOS18-Simulator.app.zip
-          if-no-files-found: error
 
       - name: Upload FishingIOSApp.ipa Device Artifact (arm64 iPhone/iPad)
         uses: actions/upload-artifact@v4

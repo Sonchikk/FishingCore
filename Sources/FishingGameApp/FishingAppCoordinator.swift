@@ -1911,17 +1911,8 @@ public final class FishingAppCoordinator: ObservableObject {
                     if !silent {
                         if let lastFish = self.lastCaughtFishForSync {
                             self.submitCaughtFishLive(lastFish)
-                        } else if let fishnetLast = self.fishnetEntries.last,
-                                  let species = self.fishCatalogById[fishnetLast.fishId] {
-                            let reconstructed = CaughtUserFish(
-                                fish: species,
-                                weightGrams: fishnetLast.weightGrams,
-                                pondIndex: max(0, fishnetLast.pondId),
-                                baitIndex: max(0, fishnetLast.baitId),
-                                rodWeightKg: self.assembledTackle.userRod?.rod.weight ?? 3,
-                                catchTimeMs: fishnetLast.catchTime > 0 ? fishnetLast.catchTime : nowMs
-                            )
-                            self.submitCaughtFishLive(reconstructed)
+                        } else if let fishnetLast = self.fishnetEntries.last {
+                            self.submitCaughtFishLive(fishnetLast.caughtFish)
                         }
                     }
                     if bonusXp > 0 {
