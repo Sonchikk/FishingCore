@@ -1181,8 +1181,11 @@ final class FishingGameAppTests: XCTestCase {
         XCTAssertEqual(foplFields[0], "angler_ios")
         XCTAssertEqual(foplFields[1], firstDoubleHash)
         XCTAssertEqual(foplFields[2], "fishmob YmQ=")
-        XCTAssertEqual(foplFields[3], FishingNetworkCrypto.obfuscateFishPhpHexField(1))
+        // Field 3 is 0-based `fish.id - 1` (`0` for `id: 1`), obfuscated via `(v ^ 209) << 2`:
+        XCTAssertEqual(foplFields[3], FishingNetworkCrypto.obfuscateFishPhpHexField(0))
+        XCTAssertEqual(foplFields[3], "344") // (0 ^ 209) << 2 == 836 == 0x344
         XCTAssertEqual(foplFields[4], FishingNetworkCrypto.obfuscateFishPhpHexField(750))
+        XCTAssertEqual(foplFields[4], "8fc") // (750 ^ 209) << 2 == 2300 == 0x8fc
 
         // Verify `tour_regin.php` & `tour_results.php` builders and parser
         let regReq = FishingHttpRequestBuilder.makeTournamentRegistrationRequest(

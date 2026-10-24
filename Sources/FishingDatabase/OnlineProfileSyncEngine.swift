@@ -140,14 +140,13 @@ public enum FishingNetworkCrypto: Sendable {
         return Data(plain.utf8).base64EncodedString()
     }
 
-    /// Dalvik-compatible 15-field `X-Fish-Fopl` for `http://fish-mob.ru/fff/fish.php` (`FishingService$d.a`, `pc=0115..024d` in `classes.dex`):
+    /// Dalvik-compatible 15-field `X-Fish-Fopl` for `http://fish-mob.ru/fff/fish.php` (`FishingService$d.a`, `pc=012f..024d` in `classes.dex`):
     /// Plain string before standard Base64:
-    /// `login:passHash:fishmob YmQ=:fishIdHex:weightHex:baitIdxHex:pondIdxHex:catHex:expHex:balHex:rodWeightHex:uuidMd5:antiCheatCatchDeltaMs:appSign:antiCheatBiteDelaySeconds`
-    /// where each numeric field (`fishId`..`rodWeight`) is obfuscated via `Integer.toHexString((v % 109) + 21688 + v)`.
+    /// `login:passHash:fishmob YmQ=:fishId0BasedHex:weightHex:baitIdxHex:pondIdxHex:catHex:expHex:balHex:rodWeightHex:uuidMd5:antiCheatCatchDeltaMs:appSign:antiCheatBiteDelaySeconds`
+    /// where each numeric field (`fishId0Based`..`rodWeight`) is obfuscated via `Integer.toHexString((v ^ 209) << 2)` (`xor-int/lit16 v4, v4, 0x00d1; shl-int/2addr v4, v5` with `v5 = 2`).
     public static func obfuscateFishPhpHexField(_ value: Int) -> String {
-        let rem = value % 109
-        let obfuscated = rem + 21688 + value
-        return String(UInt32(bitPattern: Int32(truncatingIfNeeded: obfuscated)), radix: 16, uppercase: false)
+        let obfuscated = (Int32(truncatingIfNeeded: value) ^ 209) << 2
+        return String(UInt32(bitPattern: obfuscated), radix: 16, uppercase: false)
     }
 
     /// Builds the exact 15-field Base64 `X-Fish-Fopl` header required by `http://fish-mob.ru/fff/fish.php` (`FishingService$d.a`).
@@ -159,19 +158,20 @@ public enum FishingNetworkCrypto: Sendable {
         playerCategory: Int = 0,
         playerExperience: Int = 0,
         playerBalance: Int = 0,
-        antiCheatCatchDeltaMs: Int64 = -1000,
+        antiCheatCatchDeltaMs: Int64 = 25000,
         antiCheatBiteDelaySeconds: Int64 = 20,
         appSign: String = appSignConstant
     ) -> String {
         let passHash = doubleMd5Password(password)
         let uuidMd5 = installationUuidMd5(installationUuid)
-        let fishId = caughtFish?.fish.id ?? 1
+        // In `FishingService$d.a` (`pc=0155..015a`), `fish.getId() - 1` (0-based `0..140`) is encoded into field #3:
+        let fishId0Based = max(0, (caughtFish?.fish.id ?? 1) - 1)
         let weightGrams = caughtFish?.weightGrams ?? 100
         let baitIdx = caughtFish?.baitIndex ?? 0
         let pondIdx = caughtFish?.pondIndex ?? 0
         let rodWeight = caughtFish?.rodWeightKg ?? 3
 
-        let fIdHex = obfuscateFishPhpHexField(fishId)
+        let fIdHex = obfuscateFishPhpHexField(fishId0Based)
         let wHex = obfuscateFishPhpHexField(weightGrams)
         let bHex = obfuscateFishPhpHexField(baitIdx)
         let pHex = obfuscateFishPhpHexField(pondIdx)
@@ -502,16 +502,25 @@ extension PlayerStateRepository {
                 let name = fields[0]
 
                 let rodRows = try connection.query(
-                    "SELECT id, price FROM fishing_rods WHERE name = ? LIMIT 1;",
+                    "SELECT id FROM fishing_rods WHERE name = ? LIMIT 1;",
                     bindings: [.text(name)]
                 )
-                guard let rodRow = rodRows.first else { continue }
-                let baseRodId = rodRow.int("id")
-                let basePrice = rodRow.int("price")
-                if basePrice == 0 && weightKg > 0 {
+                let baseRodId: Int
+                if let rodRow = rodRows.first {
+                    baseRodId = rodRow.int("id")
+                    if weightKg > 0 {
+                        try connection.run(
+                            "UPDATE fishing_rods SET weight = ? WHERE id = ?;",
+                            bindings: [.integer(Int64(weightKg)), .integer(Int64(baseRodId))]
+                        )
+                    }
+                } else {
+                    let maxRows = try connection.query("SELECT COALESCE(MAX(id), 0) AS max_id FROM fishing_rods;")
+                    baseRodId = (maxRows.first?.int("max_id") ?? 13) + 1
+                    let dummyMd5 = FishingChecksum.rodMd5(id: baseRodId, name: name, weight: max(1, weightKg), cat: 0, price: 0, date: nowMs)
                     try connection.run(
-                        "UPDATE fishing_rods SET weight = ? WHERE id = ?;",
-                        bindings: [.integer(Int64(weightKg)), .integer(Int64(baseRodId))]
+                        "INSERT INTO fishing_rods (id, name, weight, cat, price, image, date, md5) VALUES (?, ?, ?, 0, 0, 0, ?, ?);",
+                        bindings: [.integer(Int64(baseRodId)), .text(name), .integer(Int64(max(1, weightKg))), .integer(nowMs), .text(dummyMd5)]
                     )
                 }
 
@@ -549,16 +558,25 @@ extension PlayerStateRepository {
                 let name = fields[0]
 
                 let coilRows = try connection.query(
-                    "SELECT id, price FROM coils WHERE name = ? LIMIT 1;",
+                    "SELECT id FROM coils WHERE name = ? LIMIT 1;",
                     bindings: [.text(name)]
                 )
-                guard let coilRow = coilRows.first else { continue }
-                let baseCoilId = coilRow.int("id")
-                let basePrice = coilRow.int("price")
-                if basePrice == 0 && bearings > 0 {
+                let baseCoilId: Int
+                if let coilRow = coilRows.first {
+                    baseCoilId = coilRow.int("id")
+                    if bearings > 0 {
+                        try connection.run(
+                            "UPDATE coils SET bearing_count = ? WHERE id = ?;",
+                            bindings: [.integer(Int64(bearings)), .integer(Int64(baseCoilId))]
+                        )
+                    }
+                } else {
+                    let maxRows = try connection.query("SELECT COALESCE(MAX(id), 0) AS max_id FROM coils;")
+                    baseCoilId = (maxRows.first?.int("max_id") ?? 10) + 1
+                    let dummyMd5 = FishingChecksum.coilMd5(id: baseCoilId, name: name, bearingCount: max(1, bearings), cat: 0, price: 0, date: nowMs)
                     try connection.run(
-                        "UPDATE coils SET bearing_count = ? WHERE id = ?;",
-                        bindings: [.integer(Int64(bearings)), .integer(Int64(baseCoilId))]
+                        "INSERT INTO coils (id, name, bearing_count, cat, price, image, date, md5) VALUES (?, ?, ?, 0, 0, 0, ?, ?);",
+                        bindings: [.integer(Int64(baseCoilId)), .text(name), .integer(Int64(max(1, bearings))), .integer(nowMs), .text(dummyMd5)]
                     )
                 }
 
@@ -596,16 +614,25 @@ extension PlayerStateRepository {
                 let name = fields[0]
 
                 let lineRows = try connection.query(
-                    "SELECT id, price FROM fishing_lines WHERE name = ? LIMIT 1;",
+                    "SELECT id FROM fishing_lines WHERE name = ? LIMIT 1;",
                     bindings: [.text(name)]
                 )
-                guard let lineRow = lineRows.first else { continue }
-                let baseLineId = lineRow.int("id")
-                let basePrice = lineRow.int("price")
-                if basePrice == 0 && weightKg > 0 {
+                let baseLineId: Int
+                if let lineRow = lineRows.first {
+                    baseLineId = lineRow.int("id")
+                    if weightKg > 0 {
+                        try connection.run(
+                            "UPDATE fishing_lines SET weight = ? WHERE id = ?;",
+                            bindings: [.integer(Int64(weightKg)), .integer(Int64(baseLineId))]
+                        )
+                    }
+                } else {
+                    let maxRows = try connection.query("SELECT COALESCE(MAX(id), 0) AS max_id FROM fishing_lines;")
+                    baseLineId = (maxRows.first?.int("max_id") ?? 16) + 1
+                    let dummyMd5 = FishingChecksum.lineMd5(id: baseLineId, name: name, weight: max(1, weightKg), stockLength: max(100, lengthM), cat: 0, price: 0, date: nowMs)
                     try connection.run(
-                        "UPDATE fishing_lines SET weight = ? WHERE id = ?;",
-                        bindings: [.integer(Int64(weightKg)), .integer(Int64(baseLineId))]
+                        "INSERT INTO fishing_lines (id, name, weight, stock_length, cat, price, image, date, md5) VALUES (?, ?, ?, ?, 0, 0, 0, ?, ?);",
+                        bindings: [.integer(Int64(baseLineId)), .text(name), .integer(Int64(max(1, weightKg))), .integer(Int64(max(100, lengthM))), .integer(nowMs), .text(dummyMd5)]
                     )
                 }
 
@@ -628,6 +655,25 @@ extension PlayerStateRepository {
                     .integer(nowMs),
                     .text(invMd5)
                 ])
+            }
+
+            // Ensure equipped tackle slots point to valid restored items if previous slot IDs no longer exist
+            var slots = try loadTackleSlots()
+            var slotsChanged = false
+            if rodsRestored > 0 && (slots.fishingRodId <= 0 || slots.fishingRodId > rodsRestored) {
+                slots.fishingRodId = 1
+                slotsChanged = true
+            }
+            if coilsRestored > 0 && (slots.coilId <= 0 || slots.coilId > coilsRestored) {
+                slots.coilId = 1
+                slotsChanged = true
+            }
+            if linesRestored > 0 && (slots.fishingLineId <= 0 || slots.fishingLineId > linesRestored) {
+                slots.fishingLineId = 1
+                slotsChanged = true
+            }
+            if slotsChanged {
+                try saveTackleSlots(slots)
             }
 
             // Rebuild DataSigns 1..7 (`fillFishingRodsLegal`, `fillCoilsLegal`, `fillFishingLinesLegal`)

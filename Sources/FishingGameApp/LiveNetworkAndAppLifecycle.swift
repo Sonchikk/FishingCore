@@ -270,9 +270,7 @@ public enum FishingHttpRequestBuilder: Sendable {
         )
         req.setValue(FishingNetworkCrypto.installationUuidMd5(installationUuid), forHTTPHeaderField: "X-Fish-Uuid")
         req.setValue(fachHeader, forHTTPHeaderField: "X-Fish-Fach")
-        if let fqstHeader, !fqstHeader.isEmpty {
-            req.setValue(fqstHeader, forHTTPHeaderField: "X-Fish-Fqst")
-        }
+        req.setValue(fqstHeader ?? "", forHTTPHeaderField: "X-Fish-Fqst")
         req.setValue(languageCode, forHTTPHeaderField: "X-Fish-Lng")
         return req
     }
@@ -456,6 +454,13 @@ public enum FishingOnlineResponseParser: Sendable {
     /// `"status=1000"` -> `.accepted`, `"status=1100"` -> `.newWorldRecord`.
     public static func parseFishCatchUploadResponse(_ raw: String) -> FishCatchUploadResult {
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let directCode = Int(trimmed) {
+            switch directCode {
+            case 1000: return .accepted
+            case 1100, 1300: return .newWorldRecord
+            default: return .rejected(statusCode: directCode)
+            }
+        }
         for token in trimmed.components(separatedBy: CharacterSet(charactersIn: ",;&\n\r")) {
             let kv = token.split(separator: "=", maxSplits: 1).map {
                 String($0).trimmingCharacters(in: .whitespacesAndNewlines)

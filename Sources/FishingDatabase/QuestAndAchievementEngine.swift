@@ -114,9 +114,13 @@ extension PlayerStateRepository {
             let deobfuscatedScore = obfuscatedScore / v14
             ach.score = deobfuscatedScore
 
+            let oldLevel = ach.level
             let thresholds = BalanceTables.achievementThresholds[achievementId - 1]
             while ach.level < thresholds.count && ach.score >= thresholds[ach.level] {
                 ach.level += 1
+            }
+            if ach.level > oldLevel {
+                ach.nag = 1
             }
 
             ach.date = nowMs
@@ -179,9 +183,83 @@ extension PlayerStateRepository {
         _ = try updateAchievementProgress(achievementId: 3, valueOrDelta: 1, nowMs: nowMs)
     }
 
-    /// Updates Achievement #10 («Богач») with the player's current coin balance after selling fish (`MainActivity$e.q`).
-    public func evaluateAchievementOnFishSale(newBalance: Int, nowMs: Int64) throws {
-        _ = try updateAchievementProgress(achievementId: 10, valueOrDelta: newBalance, nowMs: nowMs)
+    /// Updates Achievement #6 («Торговец», sold fish count) and Achievement #10 («Богач», max balance) after selling fish (`MainActivity$e.q`).
+    public func evaluateAchievementOnFishSale(soldFishCount: Int = 0, newBalance: Int, nowMs: Int64) throws {
+        try connection.transaction {
+            if soldFishCount > 0 {
+                _ = try updateAchievementProgress(achievementId: 6, valueOrDelta: soldFishCount, nowMs: nowMs)
+            }
+            _ = try updateAchievementProgress(achievementId: 10, valueOrDelta: newBalance, nowMs: nowMs)
+        }
+    }
+
+    /// Reconstructs `F0.o$a.e()` (`pc=0000..0212` in `classes.dex`):
+    /// After `achievs.php` returns `"1000"`, awards `nagSize * level` experience to `user_data` for every achievement
+    /// with `nag == 1` and resets `nag = 0`.
+    @discardableResult
+    public func claimPendingAchievementLevelRewards(nowMs: Int64) throws -> Int {
+        return try connection.transaction {
+            let rows = try listAchievements()
+            var totalBonusXp = 0
+            for var ach in rows where ach.nag == 1 {
+                let expectedMd5 = FishingChecksum.achievementMd5(
+                    id: ach.id,
+                    score: ach.score,
+                    level: ach.level,
+                    nag: ach.nag,
+                    nagsize: ach.nagSize,
+                    date: ach.date,
+                    installationUuid: installationUuid
+                )
+                guard ach.md5 == expectedMd5 else { continue }
+                let bonusXp = max(0, ach.nagSize * max(1, ach.level))
+                totalBonusXp += bonusXp
+                ach.nag = 0
+                ach.date = nowMs
+                ach.md5 = FishingChecksum.achievementMd5(
+                    id: ach.id,
+                    score: ach.score,
+                    level: ach.level,
+                    nag: 0,
+                    nagsize: ach.nagSize,
+                    date: nowMs,
+                    installationUuid: installationUuid
+                )
+                try connection.run(
+                    "UPDATE achievements SET nag = 0, date = ?, md5 = ? WHERE id = ?;",
+                    bindings: [
+                        .integer(nowMs),
+                        .text(ach.md5),
+                        .integer(Int64(ach.id))
+                    ]
+                )
+            }
+            if totalBonusXp > 0 {
+                var profile = try loadPlayerProfile()
+                profile.experience += totalBonusXp
+                profile.category = ProgressionCalculator.categoryForExperience(
+                    profile.experience,
+                    balanceTables: balanceTables
+                )
+                let newMd5 = FishingChecksum.userDataMd5(
+                    balance: profile.balance,
+                    experience: profile.experience,
+                    category: profile.category,
+                    date: nowMs,
+                    installationUuid: installationUuid
+                )
+                try connection.run(
+                    "UPDATE user_data SET experience = ?, category = ?, date = ?, md5 = ? WHERE id = 1;",
+                    bindings: [
+                        .integer(Int64(profile.experience)),
+                        .integer(Int64(profile.category)),
+                        .integer(nowMs),
+                        .text(newMd5)
+                    ]
+                )
+            }
+            return totalBonusXp
+        }
     }
 
     // MARK: - 3. Quests (`F0.o.b`, 44 Quests across Types 1, 2, 3, 4, 7)

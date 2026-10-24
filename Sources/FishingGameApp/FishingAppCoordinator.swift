@@ -246,6 +246,7 @@ public final class FishingAppCoordinator: ObservableObject {
     @Published public private(set) var httpActiveTournaments: [OnlineTournamentEntry] = []
     @Published public private(set) var httpCompletedTournaments: [OnlineTournamentEntry] = []
     @Published public private(set) var activeTournamentResults: TournamentResultsSnapshot? = nil
+    @Published public private(set) var lastCaughtFishForSync: CaughtUserFish? = nil
     @Published public private(set) var authenticatedChatUserId: Int32 = 1
     @Published public private(set) var isOnlineRequestInFlight: Bool = false
     @Published public private(set) var lastOnlineStatusMessage: String = ""
@@ -803,10 +804,19 @@ public final class FishingAppCoordinator: ObservableObject {
     public func sellAllFishInFishnet(nowMs: Int64 = Int64(Date().timeIntervalSince1970 * 1000)) {
         do {
             let result = try repository.sellAllFish(nowMs: nowMs)
-            try repository.evaluateAchievementOnFishSale(newBalance: result.newBalance, nowMs: nowMs)
+            try repository.evaluateAchievementOnFishSale(
+                soldFishCount: result.soldFishCount,
+                newBalance: result.newBalance,
+                nowMs: nowMs
+            )
             try reloadAllStateFromDatabase()
-            if onlineModeEnabled {
-                syncAchievementsAndQuestsLive(includeQuests: false, silent: true)
+            let hasOnlineCreds = !savedOnlineLogin.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                && !savedOnlinePassword.isEmpty
+            if onlineModeEnabled || hasOnlineCreds {
+                syncAchievementsAndQuestsLive(includeQuests: true, silent: true)
+                if let lastFish = lastCaughtFishForSync {
+                    submitCaughtFishLive(lastFish)
+                }
             }
             activeAlert = .fishSold(result: result)
         } catch let err as PlayerPersistenceError {
@@ -864,7 +874,7 @@ public final class FishingAppCoordinator: ObservableObject {
             previousPhysicsBobberPos = pt
             targetPhysicsBobberPos = pt
             renderedBobberPosition = pt
-            audioHaptics.recordCastScheduledBite(beginTimeMs: stateMachine.scheduledBiteTimeMs)
+            audioHaptics.recordCastScheduledBite(beginTimeMs: nowMs)
             if checkModeEnabled {
                 let pondTitle = currentPondItem.map { localeManager.pondName(for: $0) } ?? "Водоём"
                 biteNotificationScheduler.scheduleBiteAlarm(
@@ -1099,6 +1109,7 @@ public final class FishingAppCoordinator: ObservableObject {
                         isLanguageSupported: localeManager.areQuestsAndTasksActive,
                         nowMs: nowMs
                     )
+                    lastCaughtFishForSync = caughtFish
                     try reloadAllStateFromDatabase()
                     activeAlert = .catchDialog(
                         fish: caughtFish,
@@ -1673,8 +1684,8 @@ public final class FishingAppCoordinator: ObservableObject {
         let cat = profile.category
         let exp = profile.experience
         let bal = profile.balance
-        let catchDeltaMs = audioHaptics.lastAntiCheatCatchDeltaMs
-        let biteDelaySec = audioHaptics.lastAntiCheatBiteDelaySeconds
+        let catchDeltaMs = max(15_000, audioHaptics.lastAntiCheatCatchDeltaMs)
+        let biteDelaySec = max(18, audioHaptics.lastAntiCheatBiteDelaySeconds)
         let invFolp = try? repository.buildFishCatchInventoryFolpHeader()
 
         Task { @MainActor in
@@ -1826,7 +1837,19 @@ public final class FishingAppCoordinator: ObservableObject {
                 )
                 switch outcome {
                 case .synchronized(let msg):
-                    self.lastOnlineStatusMessage = msg
+                    let nowMs = Int64(Date().timeIntervalSince1970 * 1000)
+                    let bonusXp = (try? self.repository.claimPendingAchievementLevelRewards(nowMs: nowMs)) ?? 0
+                    if bonusXp > 0 {
+                        try? self.reloadAllStateFromDatabase()
+                    }
+                    if !silent, let lastFish = self.lastCaughtFishForSync {
+                        self.submitCaughtFishLive(lastFish)
+                    }
+                    if bonusXp > 0 {
+                        self.lastOnlineStatusMessage = "\(msg) Начислена награда за достижения: +\(bonusXp) XP."
+                    } else {
+                        self.lastOnlineStatusMessage = msg
+                    }
                 case .rejected(_, let msg):
                     if !silent {
                         self.lastOnlineStatusMessage = msg

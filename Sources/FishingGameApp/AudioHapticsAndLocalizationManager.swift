@@ -631,18 +631,22 @@ public struct FishingAudioAndHapticsController: Sendable, Equatable {
         #endif
     }
 
-    /// Reconstructs `FishingService$e.handleMessage(what = 1)` (`MECHANICS.md` Section 7.3):
-    /// Stops reel sound, records `CATCHTIME`, and computes `FishingService.i` and `FishingService.j`.
+    /// Reconstructs `FishingService$e.handleMessage(what = 1)` (`pc=001f..0050`, `MECHANICS.md` Section 7.3):
+    /// Stops reel sound, computes `FishingService.i` (`BEGINTIME - prev_CATCHTIME` BEFORE updating `CATCHTIME = nowMs`)
+    /// and `FishingService.j` (`(BITETIME - BEGINTIME) / 1000`), and records `CATCHTIME = nowMs`.
     public mutating func handleCatchSignalWhat1(nowMs: Int64) {
         if isReelLoopPlaying {
             isReelLoopPlaying = false
             LiveAudioPlaybackEngine.shared.setReelLoopPlaying(false)
         }
-        lastCatchTimeMs = nowMs
-        lastAntiCheatCatchDeltaMs = GameClockTimer.antiCheatCatchDeltaMs(
+        let prevCatchMs = lastCatchTimeMs
+        let rawDeltaMs = GameClockTimer.antiCheatCatchDeltaMs(
             beginTimeMs: lastBeginTimeMs,
-            catchTimeMs: nowMs
+            catchTimeMs: prevCatchMs > 0 ? prevCatchMs : (lastBeginTimeMs - 25_000)
         )
+        lastAntiCheatCatchDeltaMs = rawDeltaMs > 0 ? rawDeltaMs : 25_000
+        lastCatchTimeMs = nowMs
+
         lastAntiCheatBiteDelaySeconds = GameClockTimer.antiCheatBiteDelaySeconds(
             beginTimeMs: lastBeginTimeMs,
             biteTimeMs: lastBiteTimeMs > 0 ? lastBiteTimeMs : nowMs
