@@ -1,9 +1,6 @@
 import Foundation
 import FishingCore
 import FishingDatabase
-#if canImport(UserNotifications)
-import UserNotifications
-#endif
 #if canImport(Network)
 import Network
 #endif
@@ -445,7 +442,8 @@ public enum AppBundleDatabaseBootstrapper: Sendable {
         initialMinute: Int = 0,
         viewWidth: Int = 393,
         viewHeight: Int = 600,
-        nowMs: Int64 = Int64(Date().timeIntervalSince1970 * 1000)
+        nowMs: Int64 = Int64(Date().timeIntervalSince1970 * 1000),
+        notificationScheduling: any SystemNotificationScheduling = LiveSystemNotifications()
     ) throws -> FishingAppCoordinator {
         let supportDir = appSupportDirectory ?? defaultAppSupportDirectoryURL()
         try FileManager.default.createDirectory(at: supportDir, withIntermediateDirectories: true)
@@ -469,7 +467,8 @@ public enum AppBundleDatabaseBootstrapper: Sendable {
             initialMinute: initialMinute,
             viewWidth: viewWidth,
             viewHeight: viewHeight,
-            nowMs: nowMs
+            nowMs: nowMs,
+            notificationScheduling: notificationScheduling
         )
     }
 }
@@ -486,13 +485,31 @@ public struct FishingBiteNotificationScheduler: Sendable, Equatable {
     public private(set) var scheduledPondTitle: String? = nil
     public private(set) var scheduledCount: Int = 0
     public private(set) var cancelledCount: Int = 0
+    private let notificationScheduling: any SystemNotificationScheduling
 
-    public init(authorizationGranted: Bool = true) {
+    public init(
+        authorizationGranted: Bool = true,
+        notificationScheduling: any SystemNotificationScheduling = LiveSystemNotifications()
+    ) {
         self.authorizationGranted = authorizationGranted
+        self.notificationScheduling = notificationScheduling
+    }
+
+    public static func == (lhs: FishingBiteNotificationScheduler, rhs: FishingBiteNotificationScheduler) -> Bool {
+        lhs.authorizationGranted == rhs.authorizationGranted
+            && lhs.scheduledBiteTimeMs == rhs.scheduledBiteTimeMs
+            && lhs.scheduledPondTitle == rhs.scheduledPondTitle
+            && lhs.scheduledCount == rhs.scheduledCount
+            && lhs.cancelledCount == rhs.cancelledCount
     }
 
     public var isNotificationPending: Bool {
         scheduledBiteTimeMs != nil
+    }
+
+    /// Requests system notification permission via injected `SystemNotificationScheduling`.
+    public func requestAuthorization() {
+        notificationScheduling.requestAuthorization()
     }
 
     /// Schedules a local iOS notification for `scheduledBiteTimeMs` (`BEGINTIME`).
@@ -507,55 +524,31 @@ public struct FishingBiteNotificationScheduler: Sendable, Equatable {
         self.scheduledCount += 1
 
         let delaySeconds = max(1.0, Double(scheduledBiteTimeMs - nowMs) / 1000.0)
-        Self.postSystemLocalNotification(pondTitle: pondTitle, delaySeconds: delaySeconds)
+        notificationScheduling.scheduleLocal(
+            id: Self.biteAlarmNotificationIdentifier,
+            title: "Рыбалка для друзей",
+            body: "Клюёт на водоёме «\(pondTitle)»! Скорее подсекайте!",
+            delaySeconds: delaySeconds
+        )
     }
 
-    /// Cancels any pending or delivered local bite notification.
+    /// Cancels a pending local bite notification if one was scheduled.
     public mutating func cancelPendingBiteAlarm() {
+        guard scheduledBiteTimeMs != nil else { return }
+        scheduledBiteTimeMs = nil
+        scheduledPondTitle = nil
+        cancelledCount += 1
+        notificationScheduling.removePending(id: Self.biteAlarmNotificationIdentifier)
+    }
+
+    /// Removes all pending and delivered local notifications via injected `SystemNotificationScheduling`.
+    public mutating func removeAllPendingBiteAlarms() {
         if scheduledBiteTimeMs != nil {
             scheduledBiteTimeMs = nil
             scheduledPondTitle = nil
             cancelledCount += 1
         }
-        Self.removeSystemLocalNotification()
-    }
-
-    public static func requestSystemNotificationAuthorization() {
-        #if canImport(UserNotifications)
-        guard Bundle.main.bundleIdentifier != nil else { return }
-        let center = UNUserNotificationCenter.current()
-        center.requestAuthorization(options: [.alert, .sound, .badge]) { _, _ in }
-        #endif
-    }
-
-    private static func postSystemLocalNotification(pondTitle: String, delaySeconds: TimeInterval) {
-        #if canImport(UserNotifications)
-        guard Bundle.main.bundleIdentifier != nil else { return }
-        let center = UNUserNotificationCenter.current()
-        center.removePendingNotificationRequests(withIdentifiers: [biteAlarmNotificationIdentifier])
-
-        let content = UNMutableNotificationContent()
-        content.title = "Рыбалка для друзей"
-        content.body = "Клюёт на водоёме «\(pondTitle)»! Скорее подсекайте!"
-        content.sound = .default
-
-        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: max(1.0, delaySeconds), repeats: false)
-        let request = UNNotificationRequest(
-            identifier: biteAlarmNotificationIdentifier,
-            content: content,
-            trigger: trigger
-        )
-        center.add(request, withCompletionHandler: nil)
-        #endif
-    }
-
-    private static func removeSystemLocalNotification() {
-        #if canImport(UserNotifications)
-        guard Bundle.main.bundleIdentifier != nil else { return }
-        let center = UNUserNotificationCenter.current()
-        center.removePendingNotificationRequests(withIdentifiers: [biteAlarmNotificationIdentifier])
-        center.removeDeliveredNotifications(withIdentifiers: [biteAlarmNotificationIdentifier])
-        #endif
+        notificationScheduling.removeAllPending()
     }
 }
 

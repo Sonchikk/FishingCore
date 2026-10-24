@@ -162,8 +162,8 @@ public final class FishingAppCoordinator: ObservableObject {
     @Published public var checkModeEnabled: Bool = false {
         didSet {
             if checkModeEnabled {
-                FishingBiteNotificationScheduler.requestSystemNotificationAuthorization()
-            } else {
+                biteNotificationScheduler.requestAuthorization()
+            } else if biteNotificationScheduler.isNotificationPending {
                 biteNotificationScheduler.cancelPendingBiteAlarm()
             }
         }
@@ -175,7 +175,7 @@ public final class FishingAppCoordinator: ObservableObject {
     public let installationUuid: String
     public let liveNetworkClient = FishingLiveNetworkClient()
     public let tcpChatSession = FishingLiveTCPChatSession()
-    @Published public var biteNotificationScheduler = FishingBiteNotificationScheduler()
+    @Published public var biteNotificationScheduler: FishingBiteNotificationScheduler
     @Published public private(set) var topPlayersRating: [TopPlayerRatingEntry] = []
     @Published public private(set) var worldSpeciesRecords: [WorldSpeciesRecordEntry] = []
     @Published public private(set) var tournamentTimetableLines: [String] = []
@@ -260,7 +260,8 @@ public final class FishingAppCoordinator: ObservableObject {
         initialMinute: Int = 0,
         viewWidth: Int = 1280,
         viewHeight: Int = 800,
-        nowMs: Int64 = 1_700_000_000_000
+        nowMs: Int64 = 1_700_000_000_000,
+        notificationScheduling: any SystemNotificationScheduling = LiveSystemNotifications()
     ) throws {
         let resolvedPath: String
         if let databasePath {
@@ -295,6 +296,9 @@ public final class FishingAppCoordinator: ObservableObject {
         try repo.initializeNewPlayerIfNeeded(nowMs: nowMs)
 
         self.installationUuid = installationUuid
+        self.biteNotificationScheduler = FishingBiteNotificationScheduler(
+            notificationScheduling: notificationScheduling
+        )
         self.connection = conn
         self.catalog = cat
         self.repository = repo
@@ -667,7 +671,9 @@ public final class FishingAppCoordinator: ObservableObject {
     public func resetCastToIdle() {
         let events = stateMachine.resetToIdle()
         audioHaptics.setReelLooping(false)
-        biteNotificationScheduler.cancelPendingBiteAlarm()
+        if biteNotificationScheduler.isNotificationPending {
+            biteNotificationScheduler.cancelPendingBiteAlarm()
+        }
         currentLineCurve = nil
         renderedBobberPosition = nil
         previousPhysicsBobberPos = nil
@@ -839,7 +845,9 @@ public final class FishingAppCoordinator: ObservableObject {
                 break
 
             case .biteTriggered:
-                biteNotificationScheduler.cancelPendingBiteAlarm()
+                if biteNotificationScheduler.isNotificationPending {
+                    biteNotificationScheduler.cancelPendingBiteAlarm()
+                }
                 audioHaptics.handleBiteSignalWhat0(nowMs: nowMs)
 
             case .fishCaught(let caughtFish):
@@ -1081,7 +1089,9 @@ public final class FishingAppCoordinator: ObservableObject {
     /// Called when the app returns to foreground (`scenePhase == .active`, `GameActivity.onResume`).
     /// Catches up the game clock and evaluates any bite that occurred while the device was asleep.
     public func handleAppDidBecomeActive(nowMs: Int64 = Int64(Date().timeIntervalSince1970 * 1000)) {
-        biteNotificationScheduler.cancelPendingBiteAlarm()
+        if biteNotificationScheduler.isNotificationPending {
+            biteNotificationScheduler.cancelPendingBiteAlarm()
+        }
 
         if let meta = stateMachine.lastCastMetadata {
             _ = handleResumeAfterSleep(

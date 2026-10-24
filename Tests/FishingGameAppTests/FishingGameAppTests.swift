@@ -13,7 +13,8 @@ final class FishingGameAppTests: XCTestCase {
             databasePath: ":memory:",
             initialHour: 8,
             initialMinute: 30,
-            nowMs: 1_700_000_000_000
+            nowMs: 1_700_000_000_000,
+            notificationScheduling: NoopSystemNotifications()
         )
 
         XCTAssertEqual(coordinator.profile.balance, 500)
@@ -38,7 +39,8 @@ final class FishingGameAppTests: XCTestCase {
     func testCastWithMissingTackleShowsAlertAndReturnsToIdle() throws {
         let coordinator = try FishingAppCoordinator(
             databasePath: ":memory:",
-            nowMs: 1_700_000_000_000
+            nowMs: 1_700_000_000_000,
+            notificationScheduling: NoopSystemNotifications()
         )
 
         var rng = ScriptedFishingRandom(ints: [10])
@@ -61,7 +63,8 @@ final class FishingGameAppTests: XCTestCase {
             initialMinute: 0,
             viewWidth: 1280,
             viewHeight: 800,
-            nowMs: 1_700_000_000_000
+            nowMs: 1_700_000_000_000,
+            notificationScheduling: NoopSystemNotifications()
         )
 
         coordinator.buyAndEquipStarterKit(nowMs: 1_700_000_001_000)
@@ -226,7 +229,8 @@ final class FishingGameAppTests: XCTestCase {
     func testCoordinatorOnlineAuthRestoreShopSyncAndChatPacketHandling() throws {
         let coordinator = try FishingAppCoordinator(
             databasePath: ":memory:",
-            nowMs: 1_700_000_000_000
+            nowMs: 1_700_000_000_000,
+            notificationScheduling: NoopSystemNotifications()
         )
 
         let rodName = try XCTUnwrap(coordinator.catalog.listAllRodSpecs().first?.name)
@@ -339,7 +343,8 @@ final class FishingGameAppTests: XCTestCase {
     func testLocalizationManagerPondNamesAndQuestLanguageGate() throws {
         let coordinator = try FishingAppCoordinator(
             databasePath: ":memory:",
-            nowMs: 1_700_000_000_000
+            nowMs: 1_700_000_000_000,
+            notificationScheduling: NoopSystemNotifications()
         )
         let firstPond = try XCTUnwrap(coordinator.availablePonds.first)
 
@@ -378,7 +383,8 @@ final class FishingGameAppTests: XCTestCase {
     func testCoordinatorClaimServerRewardsAndFishermanContractCompletion() throws {
         let coordinator = try FishingAppCoordinator(
             databasePath: ":memory:",
-            nowMs: 1_700_000_000_000
+            nowMs: 1_700_000_000_000,
+            notificationScheduling: NoopSystemNotifications()
         )
 
         // 1. Claim server rewards (`reaward.php` format: `--notes=1,1=1500,2=800,3=2`): +1500 coins, +800 XP, and rod #2
@@ -516,7 +522,8 @@ final class FishingGameAppTests: XCTestCase {
             databasePath: ":memory:",
             initialHour: 21,
             initialMinute: 50,
-            nowMs: 1_000_000
+            nowMs: 1_000_000,
+            notificationScheduling: NoopSystemNotifications()
         )
         XCTAssertTrue(coordinator.dayNightLighting.isDayLight)
         XCTAssertEqual(coordinator.audioHaptics.activeAmbientTrack?.isDaylightTrack, true)
@@ -605,7 +612,8 @@ final class FishingGameAppTests: XCTestCase {
         let coordinator1 = try AppBundleDatabaseBootstrapper.bootstrapAppCoordinator(
             appSupportDirectory: tempDir,
             bundledGameDataURL: gameDataURL,
-            nowMs: 1_700_000_000_000
+            nowMs: 1_700_000_000_000,
+            notificationScheduling: NoopSystemNotifications()
         )
         XCTAssertEqual(coordinator1.fishCatalogById.count, 141)
         XCTAssertEqual(coordinator1.availablePonds.count, 15)
@@ -621,7 +629,8 @@ final class FishingGameAppTests: XCTestCase {
         let coordinator2 = try AppBundleDatabaseBootstrapper.bootstrapAppCoordinator(
             appSupportDirectory: tempDir,
             bundledGameDataURL: gameDataURL,
-            nowMs: 1_700_000_002_000
+            nowMs: 1_700_000_002_000,
+            notificationScheduling: NoopSystemNotifications()
         )
         XCTAssertEqual(coordinator2.profile.balance, balanceAfterStarterKit)
         XCTAssertEqual(coordinator2.ownedRods.count, 1)
@@ -646,7 +655,11 @@ final class FishingGameAppTests: XCTestCase {
 
     @MainActor
     func testVisualFramePersistenceAndReelPullIdempotence() throws {
-        let coordinator = try FishingAppCoordinator(databasePath: ":memory:", nowMs: 1_700_000_000_000)
+        let coordinator = try FishingAppCoordinator(
+            databasePath: ":memory:",
+            nowMs: 1_700_000_000_000,
+            notificationScheduling: NoopSystemNotifications()
+        )
         XCTAssertFalse(coordinator.isDebugOverlayEnabled)
 
         coordinator.buyAndEquipStarterKit(nowMs: 1_700_000_001_000)
@@ -703,7 +716,11 @@ final class FishingGameAppTests: XCTestCase {
 
     @MainActor
     func testFastForwardToScheduledBiteUsesCurrentWallTimeAndAllowsReeling() throws {
-        let coordinator = try FishingAppCoordinator(databasePath: ":memory:", nowMs: 1_700_000_000_000)
+        let coordinator = try FishingAppCoordinator(
+            databasePath: ":memory:",
+            nowMs: 1_700_000_000_000,
+            notificationScheduling: NoopSystemNotifications()
+        )
         coordinator.buyAndEquipStarterKit(nowMs: 1_700_000_001_000)
 
         let castWallMs: Int64 = 1_700_000_002_000
@@ -725,7 +742,11 @@ final class FishingGameAppTests: XCTestCase {
 
     @MainActor
     func testPortraitViewportRodAndLinePlacementOnRightSide() throws {
-        let coordinator = try FishingAppCoordinator(databasePath: ":memory:", nowMs: 1_700_000_000_000)
+        let coordinator = try FishingAppCoordinator(
+            databasePath: ":memory:",
+            nowMs: 1_700_000_000_000,
+            notificationScheduling: NoopSystemNotifications()
+        )
         coordinator.buyAndEquipStarterKit(nowMs: 1_700_000_001_000)
 
         // Simulate portrait iPhone pond canvas size (393 x 600)
@@ -753,7 +774,11 @@ final class FishingGameAppTests: XCTestCase {
 
     @MainActor
     func testCheckModeBiteNotificationAndSleepWakeup() throws {
-        let coordinator = try FishingAppCoordinator(databasePath: ":memory:", nowMs: 1_700_000_000_000)
+        let coordinator = try FishingAppCoordinator(
+            databasePath: ":memory:",
+            nowMs: 1_700_000_000_000,
+            notificationScheduling: NoopSystemNotifications()
+        )
         coordinator.buyAndEquipStarterKit(nowMs: 1_700_000_001_000)
         coordinator.updateViewportSize(width: 393, height: 600)
         coordinator.checkModeEnabled = true
