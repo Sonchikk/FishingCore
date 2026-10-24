@@ -854,4 +854,143 @@ final class FishingGameAppTests: XCTestCase {
         XCTAssertEqual(coordinator2.gameClock.hour, 14)
         XCTAssertEqual(coordinator2.gameClock.minute, 26)
     }
+
+    // MARK: - 18. Phase 17: Real `fish-mob.ru` Online Parsers (`top.php`, `rek.php`, `index.php`), TCP Stream Framing & Audio Engine
+
+    func testRealFishMobOnlineParsersAndStreamFraming() throws {
+        // 1. Real `top.php` format from `Lx0/p` (`LINK=4`): header line + `"1. Login - 12450000"`
+        let rawTop = "Рейтинг игроков\n1. Мастер_Дона - 72500000\n2. Сибиряк_77 - 12450000\n"
+        let topEntries = FishingOnlineResponseParser.parseTopPlayersResponse(rawTop)
+        XCTAssertEqual(topEntries.count, 2)
+        XCTAssertEqual(topEntries[0].rankPosition, 1)
+        XCTAssertEqual(topEntries[0].login, "Мастер_Дона")
+        XCTAssertEqual(topEntries[0].experience, 72_500_000)
+        XCTAssertGreaterThan(topEntries[0].categoryRank, 0)
+        XCTAssertEqual(topEntries[1].rankPosition, 2)
+        XCTAssertEqual(topEntries[1].login, "Сибиряк_77")
+
+        // 2. Real `rek.php` format from `Lx0/p` (`LINK=6`): `"1. HolderLogin - FishName - 2950 г."`
+        let rawRek = "Таблица рекордов\n1. Рыболов_Про - Белуга - 1450000 г.\n2. Капитан - Щука - 24800 г.\n"
+        let rekEntries = FishingOnlineResponseParser.parseWorldSpeciesRecordsResponse(rawRek)
+        XCTAssertEqual(rekEntries.count, 2)
+        XCTAssertEqual(rekEntries[0].holderLogin, "Рыболов_Про")
+        XCTAssertEqual(rekEntries[0].fishName, "Белуга")
+        XCTAssertEqual(rekEntries[0].weightGrams, 1_450_000)
+        XCTAssertEqual(rekEntries[1].fishName, "Щука")
+        XCTAssertEqual(rekEntries[1].weightGrams, 24_800)
+
+        // 3. Real `index.php` tournament list (`LINK=2` active & `LINK=3` completed)
+        let rawActiveTours = "Вечерний кубок--Максимальный вес: Карась--Кедровый остров--20:00 - 21:00--1--1045#Ночной турнир--Сумма веса: Сом--Дон--22:00 - 23:00--0--1046#"
+        let activeTours = FishingOnlineResponseParser.parseTournamentIndexResponse(rawActiveTours, isCompleted: false)
+        XCTAssertEqual(activeTours.count, 2)
+        XCTAssertEqual(activeTours[0].id, "1045")
+        XCTAssertEqual(activeTours[0].title, "Вечерний кубок")
+        XCTAssertFalse(activeTours[0].isCompleted)
+
+        let rawDoneTours = "Дневной блиц (Победитель: Рыбак_1)--18:00--1040#"
+        let doneTours = FishingOnlineResponseParser.parseTournamentIndexResponse(rawDoneTours, isCompleted: true)
+        XCTAssertEqual(doneTours.count, 1)
+        XCTAssertEqual(doneTours[0].id, "1040")
+        XCTAssertTrue(doneTours[0].isCompleted)
+
+        // 4. `auth_chat.php` single-digit rejection code without colon
+        let rejectedNoColon = FishingOnlineResponseParser.parseChatAuthResponse("0")
+        XCTAssertEqual(rejectedNoColon, .rejected(statusCode: 0, message: "Доступ к чату временно закрыт (код 0)."))
+
+        // 5. Multi-message TCP stream buffer with single `0xACED0005` header + `TC_RESET (0x79)` on subsequent messages
+        let m1 = ChatProtocolSelector.makeOpenHandshakeMess(
+            userId: 42,
+            login: "angler_ios",
+            pondRoom: 0,
+            installationUuid: "11111111-2222-3333-4444-555555555555"
+        )
+        let m2 = ChatProtocolSelector.makeSystemMess(
+            command: "initialize",
+            userId: 42,
+            login: "angler_ios",
+            pondRoom: 0
+        )
+        var combinedStream = JavaObjectStreamCodec.encodeMess(m1, includeStreamHeader: true)
+        combinedStream.append(
+            JavaObjectStreamCodec.encodeMess(
+                m2,
+                includeStreamHeader: false,
+                prependResetWhenNoHeader: true
+            )
+        )
+        let decodedMany = JavaObjectStreamCodec.extractMessagesFromStreamBuffer(&combinedStream)
+        XCTAssertEqual(decodedMany.count, 2)
+        XCTAssertEqual(decodedMany[0].text, "open")
+        XCTAssertEqual(decodedMany[1].text, "initialize")
+        XCTAssertTrue(combinedStream.isEmpty)
+    }
+
+    func testWaterHorizonClampAndNativeAudioEngineData() throws {
+        // Verify bobber never steps above `viewHeight / 4 + halfBobberHeight` during fish fight escape
+        let bt = BalanceTables()
+        let pondData = PondSimulationData(
+            pondIndex: 0,
+            fishIds1Based: [1],
+            preferredBaitIds0BasedByFish: [1: [0]],
+            timeMaskByFish: [1: 0b1111]
+        )
+        let fish = FishSpecies(
+            id: 1,
+            name: "Карась",
+            maxWeightGrams: 3000,
+            minWeightGrams: 100,
+            pricePer100g: 10,
+            experiencePer100g: 10,
+            rarityRank: 1,
+            strength: 10,
+            stamina: 10,
+            intelligence: 10,
+            aggression: 10
+        )
+        let tackle = AssembledTackle(
+            userRod: UserRodItem(id: 1, rod: FishingRodSpec(id: 1, name: "Rod", weight: 25, price: 100), strength: 100),
+            userCoil: UserCoilItem(id: 1, coil: CoilSpec(id: 1, name: "Coil", bearingCount: 3, price: 100), strength: 100),
+            userLine: UserLineItem(id: 1, line: FishingLineSpec(id: 1, name: "Line", weight: 25, stockLength: 100, price: 100), length: 100),
+            userHook: UserHookItem(id: 1, hook: HookSpec(id: 1, name: "Hook"), amount: 5),
+            userBait: UserBaitItem(id: 1, bait: BaitSpec(id: 1, name: "Bait"), amount: 20)
+        )
+        var sm = FishingStateMachine(
+            viewWidth: 400,
+            viewHeight: 600,
+            bobberBitmapWidth: 24,
+            bobberBitmapHeight: 40,
+            animationsEnabled: true,
+            balanceTables: bt,
+            pondData: pondData,
+            timeOfDay: .morning,
+            fishCatalogById1Based: [1: fish],
+            tackle: tackle
+        )
+        var rng = ScriptedFishingRandom(ints: [5, 0, 50], floats: [0.99], defaultInt: 2, defaultFloat: 0.99)
+        _ = sm.cast(x: 200, y: 185, nowMs: 1_000, rng: &rng)
+        let biteMs = sm.scheduledBiteTimeMs + 100
+        _ = sm.stepTick(nowMs: biteMs, rng: &rng)
+        XCTAssertEqual(sm.state, .fishFight)
+
+        // Let the fish pull away (`isPulled == false`) for 40 ticks: bobber must stay >= 600/4 + 20 = 170
+        let minAllowedWaterY = Float(600 / 4) + Float(40 / 2)
+        for tick in 1...40 {
+            sm.stepBobberMovement(nowMs: biteMs + Int64(tick * 200), rng: &rng)
+            XCTAssertGreaterThanOrEqual(sm.bobber?.y ?? 0, minAllowedWaterY)
+        }
+
+        // Verify Phase 17 audio engine embedded `.m4a` and procedural `.wav` assets are non-empty and valid
+        let engine = LiveAudioPlaybackEngine.shared
+        let klevData = engine.resolvedAudioData(forKey: "klev")
+        let twData = engine.resolvedAudioData(forKey: "tw")
+        XCTAssertGreaterThan(klevData.count, 1000)
+        XCTAssertGreaterThan(twData.count, 1000)
+
+        for sfx in FishingSoundEffect.allCases {
+            let wavData = engine.resolvedAudioData(forKey: "sfx_\(sfx.rawValue)")
+            XCTAssertGreaterThan(wavData.count, 1000)
+            let headerPrefix = String(decoding: wavData.prefix(4), as: UTF8.self)
+            XCTAssertEqual(headerPrefix, "RIFF")
+        }
+    }
 }

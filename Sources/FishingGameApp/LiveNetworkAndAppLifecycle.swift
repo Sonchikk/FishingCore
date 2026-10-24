@@ -38,6 +38,9 @@ public enum FishingHttpRequestBuilder: Sendable {
     ) -> URLRequest {
         var req = URLRequest(url: URL(string: FishingHttpEndpoint.authChat.rawValue)!)
         req.httpMethod = "GET"
+        req.setValue("close", forHTTPHeaderField: "Connection")
+        req.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        req.setValue("text/plain", forHTTPHeaderField: "Accept")
         req.setValue(
             FishingNetworkCrypto.makeChatAuthFoplHeader(
                 login: login,
@@ -147,6 +150,29 @@ public enum FishingHttpRequestBuilder: Sendable {
         return req
     }
 
+    /// Builds `GET http://fish-mob.ru/fff/index.php` (`OnlineGameActivity$e.a`, `NETWORK.md` Section 2 #14).
+    /// `listType`: `"2"` = active tournaments, `"3"` = completed tournaments, `"7"` = server news.
+    public static func makeTournamentIndexRequest(
+        login: String,
+        listType: String = "2",
+        languageCode: String = "ru",
+        utcOffsetSeconds: Int = TimeZone.current.secondsFromGMT(),
+        regFlag: String = "1"
+    ) -> URLRequest {
+        var req = URLRequest(url: URL(string: FishingHttpEndpoint.tournamentIndex.rawValue)!)
+        req.httpMethod = "GET"
+        req.setValue("close", forHTTPHeaderField: "Connection")
+        req.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        req.setValue("text/plain", forHTTPHeaderField: "Accept")
+        req.setValue(FishingNetworkCrypto.versionMeeks4_15, forHTTPHeaderField: "X-Fish-Version")
+        req.setValue(languageCode, forHTTPHeaderField: "X-Fish-SetLng")
+        req.setValue(login, forHTTPHeaderField: "X-Fish-Login")
+        req.setValue(listType, forHTTPHeaderField: "X-Fish-Type")
+        req.setValue(String(utcOffsetSeconds), forHTTPHeaderField: "X-Fish-OffsetUTC")
+        req.setValue(regFlag, forHTTPHeaderField: "X-Fish-Reg")
+        return req
+    }
+
     /// Builds `GET http://fish-mob.ru/fff/online.php` (`MainActivity$d.a`, `NETWORK.md` Section 2 #5).
     public static func makeOnlineShopRequest(
         login: String,
@@ -250,20 +276,61 @@ public struct WorldSpeciesRecordEntry: Sendable, Equatable, Identifiable {
     }
 }
 
+/// Tournament entry parsed from `http://fish-mob.ru/fff/index.php` (`Lx0/p.onActivityCreated`, `LINK=2` / `LINK=3`).
+public struct OnlineTournamentEntry: Sendable, Equatable, Identifiable {
+    public let id: String
+    public let title: String
+    public let details: String
+    public let dateInfo: String
+    public let registrationState: String
+    public let isCompleted: Bool
+
+    public init(
+        id: String,
+        title: String,
+        details: String,
+        dateInfo: String = "",
+        registrationState: String = "",
+        isCompleted: Bool = false
+    ) {
+        self.id = id
+        self.title = title
+        self.details = details
+        self.dateInfo = dateInfo
+        self.registrationState = registrationState
+        self.isCompleted = isCompleted
+    }
+}
+
 public enum FishingOnlineResponseParser: Sendable {
 
     /// Parses `auth_chat.php` response (`SplashScreenActivity$d.a`, `NETWORK.md` Section 2 #2):
-    /// `"1:<userId>"` on success, `"0:..."` or `"2:..."..`"9:..."` on rejection.
+    /// `"1:<userId>"` on success, `"0"` or `"2"`..`"9"` (with or without `":..."`) on rejection.
     public static func parseChatAuthResponse(_ raw: String) -> ChatAuthHandshakeResult {
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         let parts = trimmed.split(separator: ":", maxSplits: 1).map(String.init)
-        guard parts.count == 2, let code = Int(parts[0]) else {
+        guard let first = parts.first,
+              let code = Int(first.trimmingCharacters(in: .whitespacesAndNewlines)) else {
             return .rejected(statusCode: -1, message: trimmed)
         }
-        if code == 1, let uid = Int32(parts[1].trimmingCharacters(in: .whitespacesAndNewlines)) {
+        if code == 1, parts.count == 2,
+           let uid = Int32(parts[1].trimmingCharacters(in: .whitespacesAndNewlines)) {
             return .authenticated(userId: uid)
         }
-        return .rejected(statusCode: code, message: parts[1])
+        let message: String
+        if parts.count >= 2 {
+            message = parts[1].trimmingCharacters(in: .whitespacesAndNewlines)
+        } else {
+            switch code {
+            case 0: message = "Доступ к чату временно закрыт (код 0)."
+            case 2: message = "Устаревшая версия клиента чата (код 2)."
+            case 3: message = "Аккаунт заблокирован в чате (код 3)."
+            case 4: message = "Слишком частые подключения к чату (код 4)."
+            case 5: message = "Требуется повторная авторизация профиля (код 5)."
+            default: message = "Код ответа auth_chat.php: \(code)"
+            }
+        }
+        return .rejected(statusCode: code, message: message)
     }
 
     /// Parses `fish.php` response (`FishingService$d.a`, `NETWORK.md` Section 2 #3):
@@ -285,12 +352,50 @@ public enum FishingOnlineResponseParser: Sendable {
         return .rejected(statusCode: -1)
     }
 
-    /// Parses `top.php` top players lines (`login:exp:category` or `rank:login:exp:category`).
+    /// Parses `top.php` top players lines (`Lx0/p.onActivityCreated`, `LINK=4` in `classes.dex`):
+    /// Supports both the real `fish-mob.ru` format (`"1. Login - 12450000"`, with optional header line 0)
+    /// and colon-delimited lines (`"rank:login:exp:category"` or `"login:exp:category"`).
     public static func parseTopPlayersResponse(_ raw: String) -> [TopPlayerRatingEntry] {
         var result: [TopPlayerRatingEntry] = []
         for (idx, line) in raw.components(separatedBy: .newlines).enumerated() {
             let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !trimmed.isEmpty else { continue }
+
+            // 1. Check real `fish-mob.ru` `top.php` format from `Lx0/p` (`LINK=4`): `"1. Login - 12450000"`
+            if trimmed.contains(" - ") {
+                let dotSplit = trimmed.components(separatedBy: ". ")
+                let rankFromPrefix = dotSplit.count >= 2 ? Int(dotSplit[0].trimmingCharacters(in: .whitespaces)) : nil
+                let remainder = dotSplit.count >= 2 ? dotSplit.dropFirst().joined(separator: ". ") : trimmed
+                let dashCols = remainder.components(separatedBy: " - ").map {
+                    $0.trimmingCharacters(in: .whitespacesAndNewlines)
+                }
+                if dashCols.count >= 2 {
+                    let digitsOnly = dashCols[1].filter { $0.isNumber }
+                    if let exp = Int(digitsOnly) {
+                        let rank = rankFromPrefix ?? (result.count + 1)
+                        let cat: Int
+                        if dashCols.count >= 3, let explicitCat = Int(dashCols[2].filter({ $0.isNumber })) {
+                            cat = explicitCat
+                        } else {
+                            cat = ProgressionCalculator.categoryForExperience(
+                                exp,
+                                thresholds: BalanceTables.playerRankExpThresholds
+                            )
+                        }
+                        result.append(
+                            TopPlayerRatingEntry(
+                                rankPosition: rank,
+                                login: dashCols[0],
+                                experience: exp,
+                                categoryRank: cat
+                            )
+                        )
+                        continue
+                    }
+                }
+            }
+
+            // 2. Fallback colon-delimited format (`rank:login:exp:category` or `login:exp:category`)
             let cols = trimmed.split(separator: ":").map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
             if cols.count >= 4,
                let rank = Int(cols[0]),
@@ -306,17 +411,99 @@ public enum FishingOnlineResponseParser: Sendable {
         return result
     }
 
-    /// Parses `rek.php` world species records (`fishName:weightGrams:holderLogin`).
+    /// Parses `rek.php` world species records (`Lx0/p.onActivityCreated`, `LINK=6` in `classes.dex`):
+    /// Supports both the real `fish-mob.ru` format (`"1. HolderLogin - FishName - 2950 г."`)
+    /// and colon-delimited lines (`"fishName:weightGrams:holderLogin"`).
     public static func parseWorldSpeciesRecordsResponse(_ raw: String) -> [WorldSpeciesRecordEntry] {
         var result: [WorldSpeciesRecordEntry] = []
         for line in raw.components(separatedBy: .newlines) {
             let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !trimmed.isEmpty else { continue }
+
+            // 1. Check real `fish-mob.ru` `rek.php` format from `Lx0/p` (`LINK=6`): `"1. HolderLogin - FishName - 2950"`
+            if trimmed.contains(" - ") {
+                let dotSplit = trimmed.components(separatedBy: ". ")
+                let remainder = dotSplit.count >= 2 ? dotSplit.dropFirst().joined(separator: ". ") : trimmed
+                let dashCols = remainder.components(separatedBy: " - ").map {
+                    $0.trimmingCharacters(in: .whitespacesAndNewlines)
+                }
+                if dashCols.count >= 3 {
+                    let weightDigits = dashCols[2].filter { $0.isNumber }
+                    if let weight = Int(weightDigits) {
+                        result.append(
+                            WorldSpeciesRecordEntry(
+                                fishName: dashCols[1],
+                                weightGrams: weight,
+                                holderLogin: dashCols[0]
+                            )
+                        )
+                        continue
+                    }
+                }
+            }
+
+            // 2. Fallback colon-delimited format (`fishName:weightGrams:holderLogin`)
             let cols = trimmed.split(separator: ":").map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
             guard cols.count >= 3, let weight = Int(cols[1]) else { continue }
             result.append(WorldSpeciesRecordEntry(fishName: cols[0], weightGrams: weight, holderLogin: cols[2]))
         }
         return result
+    }
+
+    /// Parses `http://fish-mob.ru/fff/index.php` tournament list (`Lx0/p.onActivityCreated`, `LINK=2` active / `LINK=3` finished):
+    /// Entries are separated by `"#"` and fields inside each entry are separated by `"--"`.
+    public static func parseTournamentIndexResponse(_ raw: String, isCompleted: Bool = false) -> [OnlineTournamentEntry] {
+        let cleaned = FishingNetworkCrypto.truncateTournamentHeaderString(raw)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleaned.isEmpty, cleaned != "not", cleaned != "0" else { return [] }
+
+        var entries: [OnlineTournamentEntry] = []
+        let blocks = cleaned.components(separatedBy: "#")
+        for (idx, block) in blocks.enumerated() {
+            let trimmed = block.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { continue }
+            let fields = trimmed.components(separatedBy: "--").map {
+                $0.trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+            if fields.count >= 6 {
+                // `LINK=2` active tournament: `fields[0]=title`, `fields[1]=condition`, `fields[2]=pond`, `fields[3]=date`, `fields[4]=reg`, `fields[5]=id`
+                let tourId = fields[5].isEmpty ? "active_\(idx + 1)" : fields[5]
+                let detailsText = [fields[1], fields[2]].filter { !$0.isEmpty }.joined(separator: " • ")
+                entries.append(
+                    OnlineTournamentEntry(
+                        id: tourId,
+                        title: fields[0].isEmpty ? "Турнир #\(tourId)" : fields[0],
+                        details: detailsText,
+                        dateInfo: fields[3],
+                        registrationState: fields[4],
+                        isCompleted: false
+                    )
+                )
+            } else if fields.count >= 2 {
+                // `LINK=3` completed tournament: `fields[0]=title/summary`, `fields[1]=date`, `fields[2]=id`
+                let tourId = (fields.count >= 3 && !fields[2].isEmpty) ? fields[2] : "done_\(idx + 1)"
+                entries.append(
+                    OnlineTournamentEntry(
+                        id: tourId,
+                        title: fields[0],
+                        details: fields.count >= 3 ? "Завершённый турнир #\(tourId)" : "Завершённый турнир",
+                        dateInfo: fields[1],
+                        registrationState: "",
+                        isCompleted: true
+                    )
+                )
+            } else if trimmed.contains(" - ") {
+                entries.append(
+                    OnlineTournamentEntry(
+                        id: "tour_\(idx + 1)",
+                        title: trimmed,
+                        details: isCompleted ? "Завершённый турнир" : "Онлайн-турнир",
+                        isCompleted: isCompleted
+                    )
+                )
+            }
+        }
+        return entries
     }
 }
 
@@ -758,6 +945,23 @@ public struct FishingLiveNetworkClient: Sendable {
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
     }
+
+    public func fetchOnlineTournaments(
+        login: String,
+        listType: String = "2",
+        languageCode: String = "ru"
+    ) async throws -> [OnlineTournamentEntry] {
+        let req = FishingHttpRequestBuilder.makeTournamentIndexRequest(
+            login: login,
+            listType: listType,
+            languageCode: languageCode
+        )
+        let raw = try await executeStringRequest(req)
+        return FishingOnlineResponseParser.parseTournamentIndexResponse(
+            raw,
+            isCompleted: listType == "3"
+        )
+    }
 }
 
 // MARK: - 7. Live TCP Chat Session (`chat.fish-mob.ru:15701`, `Client` & `Handler`, `NETWORK.md` Section 5)
@@ -773,6 +977,8 @@ public final class FishingLiveTCPChatSession {
 
     public private(set) var state: ConnectionState = .disconnected
     public var onPacketReceived: ((Data) -> Void)?
+    public var onConnectionStateChanged: ((ConnectionState) -> Void)?
+    private var hasSentStreamHeader: Bool = false
 
     #if canImport(Network)
     private var connection: NWConnection?
@@ -789,12 +995,15 @@ public final class FishingLiveTCPChatSession {
         installationUuid: String
     ) {
         disconnect()
+        hasSentStreamHeader = false
         state = .connecting
+        onConnectionStateChanged?(.connecting)
 
         #if canImport(Network)
         let nwHost = NWEndpoint.Host(host)
         guard let nwPort = NWEndpoint.Port(rawValue: port) else {
             state = .failed
+            onConnectionStateChanged?(.failed)
             return
         }
         let conn = NWConnection(host: nwHost, port: nwPort, using: .tcp)
@@ -806,6 +1015,7 @@ public final class FishingLiveTCPChatSession {
                 switch newState {
                 case .ready:
                     self.state = .connected
+                    self.onConnectionStateChanged?(.connected)
                     self.sendInitialHandshake(
                         userId: userId,
                         login: login,
@@ -815,6 +1025,7 @@ public final class FishingLiveTCPChatSession {
                     self.receiveNextChunk()
                 case .failed, .cancelled:
                     self.state = .failed
+                    self.onConnectionStateChanged?(.failed)
                 default:
                     break
                 }
@@ -823,6 +1034,7 @@ public final class FishingLiveTCPChatSession {
         conn.start(queue: .global(qos: .userInitiated))
         #else
         state = .failed
+        onConnectionStateChanged?(.failed)
         #endif
     }
 
@@ -831,11 +1043,23 @@ public final class FishingLiveTCPChatSession {
         connection?.cancel()
         connection = nil
         #endif
+        hasSentStreamHeader = false
         state = .disconnected
+        onConnectionStateChanged?(.disconnected)
     }
 
+    /// Sends a Mess over the persistent ObjectOutputStream on port 15701.
+    /// Matches Java's ObjectOutputStream protocol: the 4-byte 0xACED0005 stream header is written
+    /// ONLY ONCE when opening the stream; subsequent objects prepend TC_RESET (0x79) so the server's
+    /// ObjectInputStream.readUnshared() resets its wire handle table without throwing StreamCorruptedException.
     public func sendMess(_ mess: ChatMess) {
-        let packet = JavaObjectStreamCodec.encodeMess(mess)
+        let includeHeader = !hasSentStreamHeader
+        hasSentStreamHeader = true
+        let packet = JavaObjectStreamCodec.encodeMess(
+            mess,
+            includeStreamHeader: includeHeader,
+            prependResetWhenNoHeader: !includeHeader
+        )
         #if canImport(Network)
         connection?.send(content: packet, completion: .contentProcessed { _ in })
         #endif
@@ -847,6 +1071,8 @@ public final class FishingLiveTCPChatSession {
         pondIndex: Int32,
         installationUuid: String
     ) {
+        // Match Client.open() (pc=003e..0056) & Data.initialize():
+        // 1. Send "open" with Request(string: md5(installationUuid))
         let openMess = ChatProtocolSelector.makeOpenHandshakeMess(
             userId: userId,
             login: login,
@@ -855,6 +1081,7 @@ public final class FishingLiveTCPChatSession {
         )
         sendMess(openMess)
 
+        // 2. Send "initialize" (Data.initialize())
         let initMess = ChatProtocolSelector.makeSystemMess(
             command: "initialize",
             userId: userId,
@@ -863,6 +1090,7 @@ public final class FishingLiveTCPChatSession {
         )
         sendMess(initMess)
 
+        // 3. Request online users for the current pond room ("getUserList3")
         let usersMess = ChatProtocolSelector.makeSystemMess(
             command: "getUserList3",
             userId: userId,
@@ -870,19 +1098,11 @@ public final class FishingLiveTCPChatSession {
             pondRoom: pondIndex
         )
         sendMess(usersMess)
-
-        let toursMess = ChatProtocolSelector.makeSystemMess(
-            command: "tours",
-            userId: userId,
-            login: login,
-            pondRoom: pondIndex
-        )
-        sendMess(toursMess)
     }
 
     #if canImport(Network)
     private func receiveNextChunk() {
-        connection?.receive(minimumIncompleteLength: 4, maximumLength: 65536) { [weak self] data, _, isComplete, error in
+        connection?.receive(minimumIncompleteLength: 1, maximumLength: 65536) { [weak self] data, _, isComplete, error in
             Task { @MainActor [weak self] in
                 guard let self else { return }
                 if let data, !data.isEmpty {
@@ -890,6 +1110,7 @@ public final class FishingLiveTCPChatSession {
                 }
                 if isComplete || error != nil {
                     self.state = .disconnected
+                    self.onConnectionStateChanged?(.disconnected)
                 } else {
                     self.receiveNextChunk()
                 }

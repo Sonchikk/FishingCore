@@ -732,8 +732,14 @@ public struct FishingStateMachine: Sendable, Equatable {
             }
         }
 
-        currentBobber.x = x
-        currentBobber.y = y
+        let halfW = Float(currentBobber.bitmapWidth / 2)
+        let halfH = Float(currentBobber.bitmapHeight / 2)
+        let minX = halfW
+        let maxX = max(minX, Float(viewWidth) - halfW)
+        let minY = Float(viewHeight / 4) + halfH
+        let maxY = max(minY, Float(viewHeight))
+        currentBobber.x = min(maxX, max(minX, x))
+        currentBobber.y = min(maxY, max(minY, y))
         if animationsEnabled {
             currentBobber.addBiteRipple(enabled: true)
         }

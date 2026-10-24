@@ -1809,6 +1809,24 @@ public struct OnlineAndChatView: View {
             ForEach(OnlineSection.allCases) { sec in
                 Button {
                     selectedSection = sec
+                    switch sec {
+                    case .ratings:
+                        if coordinator.topPlayersRating.isEmpty && coordinator.worldSpeciesRecords.isEmpty {
+                            coordinator.refreshOnlineRatingsAndRecordsLive(login: coordinator.savedOnlineLogin)
+                        }
+                    case .tours:
+                        if coordinator.httpActiveTournaments.isEmpty
+                            && coordinator.httpCompletedTournaments.isEmpty
+                            && coordinator.tournamentTimetableLines.isEmpty {
+                            coordinator.refreshOnlineTournamentsLive(login: coordinator.savedOnlineLogin)
+                        }
+                    case .chat:
+                        if coordinator.chatConnectionState == .disconnected {
+                            coordinator.connectLiveTCPChat(login: coordinator.savedOnlineLogin)
+                        }
+                    case .profile:
+                        break
+                    }
                 } label: {
                     OriginalStyledActionButtonLabel(title: sec.rawValue, minWidth: 78)
                         .opacity(selectedSection == sec ? 1.0 : 0.65)
@@ -1961,16 +1979,52 @@ public struct OnlineAndChatView: View {
     }
 
     private var onlineToursSectionCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Онлайн-турниры (Tours / tt.php)")
-                .font(.system(size: 15, weight: .bold))
-                .foregroundStyle(OriginalGameTheme.goldText)
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("Онлайн-турниры (index.php / tt.php)")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(OriginalGameTheme.goldText)
+                Spacer()
+                Button {
+                    coordinator.refreshOnlineTournamentsLive(login: coordinator.savedOnlineLogin)
+                } label: {
+                    Text("Обновить")
+                        .font(.system(size: 12, weight: .bold))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(OriginalGameTheme.goldText, in: Capsule())
+                        .foregroundStyle(.black)
+                }
+                .buttonStyle(.plain)
+            }
 
-            if coordinator.onlineTours.isEmpty {
-                Text("Нет активных турниров. Подключитесь к серверу чата 15701 для загрузки списка турниров.")
-                    .font(.system(size: 13))
-                    .foregroundStyle(.white.opacity(0.8))
-            } else {
+            if !coordinator.httpActiveTournaments.isEmpty {
+                Text("Текущие турниры:")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(.green)
+                ForEach(coordinator.httpActiveTournaments) { entry in
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(entry.title)
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundStyle(OriginalGameTheme.goldText)
+                        if !entry.details.isEmpty {
+                            Text(entry.details)
+                                .font(.system(size: 12))
+                                .foregroundStyle(.white)
+                        }
+                        if !entry.dateInfo.isEmpty {
+                            Text(entry.dateInfo)
+                                .font(.system(size: 11).monospacedDigit())
+                                .foregroundStyle(.cyan)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(8)
+                    .background(Color.black.opacity(0.45), in: RoundedRectangle(cornerRadius: 6))
+                }
+            }
+
+            if !coordinator.onlineTours.isEmpty {
                 ForEach(coordinator.onlineTours, id: \.id) { tour in
                     VStack(alignment: .leading, spacing: 3) {
                         Text(tour.title.isEmpty ? "Турнир #\(tour.id)" : tour.title)
@@ -1980,9 +2034,53 @@ public struct OnlineAndChatView: View {
                             .font(.system(size: 12))
                             .foregroundStyle(.white)
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(8)
                     .background(Color.black.opacity(0.45), in: RoundedRectangle(cornerRadius: 6))
                 }
+            }
+
+            if !coordinator.httpCompletedTournaments.isEmpty {
+                Text("Завершённые турниры:")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(OriginalGameTheme.goldText)
+                ForEach(coordinator.httpCompletedTournaments.prefix(12)) { entry in
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(entry.title)
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(.white)
+                        if !entry.dateInfo.isEmpty {
+                            Text(entry.dateInfo)
+                                .font(.system(size: 11).monospacedDigit())
+                                .foregroundStyle(.white.opacity(0.75))
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(8)
+                    .background(Color.black.opacity(0.40), in: RoundedRectangle(cornerRadius: 6))
+                }
+            }
+
+            if !coordinator.tournamentTimetableLines.isEmpty {
+                Text("Расписание турниров (tt.php):")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(.cyan)
+                ForEach(Array(coordinator.tournamentTimetableLines.enumerated()), id: \.offset) { _, line in
+                    Text(line)
+                        .font(.system(size: 12))
+                        .foregroundStyle(.white.opacity(0.9))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.vertical, 2)
+                }
+            }
+
+            if coordinator.httpActiveTournaments.isEmpty
+                && coordinator.httpCompletedTournaments.isEmpty
+                && coordinator.onlineTours.isEmpty
+                && coordinator.tournamentTimetableLines.isEmpty {
+                Text("Нажмите «Обновить», чтобы загрузить текущие и завершённые турниры и расписание с fish-mob.ru (index.php / tt.php).")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.white.opacity(0.8))
             }
         }
         .padding(12)
@@ -2002,20 +2100,20 @@ public struct OnlineAndChatView: View {
         let text = chatDraft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
         let mess = ChatMess(
-            fromID: 1,
-            prem: 0,
+            fromID: coordinator.authenticatedChatUserId,
+            prem: Int32(coordinator.profile.premium),
             room: Int32(coordinator.selectedPondIndex),
             from: coordinator.savedOnlineLogin,
             object: nil,
             text: text,
             timeEpochMs: Int64(Date().timeIntervalSince1970 * 1000),
-            to: ""
+            to: nil
         )
         if coordinator.chatConnectionState == .connected {
             coordinator.tcpChatSession.sendMess(mess)
         }
         let packet = JavaObjectStreamCodec.encodeMess(mess)
-        _ = try? coordinator.receiveChatStreamPacket(packet)
+        _ = try? coordinator.receiveChatStreamPacket(packet, currentUserId: coordinator.authenticatedChatUserId)
         chatDraft = ""
     }
 }

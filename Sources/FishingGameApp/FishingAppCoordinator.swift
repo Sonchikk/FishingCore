@@ -230,9 +230,13 @@ public final class FishingAppCoordinator: ObservableObject {
     @Published public private(set) var topPlayersRating: [TopPlayerRatingEntry] = []
     @Published public private(set) var worldSpeciesRecords: [WorldSpeciesRecordEntry] = []
     @Published public private(set) var tournamentTimetableLines: [String] = []
+    @Published public private(set) var httpActiveTournaments: [OnlineTournamentEntry] = []
+    @Published public private(set) var httpCompletedTournaments: [OnlineTournamentEntry] = []
+    @Published public private(set) var authenticatedChatUserId: Int32 = 1
     @Published public private(set) var isOnlineRequestInFlight: Bool = false
     @Published public private(set) var lastOnlineStatusMessage: String = ""
     @Published public private(set) var chatConnectionState: FishingLiveTCPChatSession.ConnectionState = .disconnected
+    private var tcpChatReceiveBuffer = Data()
 
     /// Exact activation check (`GameActivity.b0()`): `pond_fon_set_<id> > 0 && WATER_SHADER == true`.
     public var isWaterShaderActive: Bool {
@@ -399,13 +403,21 @@ public final class FishingAppCoordinator: ObservableObject {
         )
 
         try reloadAllStateFromDatabase()
+        self.tcpChatSession.onConnectionStateChanged = { [weak self] newState in
+            guard let self else { return }
+            self.chatConnectionState = newState
+        }
         self.tcpChatSession.onPacketReceived = { [weak self] packetData in
             guard let self else { return }
-            let outcome = try? self.receiveChatStreamPacket(packetData)
-            if case .sendHeartbeatReply(let pongMess) = outcome {
-                self.tcpChatSession.sendMess(pongMess)
-            } else if case .sendInitializeRequest(let initMess) = outcome {
-                self.tcpChatSession.sendMess(initMess)
+            self.tcpChatReceiveBuffer.append(packetData)
+            let messages = JavaObjectStreamCodec.extractMessagesFromStreamBuffer(&self.tcpChatReceiveBuffer)
+            for mess in messages {
+                let outcome = self.applyDecodedChatMessage(mess, currentUserId: self.authenticatedChatUserId)
+                if case .sendHeartbeatReply(let pongMess) = outcome {
+                    self.tcpChatSession.sendMess(pongMess)
+                } else if case .sendInitializeRequest(let initMess) = outcome {
+                    self.tcpChatSession.sendMess(initMess)
+                }
             }
         }
     }
@@ -1149,10 +1161,19 @@ public final class FishingAppCoordinator: ObservableObject {
         currentUserId: Int32 = 1
     ) throws -> ChatSelectorOutcome {
         let mess = try JavaObjectStreamCodec.decodeMess(from: packetData)
+        return applyDecodedChatMessage(mess, currentUserId: currentUserId)
+    }
+
+    @discardableResult
+    public func applyDecodedChatMessage(
+        _ mess: ChatMess,
+        currentUserId: Int32 = 1
+    ) -> ChatSelectorOutcome {
+        let effectiveLogin = !savedOnlineLogin.isEmpty ? savedOnlineLogin : (profile.login.isEmpty ? "Player" : profile.login)
         let outcome = ChatProtocolSelector.handleIncomingMess(
             mess,
             currentUserId: currentUserId,
-            currentLogin: profile.login.isEmpty ? "Player" : profile.login,
+            currentLogin: effectiveLogin,
             currentPond: Int32(selectedPondIndex)
         )
         switch outcome {
@@ -1420,7 +1441,10 @@ public final class FishingAppCoordinator: ObservableObject {
 
     /// Connects or disconnects the live TCP chat client (`chat.fish-mob.ru:15701`).
     public func connectLiveTCPChat(login: String) {
-        let effectiveLogin = login.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "angler_ios" : login
+        let effectiveLogin = login.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            ? (profile.login.isEmpty ? "angler_ios" : profile.login)
+            : login.trimmingCharacters(in: .whitespacesAndNewlines)
+        tcpChatReceiveBuffer.removeAll()
         chatConnectionState = .connecting
         lastOnlineStatusMessage = "Авторизация чата (auth_chat.php) и подключение к 15701..."
 
@@ -1436,6 +1460,7 @@ public final class FishingAppCoordinator: ObservableObject {
                 )
                 switch handshake {
                 case .authenticated(let uid):
+                    self.authenticatedChatUserId = uid
                     tcpChatSession.connect(
                         userId: uid,
                         login: effectiveLogin,
@@ -1450,7 +1475,44 @@ public final class FishingAppCoordinator: ObservableObject {
                 }
             } catch {
                 self.chatConnectionState = .disconnected
-                self.lastOnlineStatusMessage = "Сервер чата 15701 недоступен — сообщения работают в локальном режиме комнаты."
+                self.lastOnlineStatusMessage = "Сервер чата 15701 недоступен (\(error.localizedDescription)) — сообщения работают в локальном режиме комнаты."
+            }
+        }
+    }
+
+    /// Fetches active tournaments (`index.php` `Type="2"`), finished tournaments (`index.php` `Type="3"`),
+    /// and the tournament timetable (`timetable/tt.php`) directly over HTTP (`OnlineGameActivity`).
+    public func refreshOnlineTournamentsLive(login: String? = nil) {
+        let rawLogin = (login ?? savedOnlineLogin).trimmingCharacters(in: .whitespacesAndNewlines)
+        let effectiveLogin = rawLogin.isEmpty ? (profile.login.isEmpty ? "angler_ios" : profile.login) : rawLogin
+        let client = self.liveNetworkClient
+        let currentLang = self.languageCode
+        isOnlineRequestInFlight = true
+        lastOnlineStatusMessage = "Загрузка турниров (index.php) и расписания (tt.php)..."
+
+        Task { @MainActor in
+            defer { self.isOnlineRequestInFlight = false }
+            let activeResult = (try? await client.fetchOnlineTournaments(
+                login: effectiveLogin,
+                listType: "2",
+                languageCode: currentLang
+            )) ?? []
+            let completedResult = (try? await client.fetchOnlineTournaments(
+                login: effectiveLogin,
+                listType: "3",
+                languageCode: currentLang
+            )) ?? []
+            let timetableResult = (try? await client.fetchTournamentTimetable(
+                languageCode: currentLang
+            )) ?? []
+
+            self.httpActiveTournaments = activeResult
+            self.httpCompletedTournaments = completedResult
+            self.tournamentTimetableLines = timetableResult
+            if !activeResult.isEmpty || !completedResult.isEmpty || !timetableResult.isEmpty {
+                self.lastOnlineStatusMessage = "Турниры обновлены: активных \(activeResult.count), завершённых \(completedResult.count), строк расписания \(timetableResult.count)."
+            } else {
+                self.lastOnlineStatusMessage = "Сейчас нет активных турниров на сервере index.php."
             }
         }
     }

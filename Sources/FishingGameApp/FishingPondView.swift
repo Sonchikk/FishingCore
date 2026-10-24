@@ -9,7 +9,7 @@ import FishingDatabase
 /// - Interactive `GameView` combining 3-pass Metal water (`pond_<id>_big.png` + `wNoise3/4.tga`), expanding ripples (`D0.a`),
 ///   original bobber sprites (`@drawable/bobber` `16x52` / `@drawable/bobber_hide` `12x12`), Quadratic Bezier line (`D0.b`),
 ///   and 16-frame bent rod sprites (`@drawable/fishing_rod_0..15`, `D0.c`);
-/// - Bottom control panel with `game_progress` tension bar (`0..250`), `game_current_bait` (`@drawable/btn_background` + `@drawable/bait_<id>`),
+/// - Bottom control panel with `game_progress` tension bar (`max="225"` in `res/Ak.xml`), `game_current_bait` (`@drawable/btn_background` + `@drawable/bait_<id>`),
 ///   `game_time` (`@drawable/time_background`, `#EBB968`), `"У - X"` / `"К - Y"` durability labels,
 ///   `game_fishpond` (`@drawable/fishpond_small`), `game_backpack` (`@drawable/backpack_small`),
 ///   `game_cancel` (`@drawable/drop_me`), and the right-hand reel button `game_pull` (`@drawable/push_me` / `@drawable/push_me_on`).
@@ -64,9 +64,15 @@ public struct FishingPondView: View {
 
             ZStack(alignment: .top) {
                 pondWaterLayer
+                    .frame(width: geo.size.width, height: geo.size.height)
+                    .clipped()
                 pondCanvasLayer(viewportWidth: w, viewportHeight: h)
+                    .frame(width: geo.size.width, height: geo.size.height)
+                    .clipped()
                 PondTopOverlayBarView(coordinator: coordinator)
             }
+            .frame(width: geo.size.width, height: geo.size.height)
+            .clipped()
             .onAppear {
                 coordinator.updateViewportSize(width: w, height: h)
             }
@@ -315,9 +321,11 @@ private struct Static2DPondBackgroundView: View {
         ZStack {
             if let pondImg = OriginalGameAssetsLoader.image(named: "pond_\(pondNumber)_big")
                 ?? OriginalGameAssetsLoader.image(named: "pond_\(pondNumber)") {
+                // Match `GameView.t()` (`Bitmap.createScaledBitmap(bmp, width, height, true)`)
+                // and `MetalWaterSurfaceView` UV mapping (`0..1` across the exact `GameView` bounds)
+                // so the visual shoreline horizon aligns with `y = viewHeight / 4` (25% from top).
                 pondImg
                     .resizable()
-                    .scaledToFill()
             } else {
                 LinearGradient(
                     colors: [
@@ -513,15 +521,17 @@ private struct PondBottomControlsPanelView: View {
     let onPresentBaitChooser: () -> Void
     @State private var didCastDuringCurrentPress: Bool = false
 
+    /// Exact progress bar normalization from `res/Ak.xml` (`game_progress`, `android:max="225"`)
+    /// and `GameView$c.v(FishingRod)` (`h >= 225` critical tension overload threshold).
     private var tensionFraction: Double {
         let tension = coordinator.stateMachine.tension
-        return Double(min(250, max(0, tension))) / 250.0
+        return Double(min(225, max(0, tension))) / 225.0
     }
 
     private var tensionColor: Color {
         let tension = coordinator.stateMachine.tension
-        if tension >= 225 { return .red }
-        if tension >= 160 { return .orange }
+        if tension >= 200 { return .red }
+        if tension >= 145 { return .orange }
         return .green
     }
 

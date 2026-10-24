@@ -306,6 +306,7 @@ public enum JavaObjectStreamCodec: Sendable {
     public static let tcString: UInt8 = 0x74
     public static let tcBlockData: UInt8 = 0x77
     public static let tcEndBlockData: UInt8 = 0x78
+    public static let tcReset: UInt8 = 0x79
 
     public static let scSerializable: UInt8 = 0x02
     public static let scWriteMethod: UInt8 = 0x03
@@ -324,11 +325,17 @@ public enum JavaObjectStreamCodec: Sendable {
 
     // MARK: - Encoding (`writeUnshared`)
 
-    public static func encodeMess(_ mess: ChatMess, includeStreamHeader: Bool = true) -> Data {
+    public static func encodeMess(
+        _ mess: ChatMess,
+        includeStreamHeader: Bool = true,
+        prependResetWhenNoHeader: Bool = false
+    ) -> Data {
         var writer = BinaryWriter()
         if includeStreamHeader {
             writer.writeUInt16(streamMagic)
             writer.writeUInt16(streamVersion)
+        } else if prependResetWhenNoHeader {
+            writer.writeUInt8(tcReset)
         }
         writeMessObject(&writer, mess)
         return writer.data
@@ -664,16 +671,27 @@ public enum JavaObjectStreamCodec: Sendable {
         w.writeUInt8(tcNull) // No superclass descriptor
     }
 
-    // MARK: - Decoding (`readUnshared`)
+    // MARK: - Decoding (`readUnshared` & Stateful TCP Stream Framing)
 
     public static func decodeMess(from data: Data, hasStreamHeader: Bool = true) throws -> ChatMess {
         var reader = BinaryReader(data: data)
-        if hasStreamHeader {
+        if reader.remainingCount >= 4 && reader.peekUInt16() == streamMagic {
             let magic = try reader.readUInt16()
             let version = try reader.readUInt16()
             guard magic == streamMagic && version == streamVersion else {
                 throw JavaObjectStreamError.invalidStreamHeader(magic: magic, version: version)
             }
+        } else if hasStreamHeader {
+            let firstByte = reader.peekUInt8() ?? 0
+            if firstByte != tcObject && firstByte != tcReset {
+                let magic = try reader.readUInt16()
+                let version = try reader.readUInt16()
+                throw JavaObjectStreamError.invalidStreamHeader(magic: magic, version: version)
+            }
+        }
+        while let nextByte = reader.peekUInt8(), nextByte == tcReset {
+            _ = try reader.readUInt8()
+            reader.resetHandles()
         }
         guard let obj = try readAnyObject(&reader),
               case .mess(let mess) = obj else {
@@ -682,19 +700,84 @@ public enum JavaObjectStreamCodec: Sendable {
         return mess
     }
 
-    private enum InternalDecoded {
+    /// Extracts all complete `ChatMess` frames from a rolling TCP receive buffer,
+    /// leaving any incomplete trailing bytes in `buffer` for the next TCP read.
+    public static func extractMessagesFromStreamBuffer(_ buffer: inout Data) -> [ChatMess] {
+        var decodedMessages: [ChatMess] = []
+        var reader = BinaryReader(data: buffer)
+
+        while reader.remainingCount > 0 {
+            let checkpointOffset = reader.offset
+            let checkpointHandles = reader.handles
+            do {
+                while reader.remainingCount >= 4 && reader.peekUInt16() == streamMagic {
+                    let _ = try reader.readUInt16()
+                    let version = try reader.readUInt16()
+                    if version != streamVersion {
+                        throw JavaObjectStreamError.invalidStreamHeader(magic: streamMagic, version: version)
+                    }
+                    reader.resetHandles()
+                }
+                while let nextByte = reader.peekUInt8(), nextByte == tcReset {
+                    _ = try reader.readUInt8()
+                    reader.resetHandles()
+                }
+                guard reader.remainingCount > 0 else { break }
+                if let obj = try readAnyObject(&reader), case .mess(let mess) = obj {
+                    decodedMessages.append(mess)
+                } else {
+                    break
+                }
+            } catch JavaObjectStreamError.unexpectedEOF {
+                reader.offset = checkpointOffset
+                reader.handles = checkpointHandles
+                break
+            } catch {
+                // Resynchronize to the next known `0xACED0005` or `TC_RESET` or `com.evados.fishing.obj.Mess` marker
+                if reader.offset == checkpointOffset {
+                    reader.offset += 1
+                }
+            }
+        }
+
+        if reader.offset > 0 {
+            if reader.offset >= buffer.count {
+                buffer.removeAll(keepingCapacity: true)
+            } else {
+                buffer = Data(buffer.dropFirst(reader.offset))
+            }
+        }
+        return decodedMessages
+    }
+
+    fileprivate enum InternalDecoded {
         case mess(ChatMess)
         case serialized(ChatSerializedObject)
         case date(Int64)
     }
 
     private static func readAnyObject(_ r: inout BinaryReader) throws -> InternalDecoded? {
-        let tc = try r.readUInt8()
+        var tc = try r.readUInt8()
+        while tc == tcReset {
+            r.resetHandles()
+            tc = try r.readUInt8()
+        }
         if tc == tcNull {
+            return nil
+        }
+        if tc == tcReference {
+            let handle = try r.readInt32()
+            if let str = r.resolveStringHandle(handle) {
+                return .serialized(.stringValue(str))
+            }
+            if let obj = r.resolveObjectHandle(handle) {
+                return obj
+            }
             return nil
         }
         if tc == tcString {
             let s = try r.readUTF()
+            r.registerHandle(.string(s))
             return .serialized(.stringValue(s))
         }
         guard tc == tcObject else {
@@ -702,6 +785,7 @@ public enum JavaObjectStreamCodec: Sendable {
         }
 
         let (className, uid) = try readClassDesc(&r)
+        _ = r.reserveObjectHandle()
         switch (className, uid) {
         case (ChatMess.javaClassName, ChatMess.serialVersionUID):
             let fromID = try r.readInt32()
@@ -884,8 +968,13 @@ public enum JavaObjectStreamCodec: Sendable {
     private static func readStringArrayList(_ r: inout BinaryReader) throws -> [String] {
         let tc = try r.readUInt8()
         if tc == tcNull { return [] }
+        if tc == tcReference {
+            _ = try r.readInt32()
+            return []
+        }
         guard tc == tcObject else { throw JavaObjectStreamError.unexpectedTypeCode(tc) }
         let (cls, _) = try readClassDesc(&r)
+        let _ = r.reserveObjectHandle()
         guard cls == arrayListClassName else {
             throw JavaObjectStreamError.unsupportedClass(name: cls, serialVersionUID: 0)
         }
@@ -908,8 +997,14 @@ public enum JavaObjectStreamCodec: Sendable {
     private static func readOptionalString(_ r: inout BinaryReader) throws -> String? {
         let tc = try r.readUInt8()
         if tc == tcNull { return nil }
+        if tc == tcReference {
+            let handle = try r.readInt32()
+            return r.resolveStringHandle(handle)
+        }
         guard tc == tcString else { throw JavaObjectStreamError.unexpectedTypeCode(tc) }
-        return try r.readUTF()
+        let str = try r.readUTF()
+        r.registerHandle(.string(str))
+        return str
     }
 
     private static func readOptionalSerialized(_ r: inout BinaryReader) throws -> ChatSerializedObject? {
@@ -926,9 +1021,17 @@ public enum JavaObjectStreamCodec: Sendable {
 
     private static func readClassDesc(_ r: inout BinaryReader) throws -> (String, Int64) {
         let tc = try r.readUInt8()
+        if tc == tcReference {
+            let handle = try r.readInt32()
+            if let desc = r.resolveClassDescHandle(handle) {
+                return desc
+            }
+            throw JavaObjectStreamError.unexpectedTypeCode(tc)
+        }
         guard tc == tcClassDesc else { throw JavaObjectStreamError.unexpectedTypeCode(tc) }
         let name = try r.readUTF()
         let uid = try r.readInt64()
+        r.registerHandle(.classDesc(name: name, uid: uid))
         let _ = try r.readUInt8() // flags
         let fieldCount = Int(try r.readUInt16())
         for _ in 0..<fieldCount {
@@ -937,7 +1040,8 @@ public enum JavaObjectStreamCodec: Sendable {
             if typeByte == UInt8(ascii: "L") || typeByte == UInt8(ascii: "[") {
                 let fTc = try r.readUInt8()
                 if fTc == tcString {
-                    _ = try r.readUTF()
+                    let fieldCls = try r.readUTF()
+                    r.registerHandle(.string(fieldCls))
                 } else if fTc == tcReference {
                     try r.skip(4)
                 }
@@ -947,7 +1051,10 @@ public enum JavaObjectStreamCodec: Sendable {
         guard endAnnot == tcEndBlockData else { throw JavaObjectStreamError.unexpectedTypeCode(endAnnot) }
         let superTc = try r.readUInt8()
         if superTc == tcClassDesc {
+            r.offset -= 1
             _ = try readClassDesc(&r)
+        } else if superTc == tcReference {
+            try r.skip(4)
         }
         return (name, uid)
     }
@@ -1148,12 +1255,81 @@ private struct BinaryWriter {
     }
 }
 
+private enum WireHandleEntry {
+    case classDesc(name: String, uid: Int64)
+    case string(String)
+    case object(JavaObjectStreamCodec.InternalDecoded?)
+}
+
+extension JavaObjectStreamCodec {
+    fileprivate enum InternalDecodedHandleBox {
+        case value
+    }
+}
+
 private struct BinaryReader {
+    static let baseWireHandle: Int32 = 0x007E_0000
     let bytes: [UInt8]
     var offset: Int = 0
+    var handles: [WireHandleEntry] = []
 
     init(data: Data) {
         self.bytes = Array(data)
+    }
+
+    var remainingCount: Int {
+        max(0, bytes.count - offset)
+    }
+
+    func peekUInt8() -> UInt8? {
+        guard offset < bytes.count else { return nil }
+        return bytes[offset]
+    }
+
+    func peekUInt16() -> UInt16? {
+        guard offset + 2 <= bytes.count else { return nil }
+        return (UInt16(bytes[offset]) << 8) | UInt16(bytes[offset + 1])
+    }
+
+    mutating func resetHandles() {
+        handles.removeAll(keepingCapacity: true)
+    }
+
+    mutating func registerHandle(_ entry: WireHandleEntry) {
+        handles.append(entry)
+    }
+
+    mutating func reserveObjectHandle() -> Int {
+        let idx = handles.count
+        handles.append(.object(nil))
+        return idx
+    }
+
+    func resolveClassDescHandle(_ handle: Int32) -> (String, Int64)? {
+        let idx = Int(handle - Self.baseWireHandle)
+        guard idx >= 0 && idx < handles.count else { return nil }
+        if case .classDesc(let name, let uid) = handles[idx] {
+            return (name, uid)
+        }
+        return nil
+    }
+
+    func resolveStringHandle(_ handle: Int32) -> String? {
+        let idx = Int(handle - Self.baseWireHandle)
+        guard idx >= 0 && idx < handles.count else { return nil }
+        if case .string(let s) = handles[idx] {
+            return s
+        }
+        return nil
+    }
+
+    func resolveObjectHandle(_ handle: Int32) -> JavaObjectStreamCodec.InternalDecoded? {
+        let idx = Int(handle - Self.baseWireHandle)
+        guard idx >= 0 && idx < handles.count else { return nil }
+        if case .object(let obj) = handles[idx] {
+            return obj
+        }
+        return nil
     }
 
     mutating func skip(_ count: Int) throws {
