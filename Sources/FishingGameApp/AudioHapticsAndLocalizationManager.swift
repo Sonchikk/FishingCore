@@ -6,6 +6,9 @@ import UIKit
 #if canImport(AVFoundation)
 import AVFoundation
 #endif
+#if canImport(AudioToolbox)
+import AudioToolbox
+#endif
 import FishingDatabase
 
 // MARK: - 1. 5-Language Localization Manager (`F0.g` / `LocaleHelper` & `data/localization.json`)
@@ -482,21 +485,18 @@ public struct FishingAudioAndHapticsController: Sendable, Equatable {
     /// Updates ambient pond audio track when entering a pond or when `GameActivity.i0(hour)` flips `dayLight`.
     /// Only plays audio hardware when `soundEnabled && isOnPondScreen` (`GameActivity.onResume`).
     public mutating func syncAmbientTrack(pondIndex: Int, hour: Int, isPondScreenVisible: Bool? = nil) {
-        if let isPondScreenVisible {
-            self.isOnPondScreen = isPondScreenVisible
-        }
         let isDay = (hour >= 5 && hour < 22)
         let desired = AmbientPondTrack(pondIndex: pondIndex, isDaylightTrack: isDay)
+        let trackChanged = (activeAmbientTrack != desired)
+        activeAmbientTrack = desired
+        if let isPondScreenVisible, self.isOnPondScreen != isPondScreenVisible {
+            self.isOnPondScreen = isPondScreenVisible
+        }
         let shouldPlayNow = soundEnabled && isOnPondScreen
-        if activeAmbientTrack != desired {
-            activeAmbientTrack = desired
-            if shouldPlayNow {
-                LiveAudioPlaybackEngine.shared.syncAmbientTrack(desired, soundEnabled: true)
-            } else {
-                LiveAudioPlaybackEngine.shared.stopAmbientTrack()
-            }
-        } else if !shouldPlayNow {
+        if !shouldPlayNow {
             LiveAudioPlaybackEngine.shared.stopAmbientTrack()
+        } else if trackChanged {
+            LiveAudioPlaybackEngine.shared.syncAmbientTrack(desired, soundEnabled: true)
         } else {
             LiveAudioPlaybackEngine.shared.ensureAmbientTrackPlaying(desired, soundEnabled: true)
         }
@@ -549,32 +549,51 @@ public struct FishingAudioAndHapticsController: Sendable, Equatable {
     }
 
     private static func triggerPlatformBiteAlarmHaptic(profile: BiteHapticIntensityProfile) {
+        guard !LiveAudioPlaybackEngine.isRunningUnderXCTest else { return }
         #if canImport(UIKit) && !os(watchOS)
         Task { @MainActor in
             switch profile {
             case .lightNibbler:
-                let gen = UIImpactFeedbackGenerator(style: .light)
-                gen.prepare()
-                gen.impactOccurred(intensity: 0.55)
-            case .mediumStrike:
                 let gen = UIImpactFeedbackGenerator(style: .medium)
                 gen.prepare()
-                gen.impactOccurred(intensity: 0.85)
+                gen.impactOccurred(intensity: 0.80)
+                #if canImport(AudioToolbox)
+                AudioServicesPlaySystemSound(1519) // Peek Taptic pulse
+                #endif
+            case .mediumStrike:
+                let gen = UIImpactFeedbackGenerator(style: .heavy)
+                gen.prepare()
+                gen.impactOccurred(intensity: 1.0)
+                #if canImport(AudioToolbox)
+                AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
+                #endif
             case .heavyPull:
                 let gen = UIImpactFeedbackGenerator(style: .heavy)
                 gen.prepare()
                 gen.impactOccurred(intensity: 1.0)
-                try? await Task.sleep(nanoseconds: 130_000_000)
-                gen.impactOccurred(intensity: 0.90)
+                #if canImport(AudioToolbox)
+                AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
+                #endif
+                try? await Task.sleep(nanoseconds: 220_000_000)
+                gen.impactOccurred(intensity: 1.0)
+                #if canImport(AudioToolbox)
+                AudioServicesPlaySystemSound(1520) // Pop strong Taptic pulse
+                #endif
             case .trophyGiant:
                 let notif = UINotificationFeedbackGenerator()
                 notif.prepare()
                 notif.notificationOccurred(.warning)
+                #if canImport(AudioToolbox)
+                AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
+                #endif
                 let heavy = UIImpactFeedbackGenerator(style: .heavy)
                 heavy.prepare()
-                try? await Task.sleep(nanoseconds: 120_000_000)
+                try? await Task.sleep(nanoseconds: 200_000_000)
                 heavy.impactOccurred(intensity: 1.0)
-                try? await Task.sleep(nanoseconds: 140_000_000)
+                #if canImport(AudioToolbox)
+                AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
+                #endif
+                try? await Task.sleep(nanoseconds: 220_000_000)
                 heavy.impactOccurred(intensity: 1.0)
             }
         }
@@ -582,18 +601,31 @@ public struct FishingAudioAndHapticsController: Sendable, Equatable {
     }
 
     private static func triggerPlatformHapticForSoundEffect(_ sfx: FishingSoundEffect) {
+        guard !LiveAudioPlaybackEngine.isRunningUnderXCTest else { return }
         #if canImport(UIKit) && !os(watchOS)
         Task { @MainActor in
             switch sfx {
             case .castBobber:
-                let gen = UIImpactFeedbackGenerator(style: .light)
-                gen.impactOccurred()
-            case .fishSplash:
                 let gen = UIImpactFeedbackGenerator(style: .medium)
-                gen.impactOccurred()
+                gen.prepare()
+                gen.impactOccurred(intensity: 0.90)
+                #if canImport(AudioToolbox)
+                AudioServicesPlaySystemSound(1519)
+                #endif
+            case .fishSplash:
+                let gen = UIImpactFeedbackGenerator(style: .heavy)
+                gen.prepare()
+                gen.impactOccurred(intensity: 1.0)
+                #if canImport(AudioToolbox)
+                AudioServicesPlaySystemSound(1520)
+                #endif
             case .rodBreak, .coilBreak, .lineBreak:
                 let gen = UINotificationFeedbackGenerator()
+                gen.prepare()
                 gen.notificationOccurred(.error)
+                #if canImport(AudioToolbox)
+                AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
+                #endif
             }
         }
         #endif
@@ -762,7 +794,7 @@ public final class LiveAudioPlaybackEngine: @unchecked Sendable {
             self.ambientPlayer?.stop()
             if let player = try? AVAudioPlayer(data: data) {
                 player.numberOfLoops = -1
-                player.volume = 0.16
+                player.volume = 0.65
                 player.prepareToPlay()
                 player.play()
                 self.ambientPlayer = player
@@ -788,7 +820,7 @@ public final class LiveAudioPlaybackEngine: @unchecked Sendable {
             self.configureAudioSessionIfNeeded()
             if let player = try? AVAudioPlayer(data: data) {
                 player.numberOfLoops = -1
-                player.volume = 0.16
+                player.volume = 0.65
                 player.prepareToPlay()
                 player.play()
                 self.ambientPlayer = player
@@ -978,36 +1010,58 @@ public final class LiveAudioPlaybackEngine: @unchecked Sendable {
         return encodeMono16BitPCMWAV(samples: samples, sampleRate: sampleRate)
     }
 
-    /// Gentle, squeak-free ambient water lapping & soft breeze loop (`pondsm.txt` day/night per-pond soundscape).
-    /// Uses a 3-stage cascaded low-pass filter (< 350 Hz) with zero high-frequency sine tones so there is no whistle/squeak,
-    /// and varies wave cadence across the 15 ponds (`pondIndex = 0..14`).
+    /// Rich, audible, squeak-free ambient water lapping & shoreline stream loop (`pondsm.txt` day/night per-pond soundscape).
+    /// Combines warm mid-range water wash (`250..900 Hz` band-passed noise) with rhythmic shore wave swells and soft low-mid water droplets
+    /// (`320..540 Hz`) so it is clearly audible on iPhone speakers while having zero high-pitched whine/squeak.
     private static func synthesizeAmbientLoopWAV(isDaylight: Bool, pondIndex: Int = 0, sampleRate: Int = 22050) -> Data {
         let duration = 4.0
         let count = Int(Double(sampleRate) * duration)
         var samples = [Int16](repeating: 0, count: count)
         let seedOffset = UInt32(max(0, pondIndex) * 7919)
         var lcg: UInt32 = (isDaylight ? 0xCAFE_BABE : 0xDEAD_BEEF) &+ seedOffset
-        var lp1 = 0.0
-        var lp2 = 0.0
-        var lp3 = 0.0
-        let waveCycles = Double(1 + (max(0, pondIndex) % 3)) // 1, 2, or 3 gentle shore waves per 4.0s loop
-        let filterAlpha = isDaylight ? 0.032 : 0.020
+        var lpFast = 0.0
+        var lpSlow = 0.0
+        let waveCycles = Double(2 + (max(0, pondIndex) % 3)) // 2, 3, or 4 shore wave swells per 4.0s loop
+        let fastAlpha = isDaylight ? 0.22 : 0.16
+        let slowAlpha = 0.018
+
+        // Precompute 6 soft low-mid water droplet ripples per 4.0s loop (`340..520 Hz`)
+        let dropTimes: [Double] = [0.35, 0.95, 1.62, 2.28, 2.95, 3.55]
+        let dropFreqs: [Double] = [
+            360.0 + Double((pondIndex * 19) % 90),
+            430.0 + Double((pondIndex * 31) % 80),
+            340.0 + Double((pondIndex * 23) % 70),
+            460.0 + Double((pondIndex * 17) % 75),
+            390.0 + Double((pondIndex * 29) % 85),
+            410.0 + Double((pondIndex * 13) % 70)
+        ]
 
         for i in 0..<count {
             let t = Double(i) / Double(sampleRate)
             lcg = lcg &* 1664525 &+ 1013904223
             let white = (Double(lcg & 0xFFFF) / 32768.0) - 1.0
-            lp1 += filterAlpha * (white - lp1)
-            lp2 += filterAlpha * (lp1 - lp2)
-            lp3 += filterAlpha * (lp2 - lp3)
+            lpFast += fastAlpha * (white - lpFast)
+            lpSlow += slowAlpha * (white - lpSlow)
+            // Band-pass water surf in 180..950 Hz (audibly rich on phone speaker, zero high-frequency hiss)
+            let bandWater = lpFast - lpSlow
 
-            // Smooth periodic wave envelope (exact integer cycles over 4.0s for seamless loop boundary)
-            let waveLfo = 0.58 + 0.42 * sin(2.0 * .pi * (waveCycles / duration) * t)
-            let breezeLfo = 0.75 + 0.25 * cos(2.0 * .pi * (1.0 / duration) * t)
-            // Seamless crossfade envelope at loop edges
-            let edgeFade = min(1.0, min(Double(i) / 400.0, Double(count - 1 - i) / 400.0))
-            let sig = lp3 * waveLfo * breezeLfo * edgeFade * (isDaylight ? 0.42 : 0.30)
-            samples[i] = Int16(max(-1.0, min(1.0, sig)) * 18000.0)
+            let waveLfo = 0.55 + 0.45 * sin(2.0 * .pi * (waveCycles / duration) * t)
+            let breezeLfo = 0.72 + 0.28 * cos(2.0 * .pi * (1.0 / duration) * t)
+            var sig = bandWater * waveLfo * breezeLfo * (isDaylight ? 1.85 : 1.45)
+
+            // Add gentle water lapping droplets
+            for dIdx in 0..<dropTimes.count {
+                let dt = t - dropTimes[dIdx]
+                if dt >= 0.0 && dt < 0.085 {
+                    let dropEnv = sin((dt / 0.085) * .pi) * exp(-dt * 28.0)
+                    let dropFreq = dropFreqs[dIdx] * (1.0 + 0.35 * (dt / 0.085))
+                    sig += 0.22 * sin(2.0 * .pi * dropFreq * dt) * dropEnv
+                }
+            }
+
+            let edgeFade = min(1.0, min(Double(i) / 350.0, Double(count - 1 - i) / 350.0))
+            let clamped = max(-1.0, min(1.0, sig * edgeFade))
+            samples[i] = Int16(clamped * 26000.0)
         }
         return encodeMono16BitPCMWAV(samples: samples, sampleRate: sampleRate)
     }

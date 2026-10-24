@@ -52,36 +52,49 @@ public enum FishingHttpRequestBuilder: Sendable {
         return req
     }
 
-    /// Builds `GET http://fish-mob.ru/fff/fish.php` (`FishingService$d.a`).
+    /// Builds `GET http://fish-mob.ru/fff/fish.php` (`FishingService$d.a`, `pc=0043..0265` in `classes.dex`).
     public static func makeSubmitFishCatchRequest(
         login: String,
         password: String,
         installationUuid: String,
         caughtFish: CaughtUserFish,
-        tourType: Int = 0
+        tourType: Int = 0,
+        playerCategory: Int = 0,
+        playerExperience: Int = 0,
+        playerBalance: Int = 0,
+        antiCheatCatchDeltaMs: Int64 = -1000,
+        antiCheatBiteDelaySeconds: Int64 = 20,
+        inventoryFolpHeader: String? = nil
     ) -> URLRequest {
         var req = URLRequest(url: URL(string: FishingHttpEndpoint.submitFishCatch.rawValue)!)
         req.httpMethod = "GET"
+        req.setValue("close", forHTTPHeaderField: "Connection")
+        req.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        req.setValue("text/plain", forHTTPHeaderField: "Accept")
         req.setValue(
             FishingNetworkCrypto.makeFishCatchFoplHeader(
                 login: login,
                 password: password,
-                installationUuid: installationUuid
+                installationUuid: installationUuid,
+                caughtFish: caughtFish,
+                playerCategory: playerCategory,
+                playerExperience: playerExperience,
+                playerBalance: playerBalance,
+                antiCheatCatchDeltaMs: antiCheatCatchDeltaMs,
+                antiCheatBiteDelaySeconds: antiCheatBiteDelaySeconds
             ),
             forHTTPHeaderField: "X-Fish-Fopl"
         )
         req.setValue(FishingNetworkCrypto.installationUuidMd5(installationUuid), forHTTPHeaderField: "X-Fish-Uuid")
-        req.setValue(String(caughtFish.catchTimeMs), forHTTPHeaderField: "X-Fish-Date")
-        req.setValue(
-            FishingNetworkCrypto.makeFishCatchFolpHeader(
-                pondId0Based: caughtFish.pondIndex,
-                baitId0Based: caughtFish.baitIndex,
-                fishId0Based: max(0, caughtFish.fish.id - 1),
-                weightGrams: caughtFish.weightGrams,
-                tourType: tourType
-            ),
-            forHTTPHeaderField: "X-Fish-Folp"
+        req.setValue(FishingNetworkCrypto.formatJavaDateToString(epochMs: caughtFish.catchTimeMs), forHTTPHeaderField: "X-Fish-Date")
+        let folpValue = inventoryFolpHeader ?? FishingNetworkCrypto.makeFishCatchFolpHeader(
+            pondId0Based: caughtFish.pondIndex,
+            baitId0Based: caughtFish.baitIndex,
+            fishId0Based: max(0, caughtFish.fish.id - 1),
+            weightGrams: caughtFish.weightGrams,
+            tourType: tourType
         )
+        req.setValue(folpValue, forHTTPHeaderField: "X-Fish-Folp")
         return req
     }
 
@@ -263,6 +276,50 @@ public enum FishingHttpRequestBuilder: Sendable {
         req.setValue(languageCode, forHTTPHeaderField: "X-Fish-Lng")
         return req
     }
+
+    /// Builds `GET http://fish-mob.ru/fff/tour_regin.php` (`TextActivity$f.a`, `NETWORK.md` Section 2 #11):
+    /// Registers for (`actionType = "1"`) or unregisters from (`actionType = "0"`) an online tournament by `tournamentId`.
+    public static func makeTournamentRegistrationRequest(
+        login: String,
+        password: String,
+        installationUuid: String,
+        tournamentId: String,
+        actionType: String = "1",
+        languageCode: String = "ru"
+    ) -> URLRequest {
+        var req = URLRequest(url: URL(string: FishingHttpEndpoint.tournamentRegistration.rawValue)!)
+        req.httpMethod = "GET"
+        req.setValue(FishingNetworkCrypto.versionMeeks4Y2Q, forHTTPHeaderField: "X-Fish-Version")
+        req.setValue(login, forHTTPHeaderField: "X-Fish-Login")
+        req.setValue(FishingNetworkCrypto.doubleMd5Password(password), forHTTPHeaderField: "X-Fish-Pass")
+        req.setValue(FishingNetworkCrypto.installationUuidMd5(installationUuid), forHTTPHeaderField: "X-Fish-Imei")
+        req.setValue(languageCode, forHTTPHeaderField: "X-Fish-SetLng")
+        req.setValue(actionType, forHTTPHeaderField: "X-Fish-Type")
+        req.setValue(tournamentId, forHTTPHeaderField: "X-Fish-Id")
+        return req
+    }
+
+    /// Builds `GET http://fish-mob.ru/fff/tour_results.php` (`x0.p$b.a`, `NETWORK.md` Section 2 #12):
+    /// Fetches live or final leaderboard standings for `tournamentId`.
+    public static func makeTournamentResultsRequest(
+        login: String,
+        password: String,
+        tournamentId: String,
+        regFlag: String = "1",
+        listType: String = "2",
+        languageCode: String = "ru"
+    ) -> URLRequest {
+        var req = URLRequest(url: URL(string: FishingHttpEndpoint.tournamentResults.rawValue)!)
+        req.httpMethod = "GET"
+        req.setValue(FishingNetworkCrypto.versionMeeks4_15, forHTTPHeaderField: "X-Fish-Version")
+        req.setValue(login, forHTTPHeaderField: "X-Fish-Login")
+        req.setValue(regFlag, forHTTPHeaderField: "X-Fish-Reg")
+        req.setValue(FishingNetworkCrypto.doubleMd5Password(password), forHTTPHeaderField: "X-Fish-Pass")
+        req.setValue(languageCode, forHTTPHeaderField: "X-Fish-SetLng")
+        req.setValue(listType, forHTTPHeaderField: "X-Fish-Type")
+        req.setValue(tournamentId, forHTTPHeaderField: "X-Fish-Id")
+        return req
+    }
 }
 
 // MARK: - 2. Parsers for `auth_chat.php`, `fish.php`, `top.php` & `rek.php`
@@ -274,8 +331,33 @@ public enum ChatAuthHandshakeResult: Sendable, Equatable {
 
 public enum FishCatchUploadResult: Sendable, Equatable {
     case accepted                       // status=1000
-    case newWorldRecord                 // status=1100
+    case newWorldRecord                 // status=1100 or 1300
     case rejected(statusCode: Int)
+}
+
+public struct TournamentResultsSnapshot: Sendable, Equatable {
+    public let tournamentId: String
+    public let participantsCount: Int
+    public let secondsLeft: Int
+    public let secondsToStart: Int
+    public let isRegistered: Bool
+    public let leaderboardLines: [String]
+
+    public init(
+        tournamentId: String,
+        participantsCount: Int = 0,
+        secondsLeft: Int = 0,
+        secondsToStart: Int = 0,
+        isRegistered: Bool = false,
+        leaderboardLines: [String] = []
+    ) {
+        self.tournamentId = tournamentId
+        self.participantsCount = participantsCount
+        self.secondsLeft = secondsLeft
+        self.secondsToStart = secondsToStart
+        self.isRegistered = isRegistered
+        self.leaderboardLines = leaderboardLines
+    }
 }
 
 public enum AchievementsQuestsSyncResult: Sendable, Equatable {
@@ -381,7 +463,7 @@ public enum FishingOnlineResponseParser: Sendable {
             if kv.count == 2, kv[0] == "status", let code = Int(kv[1]) {
                 switch code {
                 case 1000: return .accepted
-                case 1100: return .newWorldRecord
+                case 1100, 1300: return .newWorldRecord
                 default: return .rejected(statusCode: code)
                 }
             }
@@ -584,6 +666,53 @@ public enum FishingOnlineResponseParser: Sendable {
             }
         }
         return entries
+    }
+
+    /// Parses `tour_results.php` response (`x0.p$b.a`, `pc=00c6..016b` in `classes.dex`):
+    /// Format: `"--regin=1,left=1200,start=0,users=14,tour=1045--1. PlayerA - 3450\n2. PlayerB - 2890"`.
+    public static func parseTournamentResultsResponse(_ raw: String, tournamentId: String) -> TournamentResultsSnapshot {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            return TournamentResultsSnapshot(tournamentId: tournamentId)
+        }
+        let sections = trimmed.components(separatedBy: "--")
+        var usersCount = 0
+        var leftSec = 0
+        var startSec = 0
+        var regin = false
+        var lines: [String] = []
+
+        for sec in sections {
+            let clean = sec.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !clean.isEmpty else { continue }
+            if clean.contains("users=") || clean.contains("left=") || clean.contains("regin=") {
+                for kv in clean.components(separatedBy: ",") {
+                    let p = kv.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if p.hasPrefix("users=") {
+                        usersCount = Int(p.replacingOccurrences(of: "users=", with: "")) ?? 0
+                    } else if p.hasPrefix("left=") {
+                        leftSec = Int(p.replacingOccurrences(of: "left=", with: "")) ?? 0
+                    } else if p.hasPrefix("start=") {
+                        startSec = Int(p.replacingOccurrences(of: "start=", with: "")) ?? 0
+                    } else if p.hasPrefix("regin=") {
+                        regin = (Int(p.replacingOccurrences(of: "regin=", with: "")) ?? 0) > 0
+                    }
+                }
+            } else {
+                let subLines = clean.components(separatedBy: .newlines)
+                    .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                    .filter { !$0.isEmpty }
+                lines.append(contentsOf: subLines)
+            }
+        }
+        return TournamentResultsSnapshot(
+            tournamentId: tournamentId,
+            participantsCount: usersCount,
+            secondsLeft: leftSec,
+            secondsToStart: startSec,
+            isRegistered: regin,
+            leaderboardLines: lines
+        )
     }
 }
 
@@ -970,14 +1099,26 @@ public struct FishingLiveNetworkClient: Sendable {
         password: String,
         installationUuid: String,
         caughtFish: CaughtUserFish,
-        tourType: Int
+        tourType: Int,
+        playerCategory: Int = 0,
+        playerExperience: Int = 0,
+        playerBalance: Int = 0,
+        antiCheatCatchDeltaMs: Int64 = -1000,
+        antiCheatBiteDelaySeconds: Int64 = 20,
+        inventoryFolpHeader: String? = nil
     ) async throws -> FishCatchUploadResult {
         let req = FishingHttpRequestBuilder.makeSubmitFishCatchRequest(
             login: login,
             password: password,
             installationUuid: installationUuid,
             caughtFish: caughtFish,
-            tourType: tourType
+            tourType: tourType,
+            playerCategory: playerCategory,
+            playerExperience: playerExperience,
+            playerBalance: playerBalance,
+            antiCheatCatchDeltaMs: antiCheatCatchDeltaMs,
+            antiCheatBiteDelaySeconds: antiCheatBiteDelaySeconds,
+            inventoryFolpHeader: inventoryFolpHeader
         )
         let raw = try await executeStringRequest(req)
         return FishingOnlineResponseParser.parseFishCatchUploadResponse(raw)
@@ -1061,6 +1202,45 @@ public struct FishingLiveNetworkClient: Sendable {
         )
         let raw = try await executeStringRequest(req)
         return FishingOnlineResponseParser.parseAchievementsQuestsSyncResponse(raw)
+    }
+
+    public func registerInOnlineTournament(
+        login: String,
+        password: String,
+        installationUuid: String,
+        tournamentId: String,
+        actionType: String = "1",
+        languageCode: String = "ru"
+    ) async throws -> String {
+        let req = FishingHttpRequestBuilder.makeTournamentRegistrationRequest(
+            login: login,
+            password: password,
+            installationUuid: installationUuid,
+            tournamentId: tournamentId,
+            actionType: actionType,
+            languageCode: languageCode
+        )
+        return try await executeStringRequest(req)
+    }
+
+    public func fetchTournamentResults(
+        login: String,
+        password: String,
+        tournamentId: String,
+        regFlag: String = "1",
+        listType: String = "2",
+        languageCode: String = "ru"
+    ) async throws -> TournamentResultsSnapshot {
+        let req = FishingHttpRequestBuilder.makeTournamentResultsRequest(
+            login: login,
+            password: password,
+            tournamentId: tournamentId,
+            regFlag: regFlag,
+            listType: listType,
+            languageCode: languageCode
+        )
+        let raw = try await executeStringRequest(req)
+        return FishingOnlineResponseParser.parseTournamentResultsResponse(raw, tournamentId: tournamentId)
     }
 }
 

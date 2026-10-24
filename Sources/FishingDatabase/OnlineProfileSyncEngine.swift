@@ -140,22 +140,79 @@ public enum FishingNetworkCrypto: Sendable {
         return Data(plain.utf8).base64EncodedString()
     }
 
-    /// `X-Fish-Fopl` for `fish.php` (`FishingService$d.a`):
-    /// `Base64(login + ":" + passHash + ":meeks4_fff Y2Q=:" + imeiOrUuidMd5 + ":" + appSign)`
+    /// Dalvik-compatible 15-field `X-Fish-Fopl` for `http://fish-mob.ru/fff/fish.php` (`FishingService$d.a`, `pc=0115..024d` in `classes.dex`):
+    /// Plain string before standard Base64:
+    /// `login:passHash:fishmob YmQ=:fishIdHex:weightHex:baitIdxHex:pondIdxHex:catHex:expHex:balHex:rodWeightHex:uuidMd5:antiCheatCatchDeltaMs:appSign:antiCheatBiteDelaySeconds`
+    /// where each numeric field (`fishId`..`rodWeight`) is obfuscated via `Integer.toHexString((v % 109) + 21688 + v)`.
+    public static func obfuscateFishPhpHexField(_ value: Int) -> String {
+        let rem = value % 109
+        let obfuscated = rem + 21688 + value
+        return String(UInt32(bitPattern: Int32(truncatingIfNeeded: obfuscated)), radix: 16, uppercase: false)
+    }
+
+    /// Builds the exact 15-field Base64 `X-Fish-Fopl` header required by `http://fish-mob.ru/fff/fish.php` (`FishingService$d.a`).
     public static func makeFishCatchFoplHeader(
         login: String,
         password: String,
         installationUuid: String,
+        caughtFish: CaughtUserFish? = nil,
+        playerCategory: Int = 0,
+        playerExperience: Int = 0,
+        playerBalance: Int = 0,
+        antiCheatCatchDeltaMs: Int64 = -1000,
+        antiCheatBiteDelaySeconds: Int64 = 20,
         appSign: String = appSignConstant
     ) -> String {
         let passHash = doubleMd5Password(password)
         let uuidMd5 = installationUuidMd5(installationUuid)
-        let plain = "\(login):\(passHash):\(versionMeeks4Y2Q):\(uuidMd5):\(appSign)"
+        let fishId = caughtFish?.fish.id ?? 1
+        let weightGrams = caughtFish?.weightGrams ?? 100
+        let baitIdx = caughtFish?.baitIndex ?? 0
+        let pondIdx = caughtFish?.pondIndex ?? 0
+        let rodWeight = caughtFish?.rodWeightKg ?? 3
+
+        let fIdHex = obfuscateFishPhpHexField(fishId)
+        let wHex = obfuscateFishPhpHexField(weightGrams)
+        let bHex = obfuscateFishPhpHexField(baitIdx)
+        let pHex = obfuscateFishPhpHexField(pondIdx)
+        let catHex = obfuscateFishPhpHexField(playerCategory)
+        let expHex = obfuscateFishPhpHexField(playerExperience)
+        let balHex = obfuscateFishPhpHexField(playerBalance)
+        let rodHex = obfuscateFishPhpHexField(rodWeight)
+
+        let plain = [
+            login,
+            passHash,
+            versionFishmobYmQ,
+            fIdHex,
+            wHex,
+            bHex,
+            pHex,
+            catHex,
+            expHex,
+            balHex,
+            rodHex,
+            uuidMd5,
+            String(antiCheatCatchDeltaMs),
+            appSign,
+            String(antiCheatBiteDelaySeconds)
+        ].joined(separator: ":")
         return Data(plain.utf8).base64EncodedString()
     }
 
-    /// `X-Fish-Folp` for `fish.php` (`FishingService$d.a`):
-    /// `F0.t.a(pondId0Based + ":" + baitId0Based + ":" + fishId0Based + ":" + weightGrams + ":" + tourType, "encode", false, 0)`
+    /// Formats `X-Fish-Date` for `fish.php` (`new java.util.Date(catchTimeMs).toString()` at `pc=00fe..0101`),
+    /// e.g. `"Sat Oct 24 12:34:56 GMT 2026"`.
+    public static func formatJavaDateToString(epochMs: Int64) -> String {
+        let date = Date(timeIntervalSince1970: Double(epochMs) / 1000.0)
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.dateFormat = "EEE MMM dd HH:mm:ss GMT yyyy"
+        return formatter.string(from: date)
+    }
+
+    /// `X-Fish-Folp` for `fish.php` (`FishingService$d.b()` at `pc=021a`, or legacy 5-field `F0.t.a` fallback):
+    /// In `FishingService$d.b()`, returns `"rod1..rod5;coil1..coil5;line1..line5"` describing the player's 5 rod/coil/line slots.
     public static func makeFishCatchFolpHeader(
         pondId0Based: Int,
         baitId0Based: Int,
@@ -311,6 +368,56 @@ extension PlayerStateRepository {
         var out = ""
         for q in quests {
             out.append("\(q.made)|")
+        }
+        return out
+    }
+
+    /// Reconstructs `FishingService$d.b()` (`pc=0000..0230` in `classes.dex`) for the `X-Fish-Folp` header on `fish.php`:
+    /// Serializes up to 5 owned rods (`name:weight:strength|`), 5 owned coils (`name:bearings:strength|`),
+    /// and 5 owned lines (`name:weight:length|`), padded with `"not:0:0|"` to 5 slots each and joined by `";"`.
+    public func buildFishCatchInventoryFolpHeader() throws -> String {
+        let rods = try listUserRods()
+        let coils = try listUserCoils()
+        let lines = try listUserLines()
+
+        var out = ""
+        for idx in 0..<5 {
+            if idx < rods.count {
+                let r = rods[idx]
+                if r.strength > 0 && r.strength <= 100 {
+                    out.append("\(r.rod.name):\(r.rod.weight):\(r.strength)|")
+                } else {
+                    out.append("not:0:0|")
+                }
+            } else {
+                out.append("not:0:0|")
+            }
+        }
+        out.append(";")
+        for idx in 0..<5 {
+            if idx < coils.count {
+                let c = coils[idx]
+                if c.strength > 0 && c.strength <= 100 {
+                    out.append("\(c.coil.name):\(c.coil.bearingCount):\(c.strength)|")
+                } else {
+                    out.append("not:0:0|")
+                }
+            } else {
+                out.append("not:0:0|")
+            }
+        }
+        out.append(";")
+        for idx in 0..<5 {
+            if idx < lines.count {
+                let l = lines[idx]
+                if l.length > 0 && l.length <= 500 {
+                    out.append("\(l.line.name):\(l.line.weight):\(l.length)|")
+                } else {
+                    out.append("not:0:0|")
+                }
+            } else {
+                out.append("not:0:0|")
+            }
         }
         return out
     }

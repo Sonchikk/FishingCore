@@ -484,7 +484,7 @@ final class FishingGameAppTests: XCTestCase {
             tourType: 2
         )
         XCTAssertEqual(fishReq.url?.absoluteString, "http://fish-mob.ru/fff/fish.php")
-        XCTAssertEqual(fishReq.value(forHTTPHeaderField: "X-Fish-Date"), "1700000123000")
+        XCTAssertEqual(fishReq.value(forHTTPHeaderField: "X-Fish-Date"), FishingNetworkCrypto.formatJavaDateToString(epochMs: 1_700_000_123_000))
         XCTAssertNotNil(fishReq.value(forHTTPHeaderField: "X-Fish-Folp"))
 
         XCTAssertEqual(
@@ -1136,5 +1136,73 @@ final class FishingGameAppTests: XCTestCase {
         XCTAssertEqual(okSync, .synchronized(serverMessage: "OK"))
         let errSync = FishingOnlineResponseParser.parseAchievementsQuestsSyncResponse("2000")
         XCTAssertEqual(errSync, .rejected(statusCode: "2000", message: "Неверный логин или пароль (код 2000)."))
+
+        // Verify Dalvik-exact 15-field `X-Fish-Fopl` and 5-slot inventory `X-Fish-Folp` for `fish.php` (`FishingService$d.a` / `b()`)
+        let sampleFish = CaughtUserFish(
+            fish: FishSpecies(
+                id: 1,
+                name: "Карась",
+                unitWeight: 500,
+                unitPrice: 55,
+                strength: 2,
+                stamina: 2,
+                intelligence: 2,
+                aggression: 2,
+                md5Valid: true
+            ),
+            weightGrams: 750,
+            pondIndex: 0,
+            baitIndex: 0,
+            rodWeightKg: 5,
+            catchTimeMs: 1_700_000_050_000
+        )
+        let invFolp = try coordinator.repository.buildFishCatchInventoryFolpHeader()
+        XCTAssertEqual(invFolp.components(separatedBy: ";").count, 3)
+
+        let fishReq = FishingHttpRequestBuilder.makeSubmitFishCatchRequest(
+            login: "angler_ios",
+            password: firstDoubleHash,
+            installationUuid: coordinator.installationUuid,
+            caughtFish: sampleFish,
+            tourType: 0,
+            playerCategory: 5,
+            playerExperience: 12000,
+            playerBalance: 4500,
+            antiCheatCatchDeltaMs: -250,
+            antiCheatBiteDelaySeconds: 18,
+            inventoryFolpHeader: invFolp
+        )
+        XCTAssertEqual(fishReq.value(forHTTPHeaderField: "X-Fish-Folp"), invFolp)
+        XCTAssertTrue(fishReq.value(forHTTPHeaderField: "X-Fish-Date")?.contains("GMT") == true)
+        let foplB64 = fishReq.value(forHTTPHeaderField: "X-Fish-Fopl") ?? ""
+        let foplDecoded = String(data: Data(base64Encoded: foplB64) ?? Data(), encoding: .utf8) ?? ""
+        let foplFields = foplDecoded.components(separatedBy: ":")
+        XCTAssertEqual(foplFields.count, 15)
+        XCTAssertEqual(foplFields[0], "angler_ios")
+        XCTAssertEqual(foplFields[1], firstDoubleHash)
+        XCTAssertEqual(foplFields[2], "fishmob YmQ=")
+        XCTAssertEqual(foplFields[3], FishingNetworkCrypto.obfuscateFishPhpHexField(1))
+        XCTAssertEqual(foplFields[4], FishingNetworkCrypto.obfuscateFishPhpHexField(750))
+
+        // Verify `tour_regin.php` & `tour_results.php` builders and parser
+        let regReq = FishingHttpRequestBuilder.makeTournamentRegistrationRequest(
+            login: "angler_ios",
+            password: firstDoubleHash,
+            installationUuid: coordinator.installationUuid,
+            tournamentId: "1045",
+            actionType: "1",
+            languageCode: "ru"
+        )
+        XCTAssertEqual(regReq.url?.absoluteString, "http://fish-mob.ru/fff/tour_regin.php")
+        XCTAssertEqual(regReq.value(forHTTPHeaderField: "X-Fish-Id"), "1045")
+
+        let parsedResults = FishingOnlineResponseParser.parseTournamentResultsResponse(
+            "--regin=1,left=900,start=0,users=12,tour=1045--1. Рыбак_1 - 3450 г\n2. Рыбак_2 - 2800 г",
+            tournamentId: "1045"
+        )
+        XCTAssertEqual(parsedResults.participantsCount, 12)
+        XCTAssertEqual(parsedResults.secondsLeft, 900)
+        XCTAssertTrue(parsedResults.isRegistered)
+        XCTAssertEqual(parsedResults.leaderboardLines.count, 2)
     }
 }

@@ -2015,7 +2015,7 @@ public struct OnlineAndChatView: View {
                     .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(.green)
                 ForEach(coordinator.httpActiveTournaments) { entry in
-                    VStack(alignment: .leading, spacing: 3) {
+                    VStack(alignment: .leading, spacing: 5) {
                         Text(entry.title)
                             .font(.system(size: 14, weight: .bold))
                             .foregroundStyle(OriginalGameTheme.goldText)
@@ -2029,11 +2029,58 @@ public struct OnlineAndChatView: View {
                                 .font(.system(size: 11).monospacedDigit())
                                 .foregroundStyle(.cyan)
                         }
+                        HStack(spacing: 8) {
+                            Button {
+                                coordinator.registerInOnlineTournamentLive(tournamentId: entry.id, actionType: "1")
+                            } label: {
+                                Text("Участвовать")
+                                    .font(.system(size: 11, weight: .bold))
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 4)
+                                    .background(Color.green.opacity(0.85), in: Capsule())
+                                    .foregroundStyle(.black)
+                            }
+                            .buttonStyle(.plain)
+
+                            Button {
+                                coordinator.fetchTournamentResultsLive(tournamentId: entry.id, isCompleted: false)
+                            } label: {
+                                Text("Таблица и итоги")
+                                    .font(.system(size: 11, weight: .bold))
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 4)
+                                    .background(OriginalGameTheme.goldText, in: Capsule())
+                                    .foregroundStyle(.black)
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(8)
                     .background(Color.black.opacity(0.45), in: RoundedRectangle(cornerRadius: 6))
                 }
+            }
+
+            if let results = coordinator.activeTournamentResults {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Таблица турнира #\(results.tournamentId) (участников: \(results.participantsCount)):")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(OriginalGameTheme.goldText)
+                    if results.leaderboardLines.isEmpty {
+                        Text("Пока нет пойманных рыб в зачёте этого турнира.")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.white.opacity(0.8))
+                    } else {
+                        ForEach(Array(results.leaderboardLines.prefix(20).enumerated()), id: \.offset) { _, row in
+                            Text(row)
+                                .font(.system(size: 12).monospacedDigit())
+                                .foregroundStyle(.white)
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(8)
+                .background(Color.black.opacity(0.60), in: RoundedRectangle(cornerRadius: 6))
             }
 
             if !coordinator.onlineTours.isEmpty {

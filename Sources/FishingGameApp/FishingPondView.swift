@@ -85,6 +85,14 @@ public struct FishingPondView: View {
             .clipped()
             .onAppear {
                 coordinator.updateViewportSize(width: w, height: h)
+                coordinator.audioHaptics.syncAmbientTrack(
+                    pondIndex: coordinator.selectedPondIndex,
+                    hour: coordinator.gameClock.hour,
+                    isPondScreenVisible: true
+                )
+            }
+            .onDisappear {
+                coordinator.audioHaptics.isOnPondScreen = false
             }
             .onChange(of: geo.size) { _, newSize in
                 coordinator.updateViewportSize(

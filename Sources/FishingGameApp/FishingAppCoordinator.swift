@@ -245,6 +245,7 @@ public final class FishingAppCoordinator: ObservableObject {
     @Published public private(set) var tournamentTimetableLines: [String] = []
     @Published public private(set) var httpActiveTournaments: [OnlineTournamentEntry] = []
     @Published public private(set) var httpCompletedTournaments: [OnlineTournamentEntry] = []
+    @Published public private(set) var activeTournamentResults: TournamentResultsSnapshot? = nil
     @Published public private(set) var authenticatedChatUserId: Int32 = 1
     @Published public private(set) var isOnlineRequestInFlight: Bool = false
     @Published public private(set) var lastOnlineStatusMessage: String = ""
@@ -1106,7 +1107,9 @@ public final class FishingAppCoordinator: ObservableObject {
                         isRepdigit: ProgressionCalculator.isRepdigitWeight(caughtFish.weightGrams),
                         isCleanerTrash: ProgressionCalculator.isCleanerTrashCatch(fishId1Based: caughtFish.fish.id)
                     )
-                    if onlineModeEnabled {
+                    let hasOnlineCreds = !savedOnlineLogin.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                        && !savedOnlinePassword.isEmpty
+                    if onlineModeEnabled || hasOnlineCreds {
                         submitCaughtFishLive(caughtFish)
                         syncAchievementsAndQuestsLive(includeQuests: true, silent: true)
                     }
@@ -1656,31 +1659,113 @@ public final class FishingAppCoordinator: ObservableObject {
         }
     }
 
-    /// Uploads a caught fish to `http://fish-mob.ru/fff/fish.php` (`FishingService$d.a`) when `onlineModeEnabled` is active.
+    /// Uploads a caught fish to `http://fish-mob.ru/fff/fish.php` (`FishingService$d.a`) with the exact 15-field `X-Fish-Fopl`
+    /// and 5-slot inventory `X-Fish-Folp` (`FishingService$d.b()`), updating «Рыб поймано сегодня» and tournament standings on `fish-mob.ru`.
     public func submitCaughtFishLive(_ caughtFish: CaughtUserFish) {
-        let login = savedOnlineLogin.trimmingCharacters(in: .whitespacesAndNewlines)
-        let password = savedOnlinePassword
+        let rawLogin = savedOnlineLogin.trimmingCharacters(in: .whitespacesAndNewlines)
+        let login = rawLogin.isEmpty ? profile.login.trimmingCharacters(in: .whitespacesAndNewlines) : rawLogin
+        let password = savedOnlinePassword.isEmpty ? profile.password : savedOnlinePassword
         guard !login.isEmpty, !password.isEmpty else { return }
+
         let client = self.liveNetworkClient
         let uuid = self.installationUuid
         let tourType = resolveCurrentCatchTourType()
+        let cat = profile.category
+        let exp = profile.experience
+        let bal = profile.balance
+        let catchDeltaMs = audioHaptics.lastAntiCheatCatchDeltaMs
+        let biteDelaySec = audioHaptics.lastAntiCheatBiteDelaySeconds
+        let invFolp = try? repository.buildFishCatchInventoryFolpHeader()
 
         Task { @MainActor in
-            if let result = try? await client.submitCaughtFish(
-                login: login,
-                password: password,
-                installationUuid: uuid,
-                caughtFish: caughtFish,
-                tourType: tourType
-            ) {
+            do {
+                let result = try await client.submitCaughtFish(
+                    login: login,
+                    password: password,
+                    installationUuid: uuid,
+                    caughtFish: caughtFish,
+                    tourType: tourType,
+                    playerCategory: cat,
+                    playerExperience: exp,
+                    playerBalance: bal,
+                    antiCheatCatchDeltaMs: catchDeltaMs,
+                    antiCheatBiteDelaySeconds: biteDelaySec,
+                    inventoryFolpHeader: invFolp
+                )
                 switch result {
                 case .accepted:
                     self.lastOnlineStatusMessage = "Улов (\(caughtFish.fish.name), \(caughtFish.weightGrams) г) отправлен на fish.php (status=1000)."
                 case .newWorldRecord:
-                    self.lastOnlineStatusMessage = "Новый мировой рекорд на fish.php! \(caughtFish.fish.name) — \(caughtFish.weightGrams) г (status=1100)."
+                    self.lastOnlineStatusMessage = "Новый рекорд на fish.php! \(caughtFish.fish.name) — \(caughtFish.weightGrams) г."
                 case .rejected(let code):
                     self.lastOnlineStatusMessage = "Сервер fish.php вернул код \(code)."
                 }
+            } catch {
+                self.lastOnlineStatusMessage = "Ошибка отправки улова на fish.php: \(error.localizedDescription)"
+            }
+        }
+    }
+
+    /// Registers for (`actionType = "1"`) or leaves (`actionType = "0"`) a scheduled tournament via `http://fish-mob.ru/fff/tour_regin.php` (`TextActivity$f.a`).
+    public func registerInOnlineTournamentLive(tournamentId: String, actionType: String = "1") {
+        let rawLogin = savedOnlineLogin.trimmingCharacters(in: .whitespacesAndNewlines)
+        let login = rawLogin.isEmpty ? profile.login.trimmingCharacters(in: .whitespacesAndNewlines) : rawLogin
+        let password = savedOnlinePassword.isEmpty ? profile.password : savedOnlinePassword
+        guard !login.isEmpty, !password.isEmpty else {
+            activeAlert = .operationError(message: "Для участия в турнире войдите в аккаунт fish-mob.ru.")
+            return
+        }
+        isOnlineRequestInFlight = true
+        lastOnlineStatusMessage = "Отправка заявки в турнир #\(tournamentId) (tour_regin.php)..."
+        let client = self.liveNetworkClient
+        let uuid = self.installationUuid
+        let lang = self.languageCode
+
+        Task { @MainActor in
+            defer { self.isOnlineRequestInFlight = false }
+            do {
+                let raw = try await client.registerInOnlineTournament(
+                    login: login,
+                    password: password,
+                    installationUuid: uuid,
+                    tournamentId: tournamentId,
+                    actionType: actionType,
+                    languageCode: lang
+                )
+                self.lastOnlineStatusMessage = "Ответ турнира #\(tournamentId): \(raw)"
+                self.refreshOnlineTournamentsLive(login: login)
+            } catch {
+                self.lastOnlineStatusMessage = "Не удалось зарегистрироваться в турнире #\(tournamentId): \(error.localizedDescription)"
+            }
+        }
+    }
+
+    /// Loads live or final leaderboard standings for a tournament via `http://fish-mob.ru/fff/tour_results.php` (`x0.p$b.a`).
+    public func fetchTournamentResultsLive(tournamentId: String, isCompleted: Bool = false) {
+        let rawLogin = savedOnlineLogin.trimmingCharacters(in: .whitespacesAndNewlines)
+        let login = rawLogin.isEmpty ? (profile.login.isEmpty ? "angler_ios" : profile.login) : rawLogin
+        let password = savedOnlinePassword.isEmpty ? profile.password : savedOnlinePassword
+        let listType = isCompleted ? "3" : "2"
+        isOnlineRequestInFlight = true
+        lastOnlineStatusMessage = "Загрузка итогов турнира #\(tournamentId) (tour_results.php)..."
+        let client = self.liveNetworkClient
+        let lang = self.languageCode
+
+        Task { @MainActor in
+            defer { self.isOnlineRequestInFlight = false }
+            do {
+                let snapshot = try await client.fetchTournamentResults(
+                    login: login,
+                    password: password,
+                    tournamentId: tournamentId,
+                    regFlag: "1",
+                    listType: listType,
+                    languageCode: lang
+                )
+                self.activeTournamentResults = snapshot
+                self.lastOnlineStatusMessage = "Итоги турнира #\(tournamentId): участников \(snapshot.participantsCount), записей \(snapshot.leaderboardLines.count)."
+            } catch {
+                self.lastOnlineStatusMessage = "Не удалось загрузить итоги турнира #\(tournamentId): \(error.localizedDescription)"
             }
         }
     }
