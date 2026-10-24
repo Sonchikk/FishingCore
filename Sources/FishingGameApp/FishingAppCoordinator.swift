@@ -222,6 +222,7 @@ public final class FishingAppCoordinator: ObservableObject {
     private var targetPhysicsBobberPos: Point2D? = nil
     private var lastPhysicsTickWallMs: Int64 = 0
     private var lastRippleStepWallMs: Int64 = 0
+    private var lastClockTickWallMs: Int64 = 0
 
     private var systemRng = SystemFishingRandom()
     private var visualRng = SystemFishingRandom()
@@ -620,6 +621,7 @@ public final class FishingAppCoordinator: ObservableObject {
 
     public func resetCastToIdle() {
         let events = stateMachine.resetToIdle()
+        audioHaptics.setReelLooping(false)
         currentLineCurve = nil
         renderedBobberPosition = nil
         previousPhysicsBobberPos = nil
@@ -633,7 +635,33 @@ public final class FishingAppCoordinator: ObservableObject {
             return
         }
         stateMachine.setPulled(pulled)
+        audioHaptics.setReelLooping(pulled && stateMachine.state == .fishFight)
         refreshLineGeometry(stepRipplesAndCast: false)
+    }
+
+    /// Unified real-time game loop dispatcher driven by a single `@State` timer in `FishingRootView`
+    /// so view re-evaluations never cancel or starve the `200 ms` `GameView$c` physics loop.
+    public func stepRealtimeLoop(nowMs: Int64 = Int64(Date().timeIntervalSince1970 * 1000)) {
+        // 1. Game clock (`FishingService$a`: 1 game minute every 2000 ms)
+        if lastClockTickWallMs == 0 || nowMs < lastClockTickWallMs {
+            lastClockTickWallMs = nowMs
+        } else if (nowMs - lastClockTickWallMs) >= GameClockTimer.tickIntervalMs {
+            lastClockTickWallMs = nowMs
+            stepGameClockMinute()
+        }
+
+        // 2. Active fishing loop (`GameView$c` 200ms/300ms physics + `GameView$a` visual frame)
+        guard stateMachine.state != .idle else { return }
+
+        if lastPhysicsTickWallMs == 0 || nowMs < lastPhysicsTickWallMs {
+            lastPhysicsTickWallMs = nowMs
+        }
+        let physicsIntervalMs: Int64 = (stateMachine.state == .fishFight) ? 200 : 300
+        if (nowMs - lastPhysicsTickWallMs) >= physicsIntervalMs {
+            stepSimulationTick(nowMs: nowMs)
+        } else {
+            stepVisualFrameTick(wallNowMs: nowMs)
+        }
     }
 
     public func stepSimulationTick(nowMs: Int64 = Int64(Date().timeIntervalSince1970 * 1000)) {
@@ -656,6 +684,7 @@ public final class FishingAppCoordinator: ObservableObject {
 
         switch stateMachine.state {
         case .fishCaught, .lineBroken, .rodBroken, .coilBroken, .fishEscaped:
+            audioHaptics.setReelLooping(false)
             try? repository.syncAssembledTackleAfterFight(stateMachine.tackle)
             let terminalEvents = stateMachine.stepTick(
                 nowMs: nowMs,
@@ -722,10 +751,12 @@ public final class FishingAppCoordinator: ObservableObject {
         refreshLineGeometry(stepRipplesAndCast: shouldStep60ms)
     }
 
-    public func fastForwardToScheduledBite() {
+    public func fastForwardToScheduledBite(nowMs: Int64 = Int64(Date().timeIntervalSince1970 * 1000)) {
         guard stateMachine.state == .waitingForBite else { return }
-        let targetMs = stateMachine.scheduledBiteTimeMs + 1
-        stepSimulationTick(nowMs: targetMs, rng: &systemRng)
+        stateMachine.rescheduleBiteToNow(nowMs: nowMs)
+        for attempt in 0..<12 where stateMachine.state == .waitingForBite {
+            stepSimulationTick(nowMs: nowMs + Int64(attempt), rng: &systemRng)
+        }
     }
 
     public func stepGameClockMinute() {

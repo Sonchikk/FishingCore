@@ -220,6 +220,13 @@ public struct FishingStateMachine: Sendable, Equatable {
         return events
     }
 
+    /// Reschedules `scheduledBiteTimeMs` to `nowMs - 1` so the next `stepTick(nowMs:)` evaluates a bite at the
+    /// current wall-clock time without pushing `biteStartTimeMs` into the future.
+    public mutating func rescheduleBiteToNow(nowMs: Int64) {
+        guard state == .waitingForBite else { return }
+        scheduledBiteTimeMs = nowMs - 1
+    }
+
     public mutating func setPulled(_ pulled: Bool) {
         isPulled = pulled
         isPreHookBobbing = false
@@ -981,6 +988,8 @@ public struct FishingStateMachine: Sendable, Equatable {
         lineGeometry = nil
         fishController = nil
         tension = 0
+        isPulled = false
+        isPreHookBobbing = false
         idleReleaseStartTimeMs = 0
         state = .idle
         rodSprite.updateFrame(forTension: 0)

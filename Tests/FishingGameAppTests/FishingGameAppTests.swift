@@ -668,5 +668,36 @@ final class FishingGameAppTests: XCTestCase {
         coordinator.setReelPulled(true)
         coordinator.setReelPulled(true)
         XCTAssertEqual(coordinator.stateMachine.lineGeometry?.tensionFactor, tensionFactorAfterFirstPull)
+
+        // Stepping unified 30 FPS realtime loop every 33ms during fishFight with reel pulled
+        // must trigger 200ms physics ticks, increase tension bar, and pull bobber downward
+        let initialFightBobberY = coordinator.stateMachine.bobber?.y ?? 0
+        for frame in 1...10 {
+            coordinator.stepRealtimeLoop(nowMs: biteTimeMs + Int64(frame * 34))
+        }
+        XCTAssertGreaterThan(coordinator.stateMachine.tension, 0)
+        XCTAssertGreaterThan(coordinator.stateMachine.bobber?.y ?? 0, initialFightBobberY)
+    }
+
+    @MainActor
+    func testFastForwardToScheduledBiteUsesCurrentWallTimeAndAllowsReeling() throws {
+        let coordinator = try FishingAppCoordinator(databasePath: ":memory:", nowMs: 1_700_000_000_000)
+        coordinator.buyAndEquipStarterKit(nowMs: 1_700_000_001_000)
+
+        let castWallMs: Int64 = 1_700_000_002_000
+        coordinator.castAt(x: 640, y: 450, nowMs: castWallMs)
+        XCTAssertEqual(coordinator.stateMachine.state, .waitingForBite)
+
+        let fastForwardWallMs: Int64 = castWallMs + 500
+        coordinator.fastForwardToScheduledBite(nowMs: fastForwardWallMs)
+        XCTAssertEqual(coordinator.stateMachine.state, .fishFight)
+        // Bite timestamp must not be pushed 15..84 seconds into the future
+        XCTAssertLessThanOrEqual(coordinator.stateMachine.biteStartTimeMs, fastForwardWallMs + 20)
+
+        coordinator.setReelPulled(true)
+        for frame in 1...8 {
+            coordinator.stepRealtimeLoop(nowMs: fastForwardWallMs + 20 + Int64(frame * 35))
+        }
+        XCTAssertGreaterThan(coordinator.stateMachine.tension, 0)
     }
 }

@@ -17,11 +17,6 @@ public struct FishingPondView: View {
     @ObservedObject public var coordinator: FishingAppCoordinator
     @State private var isBaitChooserPresented: Bool = false
 
-    /// 200 ms (`5 Hz`) physics & state-machine tick matching `GameView$c.run()`.
-    private let fightPhysicsTimer = Timer.publish(every: 0.2, on: .main, in: .common).autoconnect()
-    /// ~30 FPS (`0.033 s`) visual render & interpolation tick matching `GameView$a` (`D0.a`, `D0.b`).
-    private let visualFrameTimer = Timer.publish(every: 1.0 / 30.0, on: .main, in: .common).autoconnect()
-
     public static let goldTextColor = Color(red: 235.0 / 255.0, green: 185.0 / 255.0, blue: 104.0 / 255.0) // #EBB968
 
     public init(coordinator: FishingAppCoordinator) {
@@ -41,16 +36,6 @@ public struct FishingPondView: View {
                     coordinator: coordinator,
                     onPresentBaitChooser: { isBaitChooserPresented = true }
                 )
-            }
-        }
-        .onReceive(fightPhysicsTimer) { _ in
-            if coordinator.stateMachine.state != .idle {
-                coordinator.stepSimulationTick()
-            }
-        }
-        .onReceive(visualFrameTimer) { _ in
-            if coordinator.stateMachine.state != .idle {
-                coordinator.stepVisualFrameTick()
             }
         }
         .sheet(isPresented: $isBaitChooserPresented) {
@@ -501,6 +486,7 @@ private struct PondDeveloperDebugToolbarView: View {
 private struct PondBottomControlsPanelView: View {
     @ObservedObject var coordinator: FishingAppCoordinator
     let onPresentBaitChooser: () -> Void
+    @State private var didCastDuringCurrentPress: Bool = false
 
     private var tensionFraction: Double {
         let tension = coordinator.stateMachine.tension
@@ -683,31 +669,42 @@ private struct PondBottomControlsPanelView: View {
     }
 
     private var reelPullButton: some View {
-        let pullDrawable = isBitingOrPulling ? "push_me_on" : "push_me"
-        return ZStack {
+        ZStack {
             OriginalSpriteOrFallbackIcon(
-                drawableName: pullDrawable,
+                drawableName: "push_me",
                 fallbackSystemName: "arrow.triangle.2.circlepath.circle.fill",
                 width: 96,
                 height: 110
             )
+            .opacity(isBitingOrPulling ? 0.0 : 1.0)
+
+            OriginalSpriteOrFallbackIcon(
+                drawableName: "push_me_on",
+                fallbackSystemName: "arrow.triangle.2.circlepath.circle.fill",
+                width: 96,
+                height: 110
+            )
+            .opacity(isBitingOrPulling ? 1.0 : 0.0)
         }
         .contentShape(Rectangle())
         .gesture(
             DragGesture(minimumDistance: 0)
                 .onChanged { _ in
                     if coordinator.stateMachine.state == .idle {
+                        guard !didCastDuringCurrentPress else { return }
+                        didCastDuringCurrentPress = true
                         // Match `GameActivity$s.onTouch`: re-cast into saved `Xbobber, Ybobber` (or center)
                         let targetX = coordinator.stateMachine.lastCastMetadata?.bobberX
                             ?? (Float(coordinator.stateMachine.viewWidth) * 0.5)
                         let targetY = coordinator.stateMachine.lastCastMetadata?.bobberY
                             ?? (Float(coordinator.stateMachine.viewHeight) * 0.55)
                         coordinator.castAt(x: targetX, y: targetY)
-                    } else {
+                    } else if !didCastDuringCurrentPress {
                         coordinator.setReelPulled(true)
                     }
                 }
                 .onEnded { _ in
+                    didCastDuringCurrentPress = false
                     if coordinator.stateMachine.state != .idle {
                         coordinator.setReelPulled(false)
                     }
