@@ -430,6 +430,28 @@ final class FishingGameAppTests: XCTestCase {
         XCTAssertEqual(authReq.value(forHTTPHeaderField: "X-Fish-Uuid"), FishingNetworkCrypto.installationUuidMd5(uuid))
         XCTAssertNotNil(authReq.value(forHTTPHeaderField: "X-Fish-Fopl"))
 
+        let shopReq = FishingHttpRequestBuilder.makeOnlineShopRequest(
+            login: "angler_one",
+            password: "secret",
+            installationUuid: uuid
+        )
+        XCTAssertEqual(shopReq.url?.absoluteString, FishingHttpEndpoint.onlineShopCatalog.rawValue)
+
+        let rewardReq = FishingHttpRequestBuilder.makeServerRewardsRequest(
+            login: "angler_one",
+            password: "secret",
+            installationUuid: uuid,
+            languageCode: "ru"
+        )
+        XCTAssertEqual(rewardReq.url?.absoluteString, FishingHttpEndpoint.claimRewards.rawValue)
+        XCTAssertEqual(rewardReq.value(forHTTPHeaderField: "X-Fish-AppSign"), FishingNetworkCrypto.appSignConstant)
+
+        let topReq = FishingHttpRequestBuilder.makeTopPlayersRequest(login: "angler_one", languageCode: "ru")
+        XCTAssertEqual(topReq.url?.absoluteString, FishingHttpEndpoint.topPlayersRating.rawValue)
+
+        let rekReq = FishingHttpRequestBuilder.makeWorldRecordsRequest(languageCode: "ru")
+        XCTAssertEqual(rekReq.url?.absoluteString, FishingHttpEndpoint.worldSpeciesRecords.rawValue)
+
         let fishSpec = FishSpecies(
             id: 1,
             name: "Карась",

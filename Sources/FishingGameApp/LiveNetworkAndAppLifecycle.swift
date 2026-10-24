@@ -156,7 +156,7 @@ public enum FishingHttpRequestBuilder: Sendable {
         password: String,
         installationUuid: String
     ) -> URLRequest {
-        var req = URLRequest(url: URL(string: FishingHttpEndpoint.onlineShop.rawValue)!)
+        var req = URLRequest(url: URL(string: FishingHttpEndpoint.onlineShopCatalog.rawValue)!)
         req.httpMethod = "GET"
         req.setValue(FishingNetworkCrypto.versionMeeks4Y2Q, forHTTPHeaderField: "X-Fish-Version")
         req.setValue(login, forHTTPHeaderField: "X-Fish-Login")
@@ -173,14 +173,14 @@ public enum FishingHttpRequestBuilder: Sendable {
         installationUuid: String,
         languageCode: String = "ru"
     ) -> URLRequest {
-        var req = URLRequest(url: URL(string: FishingHttpEndpoint.serverRewards.rawValue)!)
+        var req = URLRequest(url: URL(string: FishingHttpEndpoint.claimRewards.rawValue)!)
         req.httpMethod = "GET"
         req.setValue(FishingNetworkCrypto.versionMeeks4Y2Q, forHTTPHeaderField: "X-Fish-Version")
         req.setValue(login, forHTTPHeaderField: "X-Fish-Login")
         req.setValue(FishingNetworkCrypto.doubleMd5Password(password), forHTTPHeaderField: "X-Fish-Pass")
         req.setValue("1", forHTTPHeaderField: "X-Fish-Notes")
         req.setValue(languageCode, forHTTPHeaderField: "X-Fish-SetLng")
-        req.setValue(FishingNetworkCrypto.expectedAppSignConstant, forHTTPHeaderField: "X-Fish-AppSign")
+        req.setValue(FishingNetworkCrypto.appSignConstant, forHTTPHeaderField: "X-Fish-AppSign")
         req.setValue(FishingNetworkCrypto.installationUuidMd5(installationUuid), forHTTPHeaderField: "X-Fish-Uuid")
         return req
     }
@@ -190,7 +190,7 @@ public enum FishingHttpRequestBuilder: Sendable {
         login: String,
         languageCode: String = "ru"
     ) -> URLRequest {
-        var req = URLRequest(url: URL(string: FishingHttpEndpoint.topPlayers.rawValue)!)
+        var req = URLRequest(url: URL(string: FishingHttpEndpoint.topPlayersRating.rawValue)!)
         req.httpMethod = "GET"
         req.setValue(FishingNetworkCrypto.versionMeeks4_15, forHTTPHeaderField: "X-Fish-Version")
         req.setValue(languageCode, forHTTPHeaderField: "X-Fish-SetLng")
@@ -202,7 +202,7 @@ public enum FishingHttpRequestBuilder: Sendable {
     public static func makeWorldRecordsRequest(
         languageCode: String = "ru"
     ) -> URLRequest {
-        var req = URLRequest(url: URL(string: FishingHttpEndpoint.worldRecords.rawValue)!)
+        var req = URLRequest(url: URL(string: FishingHttpEndpoint.worldSpeciesRecords.rawValue)!)
         req.httpMethod = "GET"
         req.setValue(FishingNetworkCrypto.versionMeeks4_15, forHTTPHeaderField: "X-Fish-Version")
         req.setValue(languageCode, forHTTPHeaderField: "X-Fish-SetLng")
@@ -806,32 +806,32 @@ public final class FishingLiveTCPChatSession {
         let openMess = ChatProtocolSelector.makeOpenHandshakeMess(
             userId: userId,
             login: login,
-            pond: pondIndex,
+            pondRoom: pondIndex,
             installationUuid: installationUuid
         )
         sendMess(openMess)
 
-        let initMess = ChatProtocolSelector.makeSystemCommandMess(
+        let initMess = ChatProtocolSelector.makeSystemMess(
             command: "initialize",
             userId: userId,
             login: login,
-            pond: pondIndex
+            pondRoom: pondIndex
         )
         sendMess(initMess)
 
-        let usersMess = ChatProtocolSelector.makeSystemCommandMess(
+        let usersMess = ChatProtocolSelector.makeSystemMess(
             command: "getUserList3",
             userId: userId,
             login: login,
-            pond: pondIndex
+            pondRoom: pondIndex
         )
         sendMess(usersMess)
 
-        let toursMess = ChatProtocolSelector.makeSystemCommandMess(
+        let toursMess = ChatProtocolSelector.makeSystemMess(
             command: "tours",
             userId: userId,
             login: login,
-            pond: pondIndex
+            pondRoom: pondIndex
         )
         sendMess(toursMess)
     }

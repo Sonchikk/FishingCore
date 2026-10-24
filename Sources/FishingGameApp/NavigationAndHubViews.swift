@@ -1944,10 +1944,10 @@ public struct OnlineAndChatView: View {
             } else {
                 ForEach(coordinator.onlineTours, id: \.id) { tour in
                     VStack(alignment: .leading, spacing: 3) {
-                        Text(tour.title ?? "Турнир #\(tour.id)")
+                        Text(tour.title.isEmpty ? "Турнир #\(tour.id)" : tour.title)
                             .font(.system(size: 14, weight: .bold))
                             .foregroundStyle(OriginalGameTheme.goldText)
-                        Text(tour.desc ?? "")
+                        Text(tour.desc)
                             .font(.system(size: 12))
                             .foregroundStyle(.white)
                     }

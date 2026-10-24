@@ -326,8 +326,10 @@ public final class FishingAppCoordinator: ObservableObject {
         self.tcpChatSession.onPacketReceived = { [weak self] packetData in
             guard let self else { return }
             let outcome = try? self.receiveChatStreamPacket(packetData)
-            if case .pongBit(let pongMess) = outcome {
+            if case .sendHeartbeatReply(let pongMess) = outcome {
                 self.tcpChatSession.sendMess(pongMess)
+            } else if case .sendInitializeRequest(let initMess) = outcome {
+                self.tcpChatSession.sendMess(initMess)
             }
         }
     }
@@ -1096,10 +1098,10 @@ public final class FishingAppCoordinator: ObservableObject {
 
         let events = stateMachine.stepTick(
             nowMs: nowMs,
+            checkModeEnabled: checkModeEnabled,
+            spDateMs: nowMs,
             fishnetCount: fishnetEntries.count,
             overflowFcount: overflowFcount,
-            checkModeEnabled: checkModeEnabled,
-            sleepRecordTimestampMs: nowMs,
             rng: &systemRng
         )
         handleFishingUIEvents(events, nowMs: nowMs)
@@ -1146,7 +1148,7 @@ public final class FishingAppCoordinator: ObservableObject {
                     password: password
                 )
                 self.onlineModeEnabled = true
-                self.lastOnlineStatusMessage = "Профиль синхронизирован: опыт \(summary.experience), баланс \(summary.balance) руб."
+                self.lastOnlineStatusMessage = "Профиль синхронизирован: опыт \(summary.experience), баланс \(summary.balanceCoins) руб."
             } catch {
                 self.lastOnlineStatusMessage = "Сервер fish-mob.ru недоступен (\(error.localizedDescription)). Можно использовать локальный демо-профиль."
             }
@@ -1173,7 +1175,7 @@ public final class FishingAppCoordinator: ObservableObject {
                     languageCode: languageCode
                 )
                 let summary = try claimServerRewards(raw)
-                self.lastOnlineStatusMessage = "Награды получены: +\(summary.awardedCoins) руб., +\(summary.awardedExperience) XP."
+                self.lastOnlineStatusMessage = "Награды получены: +\(summary.coinsAdded) руб., +\(summary.experienceAdded) XP."
             } catch {
                 self.lastOnlineStatusMessage = "Не удалось получить награды с сервера: \(error.localizedDescription)"
             }
