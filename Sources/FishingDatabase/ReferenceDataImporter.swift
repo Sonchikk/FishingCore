@@ -2140,7 +2140,7 @@ extension ReferenceCatalogStore {
             }
         }
 
-        let divs = balanceTables.fishXpWeightDivisors
+        let divs = BalanceTables.fishReferenceWeightsGrams
         let fishGuide: [FishEncyclopediaGuideEntry] = allFishes.map { f in
             let idx0 = f.id - 1
             let xpDiv = (idx0 >= 0 && idx0 < divs.count) ? max(1, divs[idx0]) : max(1, f.unitWeight)

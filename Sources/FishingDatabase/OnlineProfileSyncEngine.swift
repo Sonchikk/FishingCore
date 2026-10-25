@@ -1022,7 +1022,7 @@ public struct UserTaskContractRecord: Sendable, Equatable, Identifiable {
         if !isTotalWeightGoal && bonusExperience > 0 {
             return bonusExperience
         }
-        let divs = balanceTables.fishXpWeightDivisors
+        let divs = BalanceTables.fishReferenceWeightsGrams
         let idx0 = targetFishId - 1
         let xpDiv = (idx0 >= 0 && idx0 < divs.count) ? max(1, divs[idx0]) : 250
         let refWeight = max(50, requiredWeightGrams)
@@ -1538,7 +1538,7 @@ extension PlayerStateRepository {
                     .text(newMd5)
                 ])
                 // Increment Achievement #4 («Любитель заданий», `LC0/d$a.onClick` `pc=0170`)
-                _ = try? evaluateAchievement(id1Based: 4, valueOrDelta: 1, nowMs: nowMs)
+                _ = try? updateAchievementProgress(achievementId: 4, valueOrDelta: 1, nowMs: nowMs)
                 return awardedXp
             }
             return 0

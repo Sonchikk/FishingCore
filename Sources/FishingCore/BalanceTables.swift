@@ -91,6 +91,8 @@ public struct BalanceTables: Sendable, Equatable {
         [6, 12, 17]
     ]
 
+    public var fishXpWeightDivisors: [Int] { Self.fishReferenceWeightsGrams }
+
     public init() {}
 
     public func achievementThresholdsMatrix() -> [[Int]] { Self.achievementThresholds }
