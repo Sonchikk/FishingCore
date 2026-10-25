@@ -607,7 +607,7 @@ private struct PondBottomControlsPanelView: View {
                 RoundedRectangle(cornerRadius: 4)
                     .fill(tensionColor)
                     .frame(width: geo.size.width * tensionFraction)
-                    .animation(.linear(duration: 0.18), value: coordinator.stateMachine.tension)
+                    .animation(.linear(duration: 0.05), value: coordinator.stateMachine.tension)
                 RoundedRectangle(cornerRadius: 4)
                     .stroke(Color.white.opacity(0.35), lineWidth: 1)
             }

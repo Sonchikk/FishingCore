@@ -20,7 +20,7 @@ private enum OriginalGameTheme {
 public struct FishingRootView: View {
     @StateObject private var coordinator: FishingAppCoordinator
     @State private var isShowingSplash: Bool
-    @State private var gameLoopTimer = Timer.publish(every: 1.0 / 30.0, on: .main, in: .common).autoconnect()
+    @State private var gameLoopTimer = Timer.publish(every: 1.0 / 60.0, on: .main, in: .common).autoconnect()
 
     public init(
         coordinator: FishingAppCoordinator? = nil,

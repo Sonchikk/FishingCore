@@ -362,8 +362,13 @@ public final class FishingAppCoordinator: ObservableObject {
     @Published public private(set) var gameClock: GameClockTimer
     @Published public private(set) var dayNightLighting: DayNightLighting
     @Published public private(set) var stateMachine: FishingStateMachine
+    /// Exact `GameView$c` fight loop cadence (`GameView$c.u()` `SurfaceHolder.lockCanvas/unlockCanvasAndPost` VSync + `Thread.sleep(15)` + OrmLite DAO refresh ~ 45 ms).
+    public static let fightPhysicsTickIntervalMs: Int64 = 45
+    /// Non-fight state machine polling cadence (`WAITING_FOR_BITE` / hold states).
+    public static let nonFightPhysicsTickIntervalMs: Int64 = 100
+
     @Published public private(set) var currentLineCurve: QuadraticBezierCurve? = nil
-    /// Smoothly interpolated visual bobber coordinates between 200ms `GameView$c` physics ticks.
+    /// Smoothly interpolated visual bobber coordinates between `GameView$c` physics ticks.
     @Published public private(set) var renderedBobberPosition: Point2D? = nil
     @Published public var activeAlert: FishingModalAlert? = nil
 
@@ -955,13 +960,15 @@ public final class FishingAppCoordinator: ObservableObject {
             stepGameClockMinute()
         }
 
-        // 2. Active fishing loop (`GameView$c` 200ms/300ms physics + `GameView$a` visual frame)
+        // 2. Active fishing loop (`GameView$c.run()` + `GameView$c.u()` `Thread.sleep(15)` + `SurfaceView` VSync ~ 45ms unified tick)
         guard stateMachine.state != .idle else { return }
 
         if lastPhysicsTickWallMs == 0 || nowMs < lastPhysicsTickWallMs {
             lastPhysicsTickWallMs = nowMs
         }
-        let physicsIntervalMs: Int64 = (stateMachine.state == .fishFight) ? 200 : 300
+        let physicsIntervalMs: Int64 = (stateMachine.state == .fishFight)
+            ? Self.fightPhysicsTickIntervalMs
+            : Self.nonFightPhysicsTickIntervalMs
         if (nowMs - lastPhysicsTickWallMs) >= physicsIntervalMs {
             stepSimulationTick(nowMs: nowMs)
         } else {
@@ -1040,7 +1047,7 @@ public final class FishingAppCoordinator: ObservableObject {
            let prev = previousPhysicsBobberPos,
            let target = targetPhysicsBobberPos {
             let elapsed = Float(max(0, wallNowMs - lastPhysicsTickWallMs))
-            let t = min(1.0, elapsed / 200.0)
+            let t = min(1.0, elapsed / Float(Self.fightPhysicsTickIntervalMs))
             let smoothX = prev.x + (target.x - prev.x) * t
             let smoothY = prev.y + (target.y - prev.y) * t
             renderedBobberPosition = Point2D(x: smoothX, y: smoothY)

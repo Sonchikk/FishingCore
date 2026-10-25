@@ -1315,4 +1315,34 @@ final class FishingGameAppTests: XCTestCase {
         XCTAssertEqual(faqItems.count, 17)
         XCTAssertEqual(faqItems.first?.question, "Как начать карьеру?")
     }
+
+    @MainActor
+    func testFightPhysicsTickCadenceMatchesOriginalAndroid15msSleepLoop() throws {
+        XCTAssertEqual(FishingAppCoordinator.fightPhysicsTickIntervalMs, 45)
+        let coordinator = try FishingAppCoordinator(
+            databasePath: ":memory:",
+            nowMs: 1_700_000_000_000,
+            notificationScheduling: NoopSystemNotifications()
+        )
+        coordinator.buyAndEquipStarterKit(nowMs: 1_700_000_001_000)
+
+        let castWallMs: Int64 = 1_700_000_002_000
+        coordinator.castAt(x: 640, y: 450, nowMs: castWallMs)
+        let fastForwardWallMs: Int64 = castWallMs + 500
+        coordinator.fastForwardToScheduledBite(nowMs: fastForwardWallMs)
+        XCTAssertEqual(coordinator.stateMachine.state, .fishFight)
+
+        let startY = coordinator.stateMachine.bobber?.y ?? 0
+        coordinator.setReelPulled(true)
+        // Simulate 1 second (60 frames at 17ms = 1020ms) of pulling on 60Hz loop
+        for frame in 1...60 {
+            coordinator.stepRealtimeLoop(nowMs: fastForwardWallMs + 20 + Int64(frame * 17))
+            if coordinator.stateMachine.state != .fishFight {
+                break
+            }
+        }
+        if let currentY = coordinator.stateMachine.bobber?.y {
+            XCTAssertGreaterThan(currentY - startY, 35.0)
+        }
+    }
 }
