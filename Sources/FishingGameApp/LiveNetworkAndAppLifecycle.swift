@@ -421,6 +421,21 @@ public struct OnlineTournamentEntry: Sendable, Equatable, Identifiable {
 
 public enum FishingOnlineResponseParser: Sendable {
 
+    /// Reconstructs `TextActivity.Z(Context, int seconds)` (`pc=0000..0076` in `classes.dex`):
+    /// Formats a server cooldown duration in seconds as `"M мин. S сек."` (when `< 3600`) or `"H ч. M мин. S сек."`.
+    public static func formatCooldownDuration(seconds: Int) -> String {
+        let clamped = max(0, seconds)
+        let sec = clamped % 60
+        let totalMinutes = clamped / 60
+        let min = totalMinutes % 60
+        let hours = totalMinutes / 60
+        if hours == 0 {
+            return "\(min) мин. \(sec) сек."
+        } else {
+            return "\(hours) ч. \(min) мин. \(sec) сек."
+        }
+    }
+
     /// Parses `auth_chat.php` response (`SplashScreenActivity$d.a`, `NETWORK.md` Section 2 #2):
     /// `"1:<userId>"` on success, `"0"` or `"2"`..`"9"` (with or without `":..."`) on rejection.
     public static func parseChatAuthResponse(_ raw: String) -> ChatAuthHandshakeResult {
@@ -538,7 +553,11 @@ public enum FishingOnlineResponseParser: Sendable {
         case "5000":
             return .rejected(statusCode: "5000", message: "Аккаунт заблокирован в игре (код 5000).")
         case "6000":
-            let waitSuffix = msgStr.isEmpty ? "" : " Подождите \(msgStr) сек."
+            if let seconds = Int(msgStr.trimmingCharacters(in: .whitespacesAndNewlines)), seconds > 0 {
+                let formatted = formatCooldownDuration(seconds: seconds)
+                return .rejected(statusCode: "6000", message: "Попробуйте через: \(formatted) (код 6000).")
+            }
+            let waitSuffix = msgStr.isEmpty ? "" : " Попробуйте через: \(msgStr) сек."
             return .rejected(statusCode: "6000", message: "Слишком частые запросы (код 6000).\(waitSuffix)")
         case "9000":
             return .rejected(statusCode: "9000", message: "Пожалуйста, авторизуйтесь в профиле (код 9000).")
@@ -1017,15 +1036,27 @@ public enum FishingLiveNetworkError: Error, LocalizedError, Sendable, Equatable 
         case .emptyPayload:
             return "Пустой ответ от сервера fish-mob.ru."
         case .serverStatusRejected(let code):
+            if code.hasPrefix("6000:") {
+                let secStr = String(code.dropFirst("6000:".count)).trimmingCharacters(in: .whitespacesAndNewlines)
+                if let sec = Int(secStr), sec > 0 {
+                    let formatted = FishingOnlineResponseParser.formatCooldownDuration(seconds: sec)
+                    return "Попробуйте через: \(formatted) (код 6000)."
+                }
+                return "Слишком частые запросы к серверу (код 6000)."
+            }
             switch code {
             case "2000":
                 return "Неверный логин или пароль на fish-mob.ru (код 2000)."
             case "3000":
-                return "Аккаунт заблокирован или не активирован (код 3000)."
+                return "Неверный логин на fish-mob.ru (код 3000)."
             case "4000":
-                return "Профиль привязан к другому устройству UUID (код 4000)."
+                return "Несовпадение версии или подписи клиента (код 4000)."
             case "5000":
-                return "Сервер отклонил версию протокола (код 5000)."
+                return "Аккаунт заблокирован в игре (код 5000)."
+            case "6000":
+                return "Слишком частые запросы к серверу — сработал таймер ожидания (код 6000)."
+            case "9000":
+                return "Пожалуйста, авторизуйтесь в профиле (код 9000)."
             default:
                 return "Сервер отклонил запрос (код: \(code))."
             }
@@ -1088,6 +1119,17 @@ public struct FishingLiveNetworkClient: Sendable {
             .trimmingCharacters(in: .whitespacesAndNewlines)
             ?? raw.trimmingCharacters(in: .whitespacesAndNewlines)
         if !primaryPayload.contains(";") && primaryPayload != "7000" {
+            if primaryPayload == "6000" {
+                let parts = raw.components(separatedBy: ",")
+                if parts.count >= 3 {
+                    let msgVal = parts[2]
+                        .replacingOccurrences(of: "message=", with: "")
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !msgVal.isEmpty {
+                        throw FishingLiveNetworkError.serverStatusRejected(code: "6000:\(msgVal)")
+                    }
+                }
+            }
             throw FishingLiveNetworkError.serverStatusRejected(code: primaryPayload)
         }
         return primaryPayload

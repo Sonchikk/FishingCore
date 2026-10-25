@@ -1140,6 +1140,9 @@ final class FishingGameAppTests: XCTestCase {
         XCTAssertEqual(errSync, .rejected(statusCode: "2000", message: "Неверный логин или пароль (код 2000)."))
         let err9000 = FishingOnlineResponseParser.parseAchievementsQuestsSyncResponse("9000,status=0,message=")
         XCTAssertEqual(err9000, .rejected(statusCode: "9000", message: "Пожалуйста, авторизуйтесь в профиле (код 9000)."))
+        let err6000 = FishingOnlineResponseParser.parseAchievementsQuestsSyncResponse("6000,status=0,message=125")
+        XCTAssertEqual(err6000, .rejected(statusCode: "6000", message: "Попробуйте через: 2 мин. 5 сек. (код 6000)."))
+        XCTAssertEqual(FishingOnlineResponseParser.formatCooldownDuration(seconds: 3665), "1 ч. 1 мин. 5 сек.")
         XCTAssertEqual(FishingOnlineResponseParser.parseFishCatchUploadResponse("1000,status=0,message="), .accepted)
         XCTAssertEqual(FishingOnlineResponseParser.parseFishCatchUploadResponse("9000,status=0,message="), .rejected(statusCode: 9000))
 

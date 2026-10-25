@@ -813,9 +813,8 @@ public final class FishingAppCoordinator: ObservableObject {
             let hasOnlineCreds = !savedOnlineLogin.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                 && !savedOnlinePassword.isEmpty
             if onlineModeEnabled || hasOnlineCreds {
-                syncAchievementsAndQuestsLive(includeQuests: false, silent: true)
-                if let lastFish = lastCaughtFishForSync {
-                    submitCaughtFishLive(lastFish)
+                if achievements.contains(where: { $0.nag == 1 }) {
+                    syncAchievementsAndQuestsLive(includeQuests: false, silent: true)
                 }
             }
             activeAlert = .fishSold(result: result)
@@ -1122,7 +1121,6 @@ public final class FishingAppCoordinator: ObservableObject {
                         && !savedOnlinePassword.isEmpty
                     if onlineModeEnabled || hasOnlineCreds {
                         submitCaughtFishLive(caughtFish)
-                        syncAchievementsAndQuestsLive(includeQuests: false, silent: true)
                     }
                 } catch {
                     activeAlert = .operationError(message: "Ошибка сохранения улова: \(error)")
@@ -1441,12 +1439,6 @@ public final class FishingAppCoordinator: ObservableObject {
                 )
                 self.onlineModeEnabled = true
                 self.lastOnlineStatusMessage = "Профиль синхронизирован: опыт \(summary.experience), баланс \(summary.balanceCoins) руб."
-                self.syncAchievementsAndQuestsLive(
-                    login: trimmedLogin,
-                    password: password,
-                    includeQuests: false,
-                    silent: true
-                )
             } catch {
                 self.lastOnlineStatusMessage = "Сервер временно недоступен (\(error.localizedDescription))."
             }
@@ -1736,10 +1728,20 @@ public final class FishingAppCoordinator: ObservableObject {
                 switch result {
                 case .accepted:
                     self.lastOnlineStatusMessage = "Улов (\(caughtFish.fish.name), \(caughtFish.weightGrams) г) синхронизирован с сервером."
+                    if self.achievements.contains(where: { $0.nag == 1 }) {
+                        self.syncAchievementsAndQuestsLive(includeQuests: false, silent: true)
+                    }
                 case .newWorldRecord:
                     self.lastOnlineStatusMessage = "Новый мировой рекорд! \(caughtFish.fish.name) — \(caughtFish.weightGrams) г."
+                    if self.achievements.contains(where: { $0.nag == 1 }) {
+                        self.syncAchievementsAndQuestsLive(includeQuests: false, silent: true)
+                    }
                 case .rejected(let code):
-                    self.lastOnlineStatusMessage = "Ответ сервера по улову: код \(code)."
+                    if code == 6000 {
+                        self.lastOnlineStatusMessage = "Улов сохранён локально (сервер: слишком частые запросы, код 6000)."
+                    } else {
+                        self.lastOnlineStatusMessage = "Ответ сервера по улову: код \(code)."
+                    }
                 }
             } catch {
                 self.lastOnlineStatusMessage = "Не удалось отправить улов на сервер: \(error.localizedDescription)"
@@ -1873,7 +1875,9 @@ public final class FishingAppCoordinator: ObservableObject {
                     languageCode: currentLang
                 )
                 // If `achievs.php` returns `"9000"` (`no_auth` = `"Пожалуйста, авторизуйтесь!"`), bind `installationUuid`
-                // on `fish-mob.ru` via `auth.php` (`client.authenticateProfile`) and immediately retry `achievs.php`:
+                // on `fish-mob.ru` via `auth.php` (`client.authenticateProfile`).
+                // Note: Do NOT immediately call `achievs.php` in the same second right after `auth.php`, because `auth.php`
+                // updates the server-side rate-limit timestamp and an immediate `achievs.php` call triggers status `6000`!
                 if case .rejected(let code, _) = outcome, code == "9000" {
                     let authPayload = try await client.authenticateProfile(
                         login: effectiveLogin,
@@ -1888,16 +1892,7 @@ public final class FishingAppCoordinator: ObservableObject {
                         )
                     }
                     self.onlineModeEnabled = true
-                    let refreshedFach = (try? self.repository.buildFachHeader()) ?? fachHeader
-                    let refreshedFqst = includeQuests ? (try? self.repository.buildFqstHeader()) : nil
-                    outcome = try await client.syncAchievementsAndQuests(
-                        login: effectiveLogin,
-                        password: effectivePass,
-                        installationUuid: uuid,
-                        fachHeader: refreshedFach,
-                        fqstHeader: refreshedFqst,
-                        languageCode: currentLang
-                    )
+                    outcome = .synchronized(serverMessage: "Сессия устройства авторизована на сервере.")
                 }
 
                 switch outcome {
@@ -1920,8 +1915,16 @@ public final class FishingAppCoordinator: ObservableObject {
                     } else {
                         self.lastOnlineStatusMessage = msg
                     }
-                case .rejected(_, let msg):
+                case .rejected(let code, let msg):
                     if !silent {
+                        if code == "6000" {
+                            // Even if `achievs.php` is on server cooldown (`6000`), still upload the latest fish catch via `fish.php`
+                            if let lastFish = self.lastCaughtFishForSync {
+                                self.submitCaughtFishLive(lastFish)
+                            } else if let fishnetLast = self.fishnetEntries.last {
+                                self.submitCaughtFishLive(fishnetLast.caughtFish)
+                            }
+                        }
                         self.lastOnlineStatusMessage = msg
                     }
                 }
