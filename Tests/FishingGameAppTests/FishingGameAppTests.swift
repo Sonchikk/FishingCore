@@ -1217,4 +1217,102 @@ final class FishingGameAppTests: XCTestCase {
         XCTAssertTrue(parsedResults.isRegistered)
         XCTAssertEqual(parsedResults.leaderboardLines.count, 2)
     }
+
+
+    // MARK: - 19. Quests (`QuestActivity.W`, `F0.o.b`, `Ly0/h`), Procedural Tasks (`TaskActivity$f` / `TaskActivity$b`) & Fish Encyclopedia Guide (`AboutGameActivity`)
+
+    @MainActor
+    func testQuestRewardClaimProceduralTasksAndFishEncyclopediaGuide() throws {
+        let coordinator = try FishingAppCoordinator(
+            databasePath: ":memory:",
+            nowMs: 1_700_000_000_000,
+            notificationScheduling: NoopSystemNotifications()
+        )
+
+        // 1. Active quest starts at Quest #1 («Ведро рыбы», type 2, goal 20,000 g on bait 1,2,12)
+        let q1 = try XCTUnwrap(coordinator.activeQuestForPlayer)
+        XCTAssertEqual(q1.id, 1)
+        XCTAssertEqual(q1.made, 0)
+        let slotsBefore = PlayerStateRepository.buildQuestTargetSlots(for: q1, fishCatalogById: coordinator.fishCatalogById)
+        XCTAssertEqual(slotsBefore.count, 1)
+        XCTAssertEqual(slotsBefore[0].fishName, "Любая рыба")
+        XCTAssertFalse(slotsBefore[0].isSlotCompleted)
+
+        // Catch 20,000 g on bait #1 (`baitIndex: 0`) -> completes Quest #1 (`made = 1`, waiting for reward claim)
+        let fish1 = try XCTUnwrap(coordinator.fishCatalogById[1])
+        let catchForQ1 = CaughtUserFish(
+            fish: fish1,
+            weightGrams: 20_000,
+            pondIndex: 0,
+            baitIndex: 0,
+            rodWeightKg: 25,
+            catchTimeMs: 1_700_000_010_000
+        )
+        let updatedQ1 = try coordinator.repository.evaluateQuestsOnCatch(
+            catchForQ1,
+            playerCategory: coordinator.profile.category,
+            tasksEnabled: true,
+            languageCode: "ru",
+            nowMs: 1_700_000_010_000
+        )
+        XCTAssertEqual(updatedQ1?.id, 1)
+        XCTAssertEqual(updatedQ1?.made, 1)
+
+        // While Quest #1 is in `made == 1` (unclaimed), `evaluateQuestsOnCatch` must NOT advance Quest #2 (`F0.o.b`)
+        let fish3 = try XCTUnwrap(coordinator.fishCatalogById[3])
+        let catchWhileUnclaimed = CaughtUserFish(
+            fish: fish3,
+            weightGrams: 700,
+            pondIndex: 0,
+            baitIndex: 0,
+            rodWeightKg: 25,
+            catchTimeMs: 1_700_000_015_000
+        )
+        let stillQ1 = try coordinator.repository.evaluateQuestsOnCatch(
+            catchWhileUnclaimed,
+            playerCategory: coordinator.profile.category,
+            tasksEnabled: true,
+            languageCode: "ru",
+            nowMs: 1_700_000_015_000
+        )
+        XCTAssertEqual(stillQ1?.id, 1)
+        XCTAssertEqual(stillQ1?.made, 1)
+
+        // Claim Quest #1 reward (`QuestActivity.W`: `"200,150"` -> +200 coins, +150 XP, `made: 1 -> 2`)
+        let balanceBeforeClaim = coordinator.profile.balance
+        let expBeforeClaim = coordinator.profile.experience
+        let claimResult = try XCTUnwrap(coordinator.claimQuestReward(questId: 1, nowMs: 1_700_000_020_000))
+        XCTAssertEqual(claimResult.questId, 1)
+        XCTAssertEqual(claimResult.coinsAwarded, 200)
+        XCTAssertEqual(claimResult.experienceAwarded, 150)
+        XCTAssertEqual(coordinator.profile.balance, balanceBeforeClaim + 200)
+        XCTAssertEqual(coordinator.profile.experience, expBeforeClaim + 150)
+        XCTAssertEqual(coordinator.activeQuestForPlayer?.id, 2)
+
+        // 2. Procedural Fisherman Contract (`TaskActivity$f` & `TaskActivity$b`)
+        let generatedTask = try XCTUnwrap(coordinator.generateOrEnsureUserTask(nowMs: 1_700_000_030_000))
+        XCTAssertEqual(generatedTask.made, 0)
+        XCTAssertGreaterThan(generatedTask.targetFishId, 0)
+        XCTAssertGreaterThan(generatedTask.resolvedBonusExperience(balanceTables: coordinator.balanceTables), 0)
+
+        // Reroll task (`TaskActivity$b`: costs `(category + 1) * 500` rubles)
+        let rerollCost = PlayerStateRepository.taskRerollCostCoins(forCategoryRank: coordinator.profile.category)
+        let balBeforeReroll = coordinator.profile.balance
+        let rerolled = try XCTUnwrap(coordinator.rerollActiveUserTask(nowMs: 1_700_000_035_000))
+        XCTAssertEqual(rerolled.made, 0)
+        XCTAssertEqual(coordinator.profile.balance, balBeforeReroll - rerollCost)
+
+        // 3. Encyclopedia Fish & Pond Guide + 17 FAQ items (`AboutGameActivity`)
+        coordinator.ensureEncyclopediaGuideLoaded()
+        XCTAssertFalse(coordinator.fishEncyclopediaGuide.isEmpty)
+        XCTAssertFalse(coordinator.pondEncyclopediaGuide.isEmpty)
+        let carpGuide = try XCTUnwrap(coordinator.fishEncyclopediaGuide.first(where: { $0.id == 1 }))
+        XCTAssertEqual(carpGuide.fish.name, "Карась")
+        XCTAssertFalse(carpGuide.habitats.isEmpty)
+        XCTAssertFalse(carpGuide.habitats[0].baits.isEmpty)
+
+        let faqItems = coordinator.localeManager.aboutGameFaqItems(versionString: "1.81")
+        XCTAssertEqual(faqItems.count, 17)
+        XCTAssertEqual(faqItems.first?.question, "Как начать карьеру?")
+    }
 }

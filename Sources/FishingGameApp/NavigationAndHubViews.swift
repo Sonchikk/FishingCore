@@ -49,7 +49,10 @@ public struct FishingRootView: View {
             }
 
             if let alert = coordinator.activeAlert {
-                OriginalGameModalOverlay(alert: alert) {
+                OriginalGameModalOverlay(
+                    alert: alert,
+                    questTaskBanner: coordinator.lastCatchQuestTaskBanner
+                ) {
                     coordinator.activeAlert = nil
                 }
                 .transition(.opacity.combined(with: .scale(scale: 0.95)))
@@ -159,6 +162,7 @@ public struct OriginalSplashScreenView: View {
 
 private struct OriginalGameModalOverlay: View {
     let alert: FishingModalAlert
+    var questTaskBanner: String = ""
     let onDismiss: () -> Void
 
     var body: some View {
@@ -177,6 +181,7 @@ private struct OriginalGameModalOverlay: View {
                     isLucky25: isLucky25,
                     isRepdigit: isRepdigit,
                     isCleanerTrash: isCleanerTrash,
+                    questTaskBanner: questTaskBanner,
                     onDismiss: onDismiss
                 )
             default:
@@ -196,6 +201,7 @@ private struct CatchDialogModalCard: View {
     let isLucky25: Bool
     let isRepdigit: Bool
     let isCleanerTrash: Bool
+    var questTaskBanner: String = ""
     let onDismiss: () -> Void
 
     var body: some View {
@@ -247,6 +253,13 @@ private struct CatchDialogModalCard: View {
                     Text("Вклад в достижение «Чистильщик»")
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(.green)
+                }
+                if !questTaskBanner.isEmpty {
+                    Text(questTaskBanner)
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(.cyan)
+                        .multilineTextAlignment(.center)
+                        .padding(.top, 2)
                 }
             }
 
@@ -402,6 +415,7 @@ private enum BaseSubScreen: Equatable {
     case aboutMe
     case onlineShop
     case settings
+    case aboutGame
 }
 
 public struct BaseHubView: View {
@@ -424,6 +438,8 @@ public struct BaseHubView: View {
             OnlineShopSubView(coordinator: coordinator, subScreen: $subScreen)
         case .settings:
             SettingsSubView(coordinator: coordinator, subScreen: $subScreen)
+        case .aboutGame:
+            AboutGameSubView(coordinator: coordinator, subScreen: $subScreen)
         }
     }
 }
@@ -558,9 +574,8 @@ private struct BaseDashboardSubView: View {
                 subScreen = .settings
             }
             DashboardTileButton(drawable: "about_game", fallbackIcon: "info.circle.fill", title: "Об игре") {
-                coordinator.activeAlert = .operationError(
-                    message: "Рыбалка для Друзей — мобильный рыболовный симулятор!\nВерсия 1.81 • Порт Android-версии на iOS"
-                )
+                coordinator.ensureEncyclopediaGuideLoaded()
+                subScreen = .aboutGame
             }
             DashboardTileButton(drawable: "exit", fallbackIcon: "play.circle.fill", title: "На водоём") {
                 coordinator.selectedTab = .fishingPond
@@ -807,25 +822,45 @@ private struct AboutMeSubView: View {
 
             Button {
                 subScreen = .mainDashboard
+                coordinator.selectedProgressSection = .quests
                 coordinator.selectedTab = .progress
             } label: {
-                OriginalStyledActionButtonLabel(title: "Энциклопедия и Рекорды (141 вид)", minWidth: 240)
+                OriginalStyledActionButtonLabel(title: "Квесты (44 сюжетных квеста)", minWidth: 240)
             }
             .buttonStyle(.plain)
 
             Button {
                 subScreen = .mainDashboard
+                coordinator.selectedProgressSection = .tasks
                 coordinator.selectedTab = .progress
             } label: {
-                OriginalStyledActionButtonLabel(title: "Задания и Квесты (44)", minWidth: 240)
+                OriginalStyledActionButtonLabel(title: "Задание (Поручения рыбака)", minWidth: 240)
             }
             .buttonStyle(.plain)
 
             Button {
                 subScreen = .mainDashboard
+                coordinator.selectedProgressSection = .achievements
                 coordinator.selectedTab = .progress
             } label: {
                 OriginalStyledActionButtonLabel(title: "Достижения (14)", minWidth: 240)
+            }
+            .buttonStyle(.plain)
+
+            Button {
+                subScreen = .mainDashboard
+                coordinator.selectedProgressSection = .records
+                coordinator.selectedTab = .progress
+            } label: {
+                OriginalStyledActionButtonLabel(title: "Личные рекорды (141 вид)", minWidth: 240)
+            }
+            .buttonStyle(.plain)
+
+            Button {
+                coordinator.ensureEncyclopediaGuideLoaded()
+                subScreen = .aboutGame
+            } label: {
+                OriginalStyledActionButtonLabel(title: "Гайд по рыбам, водоёмам и FAQ", minWidth: 240)
             }
             .buttonStyle(.plain)
         }
@@ -1008,6 +1043,407 @@ private struct SettingsSubView: View {
                 }
             }
         }
+    }
+}
+
+
+// MARK: - 1.6 `AboutGameActivity` (`res/layout/about_game.xml` `res/o-.xml` + Fish & Pond Encyclopedia Guide)
+
+private struct AboutGameSubView: View {
+    public enum GuideTab: String, CaseIterable, Identifiable {
+        case fishes = "Рыбы (141)"
+        case ponds = "Водоёмы (15)"
+        case faq = "FAQ (17)"
+
+        public var id: String { rawValue }
+    }
+
+    @ObservedObject var coordinator: FishingAppCoordinator
+    @Binding var subScreen: BaseSubScreen
+    @State private var selectedTab: GuideTab = .fishes
+    @State private var searchText: String = ""
+    @State private var selectedPondFilter: Int = -1 // -1 = all ponds
+    @State private var expandedFishIds: Set<Int> = []
+    @State private var expandedPondIds: Set<Int> = [0]
+    @State private var expandedFaqIds: Set<Int> = [0]
+
+    private var recordWeightByFishId: [Int: Int] {
+        var map: [Int: Int] = [:]
+        for r in coordinator.personalRecords {
+            map[r.id] = r.weightGrams
+        }
+        return map
+    }
+
+    private var filteredFishes: [FishEncyclopediaGuideEntry] {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return coordinator.fishEncyclopediaGuide.filter { entry in
+            let matchesPond = (selectedPondFilter < 0) || entry.habitats.contains(where: { $0.pondId == selectedPondFilter })
+            guard matchesPond else { return false }
+            if query.isEmpty { return true }
+            if entry.fish.name.lowercased().contains(query) { return true }
+            return entry.habitats.contains(where: {
+                $0.pondNameRu.lowercased().contains(query)
+                    || $0.baits.contains(where: { $0.baitName.lowercased().contains(query) })
+            })
+        }
+    }
+
+    var body: some View {
+        ZStack {
+            OriginalSecondBackgroundView()
+
+            VStack(spacing: 8) {
+                OriginalScreenTopBar(
+                    title: "Об игре и Энциклопедия",
+                    subtitle: "v1.81 • iOS"
+                ) {
+                    subScreen = .mainDashboard
+                }
+
+                guideTabPicker
+
+                switch selectedTab {
+                case .fishes:
+                    fishesGuideSection
+                case .ponds:
+                    pondsGuideSection
+                case .faq:
+                    faqGuideSection
+                }
+            }
+        }
+        .onAppear {
+            coordinator.ensureEncyclopediaGuideLoaded()
+        }
+    }
+
+    private var guideTabPicker: some View {
+        HStack(spacing: 8) {
+            ForEach(GuideTab.allCases) { tab in
+                Button {
+                    selectedTab = tab
+                } label: {
+                    OriginalStyledActionButtonLabel(title: tab.rawValue, minWidth: 96)
+                        .opacity(selectedTab == tab ? 1.0 : 0.65)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 8)
+    }
+
+    private var fishesGuideSection: some View {
+        VStack(spacing: 8) {
+            VStack(spacing: 6) {
+                TextField("Поиск рыбы, водоёма или наживки...", text: $searchText)
+                    .textFieldStyle(.roundedBorder)
+
+                HStack {
+                    Text("Фильтр по водоёму:")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(OriginalGameTheme.goldText)
+                    Spacer()
+                    Picker("Водоём", selection: $selectedPondFilter) {
+                        Text("Все водоёмы (\(coordinator.fishEncyclopediaGuide.count))").tag(-1)
+                        ForEach(coordinator.availablePonds, id: \.id) { pond in
+                            Text("#\(pond.id + 1) \(coordinator.localeManager.pondName(for: pond))").tag(pond.id)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 8))
+            .padding(.horizontal, 10)
+
+            ScrollView {
+                LazyVStack(spacing: 8) {
+                    ForEach(filteredFishes) { entry in
+                        FishGuideCardView(
+                            entry: entry,
+                            personalRecordGrams: recordWeightByFishId[entry.id] ?? 0,
+                            isExpanded: expandedFishIds.contains(entry.id),
+                            onToggleExpand: {
+                                if expandedFishIds.contains(entry.id) {
+                                    expandedFishIds.remove(entry.id)
+                                } else {
+                                    expandedFishIds.insert(entry.id)
+                                }
+                            }
+                        )
+                    }
+                }
+                .padding(10)
+            }
+        }
+    }
+
+    private var pondsGuideSection: some View {
+        ScrollView {
+            LazyVStack(spacing: 10) {
+                ForEach(coordinator.pondEncyclopediaGuide) { pondEntry in
+                    PondGuideCardView(
+                        entry: pondEntry,
+                        localizedPondName: coordinator.localeManager.pondName(for: pondEntry.pond),
+                        isExpanded: expandedPondIds.contains(pondEntry.id),
+                        onToggleExpand: {
+                            if expandedPondIds.contains(pondEntry.id) {
+                                expandedPondIds.remove(pondEntry.id)
+                            } else {
+                                expandedPondIds.insert(pondEntry.id)
+                            }
+                        }
+                    )
+                }
+            }
+            .padding(10)
+        }
+    }
+
+    private var faqGuideSection: some View {
+        let faqItems = coordinator.localeManager.aboutGameFaqItems(versionString: "1.81")
+        return ScrollView {
+            VStack(spacing: 8) {
+                VStack(spacing: 4) {
+                    Text("Рыбалка для Друзей")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(OriginalGameTheme.goldText)
+                    Text("Версия 1.81 • Порт Android-версии на iOS")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(.cyan)
+                    Text("База данных: 141 вид рыб • 15 водоёмов • 21 наживка • 44 сюжетных квеста • 14 достижений")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.white.opacity(0.85))
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(12)
+                .background(Color.black.opacity(0.60), in: RoundedRectangle(cornerRadius: 8))
+
+                ForEach(faqItems) { item in
+                    let isOpen = expandedFaqIds.contains(item.id)
+                    VStack(alignment: .leading, spacing: 6) {
+                        Button {
+                            if isOpen {
+                                expandedFaqIds.remove(item.id)
+                            } else {
+                                expandedFaqIds.insert(item.id)
+                            }
+                        } label: {
+                            HStack {
+                                Text(item.question)
+                                    .font(.system(size: 15, weight: .bold))
+                                    .foregroundStyle(OriginalGameTheme.goldText)
+                                    .multilineTextAlignment(.leading)
+                                Spacer()
+                                Image(systemName: isOpen ? "chevron.up.circle.fill" : "chevron.down.circle")
+                                    .foregroundStyle(OriginalGameTheme.goldText)
+                            }
+                        }
+                        .buttonStyle(.plain)
+
+                        if isOpen {
+                            Divider().background(Color.white.opacity(0.2))
+                            Text(item.answer)
+                                .font(.system(size: 13))
+                                .foregroundStyle(.white.opacity(0.92))
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    .padding(12)
+                    .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 8))
+                }
+            }
+            .padding(10)
+        }
+    }
+}
+
+private struct FishGuideCardView: View {
+    let entry: FishEncyclopediaGuideEntry
+    let personalRecordGrams: Int
+    let isExpanded: Bool
+    let onToggleExpand: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Button(action: onToggleExpand) {
+                HStack(spacing: 12) {
+                    OriginalSpriteOrFallbackIcon(
+                        drawableName: "fish_\(entry.fish.id)",
+                        fallbackSystemName: "fish.fill",
+                        width: 68,
+                        height: 46
+                    )
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack {
+                            Text("#\(entry.fish.id) \(entry.fish.name)")
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundStyle(OriginalGameTheme.goldText)
+                            Spacer()
+                            Image(systemName: isExpanded ? "chevron.up.circle.fill" : "chevron.down.circle")
+                                .foregroundStyle(OriginalGameTheme.goldText)
+                        }
+                        Text("Цена: \(entry.fish.unitPrice) руб / \(entry.fish.unitWeight) г  •  Опыт: 1 XP за \(entry.xpWeightDivisor) г")
+                            .font(.system(size: 12).monospacedDigit())
+                            .foregroundStyle(.white.opacity(0.9))
+                        HStack(spacing: 8) {
+                            Text(personalRecordGrams > 0 ? "🏆 Ваш рекорд: \(PlayerStateRepository.formatGramsAsKgOrGrams(personalRecordGrams))" : "Ещё не поймана")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(personalRecordGrams > 0 ? .green : .white.opacity(0.6))
+                            Spacer()
+                            Text("Водоёмов: \(entry.habitats.count)")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundStyle(.cyan)
+                        }
+                    }
+                }
+            }
+            .buttonStyle(.plain)
+
+            if isExpanded {
+                Divider().background(Color.white.opacity(0.2))
+
+                Text("Характеристики сопротивления: Сила \(entry.fish.strength) • Выносл. \(entry.fish.stamina) • Интелл. \(entry.fish.intelligence) • Агрессия \(entry.fish.aggression)")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(OriginalGameTheme.goldText.opacity(0.9))
+
+                if entry.habitats.isEmpty {
+                    Text("Редкий / специальный предмет (попадается при особых условиях).")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.white.opacity(0.75))
+                } else {
+                    ForEach(entry.habitats) { hab in
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack {
+                                Text("📍 #\(hab.pondId + 1) \(hab.pondNameRu)")
+                                    .font(.system(size: 13, weight: .bold))
+                                    .foregroundStyle(.green)
+                                Spacer()
+                                Text("Вес: \(PlayerStateRepository.formatGramsAsKgOrGrams(hab.minWeightGrams)) – \(PlayerStateRepository.formatGramsAsKgOrGrams(hab.maxWeightGrams))")
+                                    .font(.system(size: 12, weight: .semibold).monospacedDigit())
+                                    .foregroundStyle(.white)
+                            }
+                            ForEach(hab.baits) { b in
+                                HStack(spacing: 6) {
+                                    OriginalSpriteOrFallbackIcon(
+                                        drawableName: "bait_\(b.baitId1Based)",
+                                        fallbackSystemName: "leaf.fill",
+                                        width: 22,
+                                        height: 22
+                                    )
+                                    Text(b.baitName.capitalized)
+                                        .font(.system(size: 12, weight: .bold))
+                                        .foregroundStyle(OriginalGameTheme.goldText)
+                                    Spacer()
+                                    Text("У:\(b.morningProbabilityPercent)%  Д:\(b.afternoonProbabilityPercent)%  В:\(b.eveningProbabilityPercent)%  Н:\(b.nightProbabilityPercent)%")
+                                        .font(.system(size: 11, weight: .medium).monospacedDigit())
+                                        .foregroundStyle(.cyan)
+                                }
+                            }
+                        }
+                        .padding(8)
+                        .background(Color.black.opacity(0.42), in: RoundedRectangle(cornerRadius: 6))
+                    }
+                }
+            }
+        }
+        .padding(10)
+        .background(Color.black.opacity(0.58), in: RoundedRectangle(cornerRadius: 8))
+    }
+}
+
+private struct PondGuideCardView: View {
+    let entry: PondEncyclopediaGuideEntry
+    let localizedPondName: String
+    let isExpanded: Bool
+    let onToggleExpand: () -> Void
+
+    var body: some View {
+        let pondNum = max(1, min(15, entry.pond.id + 1))
+        VStack(alignment: .leading, spacing: 8) {
+            Button(action: onToggleExpand) {
+                HStack(spacing: 12) {
+                    OriginalSpriteOrFallbackIcon(
+                        drawableName: "pond_\(pondNum)",
+                        fallbackSystemName: "water.waves",
+                        width: 72,
+                        height: 48
+                    )
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack {
+                            Text("#\(pondNum). \(localizedPondName.capitalized)")
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundStyle(OriginalGameTheme.goldText)
+                            Spacer()
+                            Image(systemName: isExpanded ? "chevron.up.circle.fill" : "chevron.down.circle")
+                                .foregroundStyle(OriginalGameTheme.goldText)
+                        }
+                        Text("Требуемый разряд: \(entry.pond.requiredRank)  •  \(entry.pond.requiresCoupon ? "Нужен путевой купон" : "Без купона")")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(entry.pond.requiresCoupon ? .orange : .green)
+                        Text("Видов рыб: \(entry.uniqueSpeciesCount)  •  Активных наживок: \(entry.baitSlots.count)")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.cyan)
+                    }
+                }
+            }
+            .buttonStyle(.plain)
+
+            if isExpanded {
+                Divider().background(Color.white.opacity(0.2))
+
+                ForEach(entry.baitSlots) { slot in
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 6) {
+                            OriginalSpriteOrFallbackIcon(
+                                drawableName: "bait_\(slot.baitId1Based)",
+                                fallbackSystemName: "leaf.fill",
+                                width: 24,
+                                height: 24
+                            )
+                            Text("Наживка: \(slot.baitName.capitalized)")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundStyle(OriginalGameTheme.goldText)
+                            Spacer()
+                            Text("Видов: \(slot.species.count)")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(.white.opacity(0.75))
+                        }
+
+                        ForEach(slot.species) { sp in
+                            HStack(spacing: 6) {
+                                OriginalSpriteOrFallbackIcon(
+                                    drawableName: "fish_\(sp.fishId1Based)",
+                                    fallbackSystemName: "fish.fill",
+                                    width: 32,
+                                    height: 22
+                                )
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text(sp.fishName)
+                                        .font(.system(size: 12, weight: .bold))
+                                        .foregroundStyle(.white)
+                                    Text("\(PlayerStateRepository.formatGramsAsKgOrGrams(sp.minWeightGrams)) – \(PlayerStateRepository.formatGramsAsKgOrGrams(sp.maxWeightGrams))")
+                                        .font(.system(size: 10).monospacedDigit())
+                                        .foregroundStyle(.green)
+                                }
+                                Spacer()
+                                Text("У:\(sp.morningProbabilityPercent)% Д:\(sp.afternoonProbabilityPercent)% В:\(sp.eveningProbabilityPercent)% Н:\(sp.nightProbabilityPercent)%")
+                                    .font(.system(size: 10, weight: .medium).monospacedDigit())
+                                    .foregroundStyle(.cyan)
+                            }
+                            .padding(.vertical, 2)
+                        }
+                    }
+                    .padding(8)
+                    .background(Color.black.opacity(0.42), in: RoundedRectangle(cornerRadius: 6))
+                }
+            }
+        }
+        .padding(10)
+        .background(Color.black.opacity(0.58), in: RoundedRectangle(cornerRadius: 8))
     }
 }
 
@@ -1571,23 +2007,22 @@ private struct FishnetEntryRowView: View {
     }
 }
 
-// MARK: - 5. Authentic `Records`, `Achievements` (`md_achiv_1..14`) & `Quests` (`res/JT.xml`, `res/zY.xml`, `res/DL.xml`)
+// MARK: - 5. Authentic `Records`, `Achievements` (`md_achiv_1..14`), `QuestActivity` (`res/zY.xml` + `Ly0/h`) & `TaskActivity` (`res/e7.xml`)
 
 public struct ProgressAndRecordsView: View {
     @ObservedObject public var coordinator: FishingAppCoordinator
-
-    public enum SectionTab: String, CaseIterable, Identifiable {
-        case achievements = "Достижения"
-        case quests = "Квесты"
-        case records = "Рекорды"
-
-        public var id: String { rawValue }
-    }
-
-    @State private var selectedSection: SectionTab = .achievements
+    @State private var showAllQuestsCatalog: Bool = false
 
     public init(coordinator: FishingAppCoordinator) {
         self.coordinator = coordinator
+    }
+
+    private var baitNamesById: [Int: String] {
+        var map: [Int: String] = [:]
+        for item in coordinator.catalogBaits {
+            map[item.id] = item.spec.name
+        }
+        return map
     }
 
     public var body: some View {
@@ -1595,19 +2030,24 @@ public struct ProgressAndRecordsView: View {
             OriginalSecondBackgroundView()
 
             VStack(spacing: 8) {
-                OriginalScreenTopBar(title: selectedSection.rawValue) {
+                OriginalScreenTopBar(
+                    title: coordinator.selectedProgressSection.rawValue,
+                    subtitle: "Разряд: \(coordinator.profile.category)"
+                ) {
                     coordinator.selectedTab = .baseHub
                 }
 
                 sectionTabPicker
 
                 ScrollView {
-                    VStack(spacing: 8) {
-                        switch selectedSection {
+                    VStack(spacing: 10) {
+                        switch coordinator.selectedProgressSection {
                         case .achievements:
                             achievementsList
                         case .quests:
-                            questsList
+                            questsSectionView
+                        case .tasks:
+                            tasksSectionView
                         case .records:
                             recordsList
                         }
@@ -1619,17 +2059,21 @@ public struct ProgressAndRecordsView: View {
     }
 
     private var sectionTabPicker: some View {
-        HStack(spacing: 8) {
-            ForEach(SectionTab.allCases) { tab in
+        HStack(spacing: 6) {
+            ForEach(ProgressSectionTab.allCases) { tab in
                 Button {
-                    selectedSection = tab
+                    coordinator.selectedProgressSection = tab
+                    if tab == .tasks && coordinator.activeContract == nil {
+                        _ = coordinator.generateOrEnsureUserTask()
+                    }
                 } label: {
-                    OriginalStyledActionButtonLabel(title: tab.rawValue, minWidth: 96)
-                        .opacity(selectedSection == tab ? 1.0 : 0.65)
+                    OriginalStyledActionButtonLabel(title: tab.rawValue, minWidth: 78)
+                        .opacity(coordinator.selectedProgressSection == tab ? 1.0 : 0.65)
                 }
                 .buttonStyle(.plain)
             }
         }
+        .padding(.horizontal, 6)
     }
 
     private var achievementsList: some View {
@@ -1642,13 +2086,224 @@ public struct ProgressAndRecordsView: View {
         }
     }
 
-    private var questsList: some View {
-        ForEach(coordinator.quests) { quest in
-            QuestRowView(
-                quest: quest,
-                title: coordinator.localeManager.questTitle(id1Based: quest.id),
-                descriptionText: coordinator.localeManager.questDescription(id1Based: quest.id)
-            )
+    // MARK: - 5.1 Authentic `QuestActivity` (`res/layout/quest.xml` `res/zY.xml` + `Ly0/h`)
+
+    private var questsSectionView: some View {
+        VStack(spacing: 12) {
+            if let activeQuest = coordinator.activeQuestForPlayer {
+                ActiveQuestDetailCardView(
+                    quest: activeQuest,
+                    title: coordinator.localeManager.questTitle(id1Based: activeQuest.id),
+                    descriptionText: coordinator.localeManager.questDescription(id1Based: activeQuest.id),
+                    baitDescription: PlayerStateRepository.formatQuestBaitsDescription(
+                        baitCsv: activeQuest.baitCsv,
+                        baitNamesById: baitNamesById
+                    ),
+                    rewards: PlayerStateRepository.parseQuestRewards(activeQuest.rewardCsv),
+                    targetSlots: PlayerStateRepository.buildQuestTargetSlots(
+                        for: activeQuest,
+                        fishCatalogById: coordinator.fishCatalogById
+                    ),
+                    onClaimReward: {
+                        _ = coordinator.claimQuestReward(questId: activeQuest.id)
+                    }
+                )
+            } else {
+                let completedCount = coordinator.quests.filter { $0.made >= 2 }.count
+                let nextLocked = coordinator.quests.first(where: { $0.made <= 1 })
+                VStack(spacing: 8) {
+                    Text(completedCount >= coordinator.quests.count ? "Поздравляем! Все 44 квеста пройдены!" : "Больше доступных квестов пока нет")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(OriginalGameTheme.goldText)
+                    if let nextLocked {
+                        Text("Следующий квест (#\(nextLocked.id) «\(coordinator.localeManager.questTitle(id1Based: nextLocked.id))») откроется на \(nextLocked.requiredCategory)-м разряде (ваш разряд: \(coordinator.profile.category)).")
+                            .font(.system(size: 13))
+                            .foregroundStyle(.white.opacity(0.9))
+                            .multilineTextAlignment(.center)
+                    }
+                    Text("Повышайте разряд и выполняйте поручения во вкладке «Задание».")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.cyan)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(14)
+                .background(Color.black.opacity(0.60), in: RoundedRectangle(cornerRadius: 8))
+            }
+
+            Button {
+                showAllQuestsCatalog.toggle()
+            } label: {
+                OriginalStyledActionButtonLabel(
+                    title: showAllQuestsCatalog
+                        ? "Скрыть полный список квестов (44)"
+                        : "Показать все 44 сюжетных квеста",
+                    minWidth: 260
+                )
+            }
+            .buttonStyle(.plain)
+
+            if showAllQuestsCatalog {
+                ForEach(coordinator.quests) { quest in
+                    QuestRowView(
+                        quest: quest,
+                        title: coordinator.localeManager.questTitle(id1Based: quest.id),
+                        descriptionText: coordinator.localeManager.questDescription(id1Based: quest.id),
+                        targetSlots: PlayerStateRepository.buildQuestTargetSlots(
+                            for: quest,
+                            fishCatalogById: coordinator.fishCatalogById
+                        ),
+                        rewards: PlayerStateRepository.parseQuestRewards(quest.rewardCsv),
+                        playerCategory: coordinator.profile.category,
+                        onClaimReward: {
+                            _ = coordinator.claimQuestReward(questId: quest.id)
+                        }
+                    )
+                }
+            }
+        }
+    }
+
+    // MARK: - 5.2 Authentic `TaskActivity` (`res/layout/task.xml` `res/e7.xml` + `TaskActivity$f` / `TaskActivity$b`)
+
+    private var tasksSectionView: some View {
+        let rerollCost = PlayerStateRepository.taskRerollCostCoins(forCategoryRank: coordinator.profile.category)
+        return VStack(spacing: 12) {
+            if let contract = coordinator.activeContract {
+                let fishName = coordinator.fishCatalogById[contract.targetFishId]?.name ?? "Рыба #\(contract.targetFishId)"
+                let baitName: String = {
+                    if contract.targetBaitId <= 0 { return "любая" }
+                    return baitNamesById[contract.targetBaitId] ?? "наживка #\(contract.targetBaitId)"
+                }()
+                let bonusXp = contract.resolvedBonusExperience(balanceTables: coordinator.balanceTables)
+
+                // Top progress plaque (`TaskActivity.onCreate` `0x7f0a02b3` & `0x7f0a03c1`)
+                ZStack {
+                    if let timeBg = OriginalGameAssetsLoader.image(named: "time_background") {
+                        timeBg.resizable().frame(height: 68)
+                    } else {
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.black.opacity(0.6))
+                            .frame(height: 68)
+                    }
+                    VStack(spacing: 4) {
+                        Text("Количество: \(contract.currentCount) шт.")
+                            .font(.system(size: 15, weight: .bold).monospacedDigit())
+                            .foregroundStyle(OriginalGameTheme.goldText)
+                        Text(String(format: "Общий вес: %.3f кг (\(contract.currentWeightGrams) г)", Double(contract.currentWeightGrams) / 1000.0))
+                            .font(.system(size: 14, weight: .semibold).monospacedDigit())
+                            .foregroundStyle(.cyan)
+                    }
+                }
+
+                // Active Task Card (`TaskActivity.O`)
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        Text(contract.made >= 1 ? "Задание выполнено!" : "Текущее поручение рыбака")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundStyle(contract.made >= 1 ? .green : OriginalGameTheme.goldText)
+                        Spacer()
+                        OriginalSpriteOrFallbackIcon(
+                            drawableName: contract.made >= 1 ? "tick" : "tick_empty",
+                            fallbackSystemName: contract.made >= 1 ? "checkmark.circle.fill" : "circle",
+                            width: 28,
+                            height: 28
+                        )
+                    }
+
+                    HStack(spacing: 14) {
+                        OriginalSpriteOrFallbackIcon(
+                            drawableName: "fish_\(contract.targetFishId)",
+                            fallbackSystemName: "fish.fill",
+                            width: 96,
+                            height: 64
+                        )
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(fishName)
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundStyle(OriginalGameTheme.goldText)
+                            HStack(spacing: 6) {
+                                if contract.targetBaitId > 0 {
+                                    OriginalSpriteOrFallbackIcon(
+                                        drawableName: "bait_\(contract.targetBaitId)",
+                                        fallbackSystemName: "leaf.fill",
+                                        width: 20,
+                                        height: 20
+                                    )
+                                }
+                                Text("Наживка: \(baitName)")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundStyle(.white)
+                            }
+                            Text("Вес рыбы: \(contract.perFishWeightConditionDescriptionRu)")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(.white.opacity(0.9))
+                        }
+                        Spacer()
+                    }
+                    .padding(10)
+                    .background(Color.black.opacity(0.40), in: RoundedRectangle(cornerRadius: 8))
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Цель задания: \(contract.goalSummaryDescriptionRu)")
+                            .font(.system(size: 14, weight: .bold).monospacedDigit())
+                            .foregroundStyle(.cyan)
+                        Text("Награда за выполнение: +\(bonusXp) опыта")
+                            .font(.system(size: 14, weight: .bold).monospacedDigit())
+                            .foregroundStyle(.green)
+                    }
+
+                    HStack(spacing: 10) {
+                        if contract.made >= 1 {
+                            Button {
+                                _ = coordinator.generateOrEnsureUserTask()
+                            } label: {
+                                OriginalStyledActionButtonLabel(title: "Новое задание (Бесплатно)", minWidth: 220)
+                            }
+                            .buttonStyle(.plain)
+                        } else {
+                            Button {
+                                coordinator.selectedTab = .fishingPond
+                            } label: {
+                                OriginalStyledActionButtonLabel(title: "Выполняю → На водоём", minWidth: 165)
+                            }
+                            .buttonStyle(.plain)
+
+                            Button {
+                                _ = coordinator.rerollActiveUserTask()
+                            } label: {
+                                OriginalStyledActionButtonLabel(title: "Сменить (\(rerollCost) руб)", minWidth: 155)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+                .padding(12)
+                .background(Color.black.opacity(0.58), in: RoundedRectangle(cornerRadius: 8))
+            } else {
+                VStack(spacing: 10) {
+                    Text("У вас пока нет активного задания")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(OriginalGameTheme.goldText)
+                    Text("Нажмите кнопку ниже, чтобы получить поручение под ваш текущий разряд и открытые водоёмы.")
+                        .font(.system(size: 13))
+                        .foregroundStyle(.white.opacity(0.85))
+                        .multilineTextAlignment(.center)
+                    Button {
+                        _ = coordinator.generateOrEnsureUserTask()
+                    } label: {
+                        OriginalStyledActionButtonLabel(title: "Получить задание", minWidth: 220)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(16)
+                .background(Color.black.opacity(0.58), in: RoundedRectangle(cornerRadius: 8))
+            }
+        }
+        .onAppear {
+            if coordinator.activeContract == nil {
+                _ = coordinator.generateOrEnsureUserTask()
+            }
         }
     }
 
@@ -1656,6 +2311,108 @@ public struct ProgressAndRecordsView: View {
         ForEach(coordinator.personalRecords) { rec in
             PersonalRecordRowView(record: rec)
         }
+    }
+}
+
+private struct ActiveQuestDetailCardView: View {
+    let quest: QuestRecord
+    let title: String
+    let descriptionText: String
+    let baitDescription: String
+    let rewards: (coins: Int, experience: Int)
+    let targetSlots: [QuestTargetSlotProgress]
+    let onClaimReward: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Квест #\(quest.id): \(title)")
+                        .font(.system(size: 17, weight: .bold))
+                        .foregroundStyle(OriginalGameTheme.goldText)
+                    Text("Требуемый разряд: \(quest.requiredCategory)")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.cyan)
+                }
+                Spacer()
+                if quest.made == 1 {
+                    Text("Выполнен!")
+                        .font(.system(size: 12, weight: .bold))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.green, in: Capsule())
+                        .foregroundStyle(.black)
+                }
+            }
+
+            Text(descriptionText)
+                .font(.system(size: 13))
+                .foregroundStyle(.white.opacity(0.95))
+
+            HStack {
+                Text("Наживка: \(baitDescription)")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(OriginalGameTheme.goldText)
+                Spacer()
+                Text("Награда: \(rewards.coins) руб • +\(rewards.experience) XP")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(.green)
+            }
+
+            Divider().background(Color.white.opacity(0.2))
+
+            // Per-fish target rows (`Ly0/h` adapter in `QuestActivity`)
+            VStack(spacing: 6) {
+                ForEach(targetSlots) { slot in
+                    HStack(spacing: 10) {
+                        OriginalSpriteOrFallbackIcon(
+                            drawableName: slot.fishId == 0 ? "no_fish" : "fish_\(slot.fishId)",
+                            fallbackSystemName: "fish.fill",
+                            width: 56,
+                            height: 38
+                        )
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(slot.fishName)
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundStyle(OriginalGameTheme.goldText)
+                            Text("Условие: \(slot.conditionText)")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.white.opacity(0.85))
+                        }
+                        Spacer()
+                        Text(slot.progressText)
+                            .font(.system(size: 13, weight: .bold).monospacedDigit())
+                            .foregroundStyle(slot.isSlotCompleted ? .green : .cyan)
+                        OriginalSpriteOrFallbackIcon(
+                            drawableName: slot.isSlotCompleted ? "tick" : "tick_empty",
+                            fallbackSystemName: slot.isSlotCompleted ? "checkmark.circle.fill" : "circle",
+                            width: 24,
+                            height: 24
+                        )
+                    }
+                    .padding(8)
+                    .background(Color.black.opacity(0.42), in: RoundedRectangle(cornerRadius: 6))
+                }
+            }
+
+            if quest.made == 1 {
+                Button(action: onClaimReward) {
+                    OriginalStyledActionButtonLabel(
+                        title: "Получить награду (+\(rewards.coins) руб, +\(rewards.experience) XP)",
+                        minWidth: 260
+                    )
+                }
+                .buttonStyle(.plain)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.top, 4)
+            }
+        }
+        .padding(12)
+        .background(Color.black.opacity(0.62), in: RoundedRectangle(cornerRadius: 8))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(quest.made == 1 ? Color.green : OriginalGameTheme.goldText.opacity(0.6), lineWidth: 1.5)
+        )
     }
 }
 
@@ -1709,14 +2466,28 @@ private struct QuestRowView: View {
     let quest: QuestRecord
     let title: String
     let descriptionText: String
+    let targetSlots: [QuestTargetSlotProgress]
+    let rewards: (coins: Int, experience: Int)
+    let playerCategory: Int
+    let onClaimReward: () -> Void
+
+    private var statusText: String {
+        if quest.made >= 2 { return "Сдан" }
+        if quest.made == 1 { return "Готов к сдаче!" }
+        if playerCategory < quest.requiredCategory { return "Разряд \(quest.requiredCategory)" }
+        return "В процессе"
+    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Text("#\(quest.id). \(title)")
                     .font(.system(size: 15, weight: .bold))
                     .foregroundStyle(OriginalGameTheme.goldText)
                 Spacer()
+                Text(statusText)
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(quest.made >= 1 ? .green : .cyan)
                 OriginalSpriteOrFallbackIcon(
                     drawableName: quest.made >= 2 ? "tick" : "tick_empty",
                     fallbackSystemName: quest.made >= 2 ? "checkmark.circle.fill" : "circle",
@@ -1727,9 +2498,31 @@ private struct QuestRowView: View {
             Text(descriptionText)
                 .font(.system(size: 12))
                 .foregroundStyle(.white.opacity(0.9))
-            Text("Прогресс: [\(quest.progressRes)] / Цель: [\(quest.numCsv)]")
-                .font(.system(size: 11).monospacedDigit())
-                .foregroundStyle(.cyan)
+            Text("Награда: \(rewards.coins) руб • +\(rewards.experience) XP  •  Мин. разряд: \(quest.requiredCategory)")
+                .font(.system(size: 11, weight: .semibold).monospacedDigit())
+                .foregroundStyle(.green)
+
+            ForEach(targetSlots) { slot in
+                HStack {
+                    Text("• \(slot.fishName) (\(slot.conditionText))")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.white.opacity(0.85))
+                    Spacer()
+                    Text(slot.progressText)
+                        .font(.system(size: 11, weight: .semibold).monospacedDigit())
+                        .foregroundStyle(slot.isSlotCompleted ? .green : .cyan)
+                }
+            }
+
+            if quest.made == 1 {
+                Button(action: onClaimReward) {
+                    OriginalStyledActionButtonLabel(
+                        title: "Получить награду (+\(rewards.coins) руб, +\(rewards.experience) XP)",
+                        minWidth: 230
+                    )
+                }
+                .buttonStyle(.plain)
+            }
         }
         .padding(10)
         .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 8))

@@ -1847,3 +1847,310 @@ extension ReferenceCatalogStore {
         }
     }
 }
+
+
+// MARK: - Fish & Pond Encyclopedia Guide (`AboutGameActivity` / Fish & Location Reference)
+
+public struct FishBaitTimeOfDayGuideEntry: Sendable, Equatable, Identifiable {
+    public var id: Int { baitId1Based }
+    public let baitId1Based: Int
+    public let baitName: String
+    public let morningProbabilityPercent: Int
+    public let afternoonProbabilityPercent: Int
+    public let eveningProbabilityPercent: Int
+    public let nightProbabilityPercent: Int
+
+    public init(
+        baitId1Based: Int,
+        baitName: String,
+        morningProbabilityPercent: Int,
+        afternoonProbabilityPercent: Int,
+        eveningProbabilityPercent: Int,
+        nightProbabilityPercent: Int
+    ) {
+        self.baitId1Based = baitId1Based
+        self.baitName = baitName
+        self.morningProbabilityPercent = morningProbabilityPercent
+        self.afternoonProbabilityPercent = afternoonProbabilityPercent
+        self.eveningProbabilityPercent = eveningProbabilityPercent
+        self.nightProbabilityPercent = nightProbabilityPercent
+    }
+}
+
+public struct FishHabitatPondGuideEntry: Sendable, Equatable, Identifiable {
+    public var id: Int { pondId }
+    public let pondId: Int
+    public let pondNameRu: String
+    public let pondNameEn: String
+    public let requiredRank: Int
+    public let requiresCoupon: Bool
+    public let minWeightGrams: Int
+    public let maxWeightGrams: Int
+    public let baits: [FishBaitTimeOfDayGuideEntry]
+
+    public init(
+        pondId: Int,
+        pondNameRu: String,
+        pondNameEn: String,
+        requiredRank: Int,
+        requiresCoupon: Bool,
+        minWeightGrams: Int,
+        maxWeightGrams: Int,
+        baits: [FishBaitTimeOfDayGuideEntry]
+    ) {
+        self.pondId = pondId
+        self.pondNameRu = pondNameRu
+        self.pondNameEn = pondNameEn
+        self.requiredRank = requiredRank
+        self.requiresCoupon = requiresCoupon
+        self.minWeightGrams = minWeightGrams
+        self.maxWeightGrams = maxWeightGrams
+        self.baits = baits
+    }
+}
+
+public struct FishEncyclopediaGuideEntry: Sendable, Equatable, Identifiable {
+    public var id: Int { fish.id }
+    public let fish: FishSpecies
+    public let xpWeightDivisor: Int
+    public let habitats: [FishHabitatPondGuideEntry]
+
+    public init(
+        fish: FishSpecies,
+        xpWeightDivisor: Int,
+        habitats: [FishHabitatPondGuideEntry]
+    ) {
+        self.fish = fish
+        self.xpWeightDivisor = xpWeightDivisor
+        self.habitats = habitats
+    }
+}
+
+public struct PondBaitSpeciesGuideEntry: Sendable, Equatable, Identifiable {
+    public var id: Int { fishId1Based }
+    public let fishId1Based: Int
+    public let fishName: String
+    public let minWeightGrams: Int
+    public let maxWeightGrams: Int
+    public let morningProbabilityPercent: Int
+    public let afternoonProbabilityPercent: Int
+    public let eveningProbabilityPercent: Int
+    public let nightProbabilityPercent: Int
+
+    public init(
+        fishId1Based: Int,
+        fishName: String,
+        minWeightGrams: Int,
+        maxWeightGrams: Int,
+        morningProbabilityPercent: Int,
+        afternoonProbabilityPercent: Int,
+        eveningProbabilityPercent: Int,
+        nightProbabilityPercent: Int
+    ) {
+        self.fishId1Based = fishId1Based
+        self.fishName = fishName
+        self.minWeightGrams = minWeightGrams
+        self.maxWeightGrams = maxWeightGrams
+        self.morningProbabilityPercent = morningProbabilityPercent
+        self.afternoonProbabilityPercent = afternoonProbabilityPercent
+        self.eveningProbabilityPercent = eveningProbabilityPercent
+        self.nightProbabilityPercent = nightProbabilityPercent
+    }
+}
+
+public struct PondBaitSlotGuideEntry: Sendable, Equatable, Identifiable {
+    public var id: Int { baitSlotIndex }
+    public let baitSlotIndex: Int
+    public let baitId1Based: Int
+    public let baitName: String
+    public let species: [PondBaitSpeciesGuideEntry]
+
+    public init(
+        baitSlotIndex: Int,
+        baitId1Based: Int,
+        baitName: String,
+        species: [PondBaitSpeciesGuideEntry]
+    ) {
+        self.baitSlotIndex = baitSlotIndex
+        self.baitId1Based = baitId1Based
+        self.baitName = baitName
+        self.species = species
+    }
+}
+
+public struct PondEncyclopediaGuideEntry: Sendable, Equatable, Identifiable {
+    public var id: Int { pond.id }
+    public let pond: PondCatalogItem
+    public let baitSlots: [PondBaitSlotGuideEntry]
+    public let uniqueSpeciesCount: Int
+
+    public init(
+        pond: PondCatalogItem,
+        baitSlots: [PondBaitSlotGuideEntry],
+        uniqueSpeciesCount: Int
+    ) {
+        self.pond = pond
+        self.baitSlots = baitSlots
+        self.uniqueSpeciesCount = uniqueSpeciesCount
+    }
+}
+
+extension ReferenceCatalogStore {
+    /// Builds the complete Fish & Pond Encyclopedia Guide from `fishes`, `baits`, `ref_ponds`,
+    /// `ref_pond_bait_catches`, `ref_pond_species_weights`, and `ref_pond_time_factors`.
+    public func buildFishAndPondEncyclopediaGuide(
+        balanceTables: BalanceTables = BalanceTables()
+    ) throws -> (fishGuide: [FishEncyclopediaGuideEntry], pondGuide: [PondEncyclopediaGuideEntry]) {
+        let fishesById = try loadFishCatalogById()
+        let allFishes = fishesById.values.sorted(by: { $0.id < $1.id })
+        let allBaits = try listAllBaitCatalogItems()
+        var baitNameById: [Int: String] = [:]
+        for b in allBaits {
+            baitNameById[b.id] = b.spec.name
+        }
+        let allPonds = try listAllPonds()
+
+        // Weight ranges: (pondId, fishId1Based) -> (minW, maxW)
+        let weightRows = try connection.query("""
+        SELECT pond_data_id, fish_db_id, min_weight_grams, max_weight_grams
+        FROM ref_pond_species_weights;
+        """)
+        var weightMap: [String: (Int, Int)] = [:]
+        for r in weightRows {
+            let key = "\(r.int("pond_data_id"))_\(r.int("fish_db_id"))"
+            weightMap[key] = (r.int("min_weight_grams"), r.int("max_weight_grams"))
+        }
+
+        // Time factors: (pondId, period, baitSlotIndex, fishId1Based) -> prob%
+        let factorRows = try connection.query("""
+        SELECT pond_data_id, day_period, bait_slot_index, fish_db_id, probability_percent
+        FROM ref_pond_time_factors;
+        """)
+        var factorMap: [String: Int] = [:]
+        for r in factorRows {
+            let key = "\(r.int("pond_data_id"))_\(r.string("day_period"))_\(r.int("bait_slot_index"))_\(r.int("fish_db_id"))"
+            factorMap[key] = r.int("probability_percent")
+        }
+
+        // Catches: pondId -> [(slotIdx, baitDbId, fishDbId)]
+        let catchRows = try connection.query("""
+        SELECT pond_data_id, bait_slot_index, bait_db_id, fish_db_id
+        FROM ref_pond_bait_catches
+        ORDER BY pond_data_id ASC, bait_slot_index ASC, catch_order_index ASC;
+        """)
+        var catchesByPond: [Int: [(slot: Int, baitId: Int, fishId: Int)]] = [:]
+        for r in catchRows {
+            let pId = r.int("pond_data_id")
+            catchesByPond[pId, default: []].append(
+                (slot: r.int("bait_slot_index"), baitId: r.int("bait_db_id"), fishId: r.int("fish_db_id"))
+            )
+        }
+
+        var pondGuide: [PondEncyclopediaGuideEntry] = []
+        var habitatsByFishId: [Int: [FishHabitatPondGuideEntry]] = [:]
+
+        for pond in allPonds {
+            let rowsForPond = catchesByPond[pond.id] ?? []
+            var slotsDict: [Int: (baitId: Int, fishIds: [Int])] = [:]
+            var slotOrder: [Int] = []
+            var uniqueFishSet = Set<Int>()
+            var fishToBaitsInPond: [Int: [FishBaitTimeOfDayGuideEntry]] = [:]
+
+            for item in rowsForPond {
+                if slotsDict[item.slot] == nil {
+                    slotOrder.append(item.slot)
+                    slotsDict[item.slot] = (baitId: item.baitId, fishIds: [])
+                }
+                slotsDict[item.slot]?.fishIds.append(item.fishId)
+                uniqueFishSet.insert(item.fishId)
+            }
+
+            var slotEntries: [PondBaitSlotGuideEntry] = []
+            for slotIdx in slotOrder {
+                guard let info = slotsDict[slotIdx] else { continue }
+                let bName = baitNameById[info.baitId] ?? "Наживка #\(info.baitId)"
+                var speciesList: [PondBaitSpeciesGuideEntry] = []
+
+                for fId in info.fishIds {
+                    let fName = fishesById[fId]?.name ?? "Рыба #\(fId)"
+                    let wRange = weightMap["\(pond.id)_\(fId)"] ?? (50, 1000)
+                    let mProb = factorMap["\(pond.id)_morning_\(slotIdx)_\(fId)"] ?? 0
+                    let aProb = factorMap["\(pond.id)_afternoon_\(slotIdx)_\(fId)"] ?? 0
+                    let eProb = factorMap["\(pond.id)_evening_\(slotIdx)_\(fId)"] ?? 0
+                    let nProb = factorMap["\(pond.id)_night_\(slotIdx)_\(fId)"] ?? 0
+
+                    speciesList.append(
+                        PondBaitSpeciesGuideEntry(
+                            fishId1Based: fId,
+                            fishName: fName,
+                            minWeightGrams: wRange.0,
+                            maxWeightGrams: wRange.1,
+                            morningProbabilityPercent: mProb,
+                            afternoonProbabilityPercent: aProb,
+                            eveningProbabilityPercent: eProb,
+                            nightProbabilityPercent: nProb
+                        )
+                    )
+
+                    fishToBaitsInPond[fId, default: []].append(
+                        FishBaitTimeOfDayGuideEntry(
+                            baitId1Based: info.baitId,
+                            baitName: bName,
+                            morningProbabilityPercent: mProb,
+                            afternoonProbabilityPercent: aProb,
+                            eveningProbabilityPercent: eProb,
+                            nightProbabilityPercent: nProb
+                        )
+                    )
+                }
+
+                slotEntries.append(
+                    PondBaitSlotGuideEntry(
+                        baitSlotIndex: slotIdx,
+                        baitId1Based: info.baitId,
+                        baitName: bName,
+                        species: speciesList
+                    )
+                )
+            }
+
+            pondGuide.append(
+                PondEncyclopediaGuideEntry(
+                    pond: pond,
+                    baitSlots: slotEntries,
+                    uniqueSpeciesCount: uniqueFishSet.count
+                )
+            )
+
+            for fId in uniqueFishSet.sorted() {
+                let wRange = weightMap["\(pond.id)_\(fId)"] ?? (50, 1000)
+                let baitsForFish = fishToBaitsInPond[fId] ?? []
+                habitatsByFishId[fId, default: []].append(
+                    FishHabitatPondGuideEntry(
+                        pondId: pond.id,
+                        pondNameRu: pond.nameRu,
+                        pondNameEn: pond.nameEn,
+                        requiredRank: pond.requiredRank,
+                        requiresCoupon: pond.requiresCoupon,
+                        minWeightGrams: wRange.0,
+                        maxWeightGrams: wRange.1,
+                        baits: baitsForFish
+                    )
+                )
+            }
+        }
+
+        let divs = balanceTables.fishXpWeightDivisors
+        let fishGuide: [FishEncyclopediaGuideEntry] = allFishes.map { f in
+            let idx0 = f.id - 1
+            let xpDiv = (idx0 >= 0 && idx0 < divs.count) ? max(1, divs[idx0]) : max(1, f.unitWeight)
+            return FishEncyclopediaGuideEntry(
+                fish: f,
+                xpWeightDivisor: xpDiv,
+                habitats: habitatsByFishId[f.id] ?? []
+            )
+        }
+
+        return (fishGuide: fishGuide, pondGuide: pondGuide)
+    }
+}

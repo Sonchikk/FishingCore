@@ -962,12 +962,19 @@ public struct AssetPackManifestEntry: Sendable, Equatable, Identifiable {
     }
 }
 
-/// Active fisherman order/contract stored in `user_task` + `user_task_data` (`MECHANICS.md` Section 6.1 #3).
+/// Active fisherman order/contract stored in `user_task` + `user_task_data` (`TaskActivity` & `LC0/d.l`, `MECHANICS.md` Section 6.1 #3).
+/// Supports all 6 original task types:
+/// - `1`: Catch `requiredCount` fish (any weight, or `>= requiredWeightGrams` if explicitly assigned)
+/// - `2`: Catch `targetTotalWeightGrams` total weight of fish (any weight)
+/// - `3`: Catch `requiredCount` fish weighing at least `requiredWeightGrams` (`от X кг`)
+/// - `4`: Catch `requiredCount` fish weighing at most `requiredWeightGrams` (`до X кг`)
+/// - `5`: Catch `targetTotalWeightGrams` total weight of fish weighing at least `requiredWeightGrams` (`от X кг`)
+/// - `6`: Catch `targetTotalWeightGrams` total weight of fish weighing at most `requiredWeightGrams` (`до X кг`)
 public struct UserTaskContractRecord: Sendable, Equatable, Identifiable {
     public let id: Int
-    public let taskType: Int       // 1 = count, 2 = total weight
+    public let taskType: Int       // 1..6
     public let targetFishId: Int
-    public let targetBaitId: Int   // 0 = any bait
+    public let targetBaitId: Int   // 0 = any bait, 1..21 = 1-based bait ID
     public let requiredCount: Int
     public let requiredWeightGrams: Int
     public let bonusExperience: Int
@@ -997,6 +1004,60 @@ public struct UserTaskContractRecord: Sendable, Equatable, Identifiable {
         self.currentCount = currentCount
         self.currentWeightGrams = currentWeightGrams
         self.made = made
+    }
+
+    public var isTotalWeightGoal: Bool {
+        taskType == 2 || taskType == 5 || taskType == 6
+    }
+
+    public var targetTotalWeightGrams: Int {
+        if isTotalWeightGoal {
+            return bonusExperience > 0 ? bonusExperience : max(requiredWeightGrams, requiredWeightGrams * max(1, requiredCount))
+        }
+        return requiredWeightGrams * max(1, requiredCount)
+    }
+
+    /// Reconstructs the bonus XP formula from `TaskActivity.O` (`pc=0189..02b6`) and `LC0/d.l` (`pc=030a..038d`).
+    public func resolvedBonusExperience(balanceTables: BalanceTables = BalanceTables()) -> Int {
+        if !isTotalWeightGoal && bonusExperience > 0 {
+            return bonusExperience
+        }
+        let divs = balanceTables.fishXpWeightDivisors
+        let idx0 = targetFishId - 1
+        let xpDiv = (idx0 >= 0 && idx0 < divs.count) ? max(1, divs[idx0]) : 250
+        let refWeight = max(50, requiredWeightGrams)
+        let basePerFish = (refWeight / xpDiv) + 1
+        let count = max(1, requiredCount)
+
+        switch taskType {
+        case 3, 5:
+            return max(10, (basePerFish * count * 3) / 2)
+        case 2, 6:
+            return max(10, (basePerFish * count * 7) / 5)
+        default:
+            return max(10, (basePerFish * count * 4) / 5)
+        }
+    }
+
+    public var perFishWeightConditionDescriptionRu: String {
+        switch taskType {
+        case 3, 5:
+            return "от \(PlayerStateRepository.formatGramsAsKgOrGrams(requiredWeightGrams))"
+        case 4, 6:
+            return "до \(PlayerStateRepository.formatGramsAsKgOrGrams(requiredWeightGrams))"
+        case 1 where requiredWeightGrams > 0 && bonusExperience > 0:
+            return "от \(PlayerStateRepository.formatGramsAsKgOrGrams(requiredWeightGrams))"
+        default:
+            return "любой"
+        }
+    }
+
+    public var goalSummaryDescriptionRu: String {
+        if isTotalWeightGoal {
+            return "Общий вес: \(PlayerStateRepository.formatGramsAsKgOrGrams(currentWeightGrams)) / \(PlayerStateRepository.formatGramsAsKgOrGrams(targetTotalWeightGrams))"
+        } else {
+            return "Количество: \(currentCount) / \(requiredCount) шт."
+        }
     }
 }
 
@@ -1384,8 +1445,9 @@ extension PlayerStateRepository {
         )
     }
 
-    /// Evaluates the active `user_task` contract on a caught fish (`LC0/d$a.onClick`, `MECHANICS.md` Section 6.1 #3).
-    /// When the contract completes (`made: 0 -> 1`), awards `bonusExperience` to `user_data` and updates `category` & `UserDataMd5`.
+    /// Evaluates the active `user_task` contract on a caught fish (`LC0/d.l` & `LC0/d$a.onClick`, `MECHANICS.md` Section 6.1 #3).
+    /// Supports all 6 original task types (`1..6`). When the contract completes (`made: 0 -> 1`), awards `resolvedBonusExperience`
+    /// to `user_data`, updates `category` & `UserDataMd5`, and increments Achievement #4 («Любитель заданий»).
     @discardableResult
     public func evaluateUserTaskOnCatch(
         _ caught: CaughtUserFish,
@@ -1398,13 +1460,24 @@ extension PlayerStateRepository {
             return 0
         }
 
-        guard caught.fish.id == contract.targetFishId else { return 0 }
+        guard contract.targetFishId == 0 || caught.fish.id == contract.targetFishId else { return 0 }
         let baitId1Based = caught.baitIndex + 1
         if contract.targetBaitId > 0 && baitId1Based != contract.targetBaitId {
             return 0
         }
-        if contract.requiredWeightGrams > 0 && contract.taskType == 1 && caught.weightGrams < contract.requiredWeightGrams {
-            return 0
+
+        // Per-fish weight filter (`LC0/d.l` `pc=0293..02cc`):
+        switch contract.taskType {
+        case 3, 5:
+            if caught.weightGrams < contract.requiredWeightGrams { return 0 }
+        case 4, 6:
+            if caught.weightGrams > contract.requiredWeightGrams { return 0 }
+        case 1:
+            if contract.requiredWeightGrams > 0 && contract.bonusExperience > 0 && caught.weightGrams < contract.requiredWeightGrams {
+                return 0
+            }
+        default:
+            break
         }
 
         return try connection.transaction {
@@ -1412,8 +1485,8 @@ extension PlayerStateRepository {
             contract.currentWeightGrams += caught.weightGrams
 
             let isDone: Bool
-            if contract.taskType == 2 {
-                isDone = contract.currentWeightGrams >= contract.requiredWeightGrams
+            if contract.isTotalWeightGoal {
+                isDone = contract.currentWeightGrams >= contract.targetTotalWeightGrams
             } else {
                 isDone = contract.currentCount >= contract.requiredCount
             }
@@ -1441,9 +1514,10 @@ extension PlayerStateRepository {
                 .integer(Int64(contract.id))
             ])
 
-            if isDone && contract.bonusExperience > 0 {
+            let awardedXp = contract.resolvedBonusExperience(balanceTables: balanceTables)
+            if isDone && awardedXp > 0 {
                 var profile = try loadPlayerProfile()
-                profile.experience += contract.bonusExperience
+                profile.experience += awardedXp
                 profile.category = ProgressionCalculator.categoryForExperience(
                     profile.experience,
                     balanceTables: balanceTables
@@ -1463,9 +1537,183 @@ extension PlayerStateRepository {
                     .integer(nowMs),
                     .text(newMd5)
                 ])
-                return contract.bonusExperience
+                // Increment Achievement #4 («Любитель заданий», `LC0/d$a.onClick` `pc=0170`)
+                _ = try? evaluateAchievement(id1Based: 4, valueOrDelta: 1, nowMs: nowMs)
+                return awardedXp
             }
             return 0
         }
+    }
+
+    /// Reconstructs `TaskActivity.R(int avg, int delta)` weight rounding helper (`pc=0000..0050`):
+    /// Rounds target weight thresholds to clean gram increments (`10`, `50`, `100`, `500`, `1000`).
+    public static func roundProceduralTaskWeightGrams(_ rawGrams: Int) -> Int {
+        let clamped = max(20, rawGrams)
+        if clamped >= 10_000 {
+            return (clamped / 1_000) * 1_000
+        } else if clamped >= 2_000 {
+            return (clamped / 500) * 500
+        } else if clamped >= 500 {
+            return (clamped / 100) * 100
+        } else if clamped >= 100 {
+            return (clamped / 50) * 50
+        } else {
+            return max(10, (clamped / 10) * 10)
+        }
+    }
+
+    /// Reconstructs `TaskActivity$f.a` & `b` (`pc=0000..0204`):
+    /// Procedurally generates a new fisherman contract based on the player's unlocked ponds and category rank.
+    @discardableResult
+    public func generateProceduralUserTask(
+        nowMs: Int64,
+        rng: inout some FishingRandomGenerator
+    ) throws -> UserTaskContractRecord {
+        let profile = try loadPlayerProfile()
+        let allPonds = try catalog.listAllPonds()
+        let unlockedPonds = allPonds.filter { $0.requiredRank <= profile.category }
+        let candidatePonds = unlockedPonds.isEmpty ? Array(allPonds.prefix(1)) : unlockedPonds
+
+        // In `TaskActivity$f.a` (`pc=0035..0064`): for `category >= 18` and `unlockedCount > 2`,
+        // with 2/3 probability picks among the top 3 unlocked ponds.
+        let chosenPond: PondCatalogItem
+        if profile.category >= 18 && candidatePonds.count > 2 && rng.nextInt(bound: 3) != 0 {
+            let startIdx = candidatePonds.count - 3
+            let offset = rng.nextInt(bound: 3)
+            chosenPond = candidatePonds[startIdx + offset]
+        } else {
+            let idx = rng.nextInt(bound: max(1, candidatePonds.count))
+            chosenPond = candidatePonds[min(idx, candidatePonds.count - 1)]
+        }
+
+        let pondSim = try catalog.loadPondSimulationData(pondIndex: chosenPond.id)
+        let slotCount = max(1, pondSim.activeBaitIndices0Based.count)
+        let slotIdx = min(slotCount - 1, max(0, rng.nextInt(bound: slotCount)))
+        let baitId1Based = (slotIdx < pondSim.activeBaitIndices0Based.count)
+            ? (pondSim.activeBaitIndices0Based[slotIdx] + 1)
+            : 1
+
+        let fishesInSlot = (slotIdx < pondSim.catchableFishByBaitSlot.count)
+            ? pondSim.catchableFishByBaitSlot[slotIdx]
+            : [0]
+        let fishChoiceIdx = fishesInSlot.isEmpty ? 0 : min(fishesInSlot.count - 1, max(0, rng.nextInt(bound: fishesInSlot.count)))
+        let fishIndex0Based = fishesInSlot.isEmpty ? 0 : fishesInSlot[fishChoiceIdx]
+        let targetFishId = fishIndex0Based + 1
+
+        let rangeEntry = pondSim.fishWeightRanges.first(where: { $0.fishIndex0Based == fishIndex0Based })
+        let minW = max(20, rangeEntry?.minWeightGrams ?? 50)
+        var maxW = max(minW + 20, rangeEntry?.maxWeightGrams ?? 1500)
+
+        // Low-rank weight cap (`TaskActivity$f.a` `pc=00bc..0108`)
+        if profile.category < 2 && maxW > 5_000 {
+            maxW = max(minW + 20, 5_000)
+        } else if profile.category < 3 && maxW > 9_000 {
+            maxW = max(minW + 20, 9_000)
+        } else if profile.category < 4 && maxW > 17_000 {
+            maxW = max(minW + 20, 17_000)
+        }
+
+        let avgW = (minW + maxW) / 2
+        let halfSpan = max(10, (maxW - minW) / 2)
+        let baseCount = 3 + rng.nextInt(bound: 8) // 3..10 (`pc=0118..0120`)
+        let primaryMode = 1 + rng.nextInt(bound: 2) // 1 = count, 2 = total weight (`pc=0122..0126`)
+        let subRoll = profile.category >= 3 ? (1 + rng.nextInt(bound: 3)) : 1 // 1..3
+
+        let taskType: Int
+        let requiredCount: Int
+        let requiredWeightGrams: Int
+        let totalWeightField: Int
+
+        if primaryMode == 2 {
+            // Total weight mode (`types 2, 5, 6`)
+            if subRoll == 2 {
+                taskType = 5
+                requiredCount = baseCount * 2 + 1
+                requiredWeightGrams = Self.roundProceduralTaskWeightGrams(avgW - halfSpan / 2)
+                totalWeightField = requiredWeightGrams * baseCount
+            } else if subRoll == 3 {
+                taskType = 6
+                requiredCount = baseCount
+                requiredWeightGrams = Self.roundProceduralTaskWeightGrams(avgW + halfSpan / 2)
+                totalWeightField = requiredWeightGrams * baseCount
+            } else {
+                taskType = 2
+                requiredCount = baseCount
+                requiredWeightGrams = avgW
+                totalWeightField = avgW * baseCount
+            }
+        } else {
+            // Count mode (`types 1, 3, 4`)
+            if subRoll == 2 {
+                taskType = 3
+                requiredCount = baseCount * 2 + 1
+                requiredWeightGrams = Self.roundProceduralTaskWeightGrams(avgW - halfSpan / 2)
+                totalWeightField = 0
+            } else if subRoll == 3 {
+                taskType = 4
+                requiredCount = baseCount
+                requiredWeightGrams = Self.roundProceduralTaskWeightGrams(avgW + halfSpan / 2)
+                totalWeightField = 0
+            } else {
+                taskType = 1
+                requiredCount = baseCount
+                requiredWeightGrams = avgW
+                totalWeightField = 0
+            }
+        }
+
+        // 50% chance any bait (`0`), 50% chance specific bait (`baitId1Based`) (`pc=01c0..01ca`)
+        let assignedBaitId = (rng.nextInt(bound: 2) == 0) ? 0 : baitId1Based
+
+        return try assignUserTaskContract(
+            taskType: taskType,
+            targetFishId: targetFishId,
+            targetBaitId: assignedBaitId,
+            requiredCount: requiredCount,
+            requiredWeightGrams: requiredWeightGrams,
+            bonusExperience: totalWeightField,
+            nowMs: nowMs
+        )
+    }
+
+    /// Cost in rubles to skip/replace the active fisherman contract (`TaskActivity$b.onClick` `pc=0015..001a`: `(category + 1) * 500`).
+    public static func taskRerollCostCoins(forCategoryRank category: Int) -> Int {
+        max(1, category + 1) * 500
+    }
+
+    /// Reconstructs `TaskActivity$b.onClick` (`pc=0015..006c`):
+    /// Deducts `(profile.category + 1) * 500` rubles from `user_data.balance` and generates a new procedural fisherman contract.
+    @discardableResult
+    public func rerollUserTaskContract(
+        nowMs: Int64,
+        rng: inout some FishingRandomGenerator
+    ) throws -> (newContract: UserTaskContractRecord, costCoins: Int, newBalance: Int) {
+        let profile = try loadPlayerProfile()
+        guard try verifyPlayerProfileIntegrity() else {
+            throw PlayerPersistenceError.integrityCheckFailed("user_data MD5 mismatch before rerollUserTaskContract")
+        }
+        let cost = Self.taskRerollCostCoins(forCategoryRank: profile.category)
+        guard profile.balance >= cost else {
+            throw PlayerPersistenceError.insufficientBalance(required: cost, available: profile.balance)
+        }
+
+        let newBalance = profile.balance - cost
+        let newMd5 = FishingChecksum.userDataMd5(
+            balance: newBalance,
+            experience: profile.experience,
+            category: profile.category,
+            date: nowMs,
+            installationUuid: installationUuid
+        )
+        try connection.run("""
+        UPDATE user_data SET balance = ?, date = ?, md5 = ? WHERE id = 1;
+        """, bindings: [
+            .integer(Int64(newBalance)),
+            .integer(nowMs),
+            .text(newMd5)
+        ])
+
+        let newContract = try generateProceduralUserTask(nowMs: nowMs, rng: &rng)
+        return (newContract: newContract, costCoins: cost, newBalance: newBalance)
     }
 }

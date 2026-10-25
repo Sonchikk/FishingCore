@@ -3,6 +3,66 @@ import FishingCore
 
 /// Implements the achievement progression (`F0.o.a`), quest evaluation (`F0.o.b`), and personal
 /// species records (`records` table / `MyRecordsActivity`) from `classes.dex` (`MECHANICS.md` Section 6).
+
+/// Result of claiming a completed quest reward (`QuestActivity.W`).
+public struct QuestRewardClaimResult: Sendable, Equatable {
+    public let questId: Int
+    public let coinsAwarded: Int
+    public let experienceAwarded: Int
+    public let newBalance: Int
+    public let newExperience: Int
+    public let newCategoryRank: Int
+
+    public init(
+        questId: Int,
+        coinsAwarded: Int,
+        experienceAwarded: Int,
+        newBalance: Int,
+        newExperience: Int,
+        newCategoryRank: Int
+    ) {
+        self.questId = questId
+        self.coinsAwarded = coinsAwarded
+        self.experienceAwarded = experienceAwarded
+        self.newBalance = newBalance
+        self.newExperience = newExperience
+        self.newCategoryRank = newCategoryRank
+    }
+}
+
+/// Per-target-slot progress row for `QuestActivity` (`Ly0/h` adapter).
+public struct QuestTargetSlotProgress: Sendable, Equatable, Identifiable {
+    public var id: Int { slotIndex }
+    public let slotIndex: Int
+    public let fishId: Int
+    public let fishName: String
+    public let conditionText: String
+    public let progressText: String
+    public let currentValue: Int
+    public let goalValue: Int
+    public let isSlotCompleted: Bool
+
+    public init(
+        slotIndex: Int,
+        fishId: Int,
+        fishName: String,
+        conditionText: String,
+        progressText: String,
+        currentValue: Int,
+        goalValue: Int,
+        isSlotCompleted: Bool
+    ) {
+        self.slotIndex = slotIndex
+        self.fishId = fishId
+        self.fishName = fishName
+        self.conditionText = conditionText
+        self.progressText = progressText
+        self.currentValue = currentValue
+        self.goalValue = goalValue
+        self.isSlotCompleted = isSlotCompleted
+    }
+}
+
 extension PlayerStateRepository {
 
     // MARK: - 1. Personal Species Records (`records` table)
@@ -305,8 +365,13 @@ extension PlayerStateRepository {
 
         return try connection.transaction {
             let allQuests = try listQuests()
-            guard var quest = allQuests.first(where: { $0.made == 0 && $0.requiredCategory <= playerCategory }) else {
+            guard var quest = allQuests.first(where: { $0.made <= 1 && $0.requiredCategory <= playerCategory }) else {
                 return nil
+            }
+            // In original `F0.o.b` (`pc=008b..008f`): if the active quest has `made == 1` (completed, awaiting reward claim in `QuestActivity`),
+            // subsequent quests do not advance until the player claims the current quest reward (`made -> 2`).
+            guard quest.made == 0 else {
+                return quest
             }
 
             let expectedMd5 = FishingChecksum.questMd5(
@@ -435,6 +500,245 @@ extension PlayerStateRepository {
             ])
 
             return quest
+        }
+    }
+
+
+    /// Returns the active quest for the player (`QuestActivity.onCreate`: first quest with `made <= 1 && cat <= category`).
+    public func activeQuest(playerCategory: Int) throws -> QuestRecord? {
+        let allQuests = try listQuests()
+        return allQuests.first(where: { $0.made <= 1 && $0.requiredCategory <= playerCategory })
+    }
+
+    /// Parses `quest.rewardCsv` (`nag`, e.g. `"200,150"` or `"5000,1000"`) into `(coins, experience)` (`QuestActivity.W`).
+    public static func parseQuestRewards(_ rewardCsv: String) -> (coins: Int, experience: Int) {
+        let parts = rewardCsv.split(separator: ",").map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
+        let coins = parts.first.flatMap(Int.init) ?? 0
+        let exp = (parts.count > 1 ? Int(parts[1]) : nil) ?? 0
+        return (coins: max(0, coins), experience: max(0, exp))
+    }
+
+    /// Formats the required bait list for a quest (`QuestActivity.onCreate` `pc=0175..01df`).
+    public static func formatQuestBaitsDescription(
+        baitCsv: String,
+        baitNamesById: [Int: String]
+    ) -> String {
+        let ids = baitCsv.split(separator: ",").compactMap { Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) }
+        if ids.isEmpty || ids.contains(0) {
+            return "любая"
+        }
+        let names = ids.map { baitNamesById[$0] ?? "наживка #\($0)" }
+        return names.joined(separator: ", ")
+    }
+
+    /// Reconstructs `Ly0/h` (`QuestTargetAdapter`) per-fish target rows for `QuestActivity`.
+    public static func buildQuestTargetSlots(
+        for quest: QuestRecord,
+        fishCatalogById: [Int: FishSpecies]
+    ) -> [QuestTargetSlotProgress] {
+        let fishIds = quest.fishCsv.split(separator: ",").compactMap { Int($0.trimmingCharacters(in: .whitespaces)) }
+        let counts = quest.numCsv.split(separator: ",").compactMap { Int($0.trimmingCharacters(in: .whitespaces)) }
+        let weights = quest.weightCsv.split(separator: ",").map { String($0.trimmingCharacters(in: .whitespaces)) }
+        let slotCount = max(1, fishIds.count)
+
+        let rawProgress: [Int]
+        if quest.progressRes == "null" || quest.progressRes.isEmpty {
+            rawProgress = [Int](repeating: 0, count: slotCount)
+        } else {
+            let parsed = quest.progressRes.split(separator: ",").compactMap { Int($0.trimmingCharacters(in: .whitespaces)) }
+            if parsed.count >= slotCount {
+                rawProgress = Array(parsed.prefix(slotCount))
+            } else {
+                rawProgress = parsed + [Int](repeating: 0, count: slotCount - parsed.count)
+            }
+        }
+
+        var slots: [QuestTargetSlotProgress] = []
+        for idx in 0..<slotCount {
+            let fishId = idx < fishIds.count ? fishIds[idx] : 0
+            let fishName = (fishId == 0) ? "Любая рыба" : (fishCatalogById[fishId]?.name ?? "Рыба #\(fishId)")
+            let currentVal = rawProgress[idx]
+
+            let conditionText: String
+            let progressText: String
+            let goalVal: Int
+            let isDone: Bool
+
+            switch quest.type {
+            case 2:
+                // Cumulative weight in grams (`Ly0/h.c` formats as kg)
+                let goalW = idx < weights.count ? (Int(weights[idx]) ?? 0) : 0
+                goalVal = max(1, goalW)
+                let shownCur = quest.made >= 2 ? goalVal : min(goalVal, currentVal)
+                isDone = shownCur >= goalVal || quest.made >= 1
+                conditionText = "вес любой"
+                progressText = "\(formatGramsAsKgOrGrams(shownCur)) / \(formatGramsAsKgOrGrams(goalVal))"
+
+            case 3:
+                let minW = idx < weights.count ? (Int(weights[idx]) ?? 0) : 0
+                let goalC = max(1, idx < counts.count ? counts[idx] : 1)
+                goalVal = goalC
+                let shownCur = quest.made >= 2 ? goalC : min(goalC, currentVal)
+                isDone = shownCur >= goalC || quest.made >= 1
+                conditionText = "от \(formatGramsAsKgOrGrams(minW))"
+                progressText = "\(shownCur) / \(goalC) шт."
+
+            case 4:
+                let maxW = idx < weights.count ? (Int(weights[idx]) ?? 0) : 0
+                let goalC = max(1, idx < counts.count ? counts[idx] : 1)
+                goalVal = goalC
+                let shownCur = quest.made >= 2 ? goalC : min(goalC, currentVal)
+                isDone = shownCur >= goalC || quest.made >= 1
+                conditionText = "до \(formatGramsAsKgOrGrams(maxW))"
+                progressText = "\(shownCur) / \(goalC) шт."
+
+            case 7:
+                let rawRange = idx < weights.count ? weights[idx] : "0-0"
+                let bounds = rawRange.split(separator: "-").compactMap { Int($0.trimmingCharacters(in: .whitespaces)) }
+                let minW = bounds.first ?? 0
+                let maxW = bounds.count > 1 ? bounds[1] : minW
+                let goalC = max(1, idx < counts.count ? counts[idx] : 1)
+                goalVal = goalC
+                let shownCur = quest.made >= 2 ? goalC : min(goalC, currentVal)
+                isDone = shownCur >= goalC || quest.made >= 1
+                conditionText = "\(formatGramsAsKgOrGrams(minW)) – \(formatGramsAsKgOrGrams(maxW))"
+                progressText = "\(shownCur) / \(goalC) шт."
+
+            default:
+                // Type 1: count of fish of any weight
+                let goalC = max(1, idx < counts.count ? counts[idx] : 1)
+                goalVal = goalC
+                let shownCur = quest.made >= 2 ? goalC : min(goalC, currentVal)
+                isDone = shownCur >= goalC || quest.made >= 1
+                conditionText = "вес любой"
+                progressText = "\(shownCur) / \(goalC) шт."
+            }
+
+            slots.append(
+                QuestTargetSlotProgress(
+                    slotIndex: idx,
+                    fishId: fishId,
+                    fishName: fishName,
+                    conditionText: conditionText,
+                    progressText: progressText,
+                    currentValue: currentVal,
+                    goalValue: goalVal,
+                    isSlotCompleted: isDone
+                )
+            )
+        }
+        return slots
+    }
+
+    public static func formatGramsAsKgOrGrams(_ grams: Int) -> String {
+        if grams >= 1000 {
+            if grams % 1000 == 0 {
+                return "\(grams / 1000) кг"
+            } else if grams % 100 == 0 {
+                return String(format: "%.1f кг", Double(grams) / 1000.0)
+            } else {
+                return String(format: "%.3f кг", Double(grams) / 1000.0)
+            }
+        }
+        return "\(grams) г"
+    }
+
+    /// Reconstructs `QuestActivity.W(Quest)` (`pc=0000..015b`):
+    /// Claims the reward for a completed quest (`made == 1`), awarding `nag[0]` coins and `nag[1]` XP
+    /// to `user_data`, recalculating `category`, and advancing `quest.made` from `1` to `2`.
+    @discardableResult
+    public func claimQuestReward(
+        questId: Int,
+        nowMs: Int64
+    ) throws -> QuestRewardClaimResult {
+        try connection.transaction {
+            let allQuests = try listQuests()
+            guard var quest = allQuests.first(where: { $0.id == questId }) else {
+                throw PlayerPersistenceError.invalidInventoryItem("Quest #\(questId) not found")
+            }
+            let expectedMd5 = FishingChecksum.questMd5(
+                id: quest.id,
+                type: quest.type,
+                fish: quest.fishCsv,
+                bait: quest.baitCsv,
+                num: quest.numCsv,
+                weight: quest.weightCsv,
+                cat: quest.requiredCategory,
+                nag: quest.rewardCsv,
+                res: quest.progressRes,
+                made: quest.made,
+                date: quest.date,
+                installationUuid: installationUuid
+            )
+            guard quest.md5 == expectedMd5 else {
+                throw PlayerPersistenceError.integrityCheckFailed("Quest #\(quest.id) MD5 mismatch before claimQuestReward")
+            }
+            guard quest.made == 1 else {
+                throw PlayerPersistenceError.invalidInventoryItem("Quest #\(quest.id) is not in claimable state (made=\(quest.made))")
+            }
+
+            guard try verifyPlayerProfileIntegrity() else {
+                throw PlayerPersistenceError.integrityCheckFailed("user_data MD5 mismatch before claimQuestReward")
+            }
+            var profile = try loadPlayerProfile()
+            let rewards = Self.parseQuestRewards(quest.rewardCsv)
+
+            profile.balance += rewards.coins
+            profile.experience += rewards.experience
+            profile.category = ProgressionCalculator.categoryForExperience(
+                profile.experience,
+                balanceTables: balanceTables
+            )
+            let newProfileMd5 = FishingChecksum.userDataMd5(
+                balance: profile.balance,
+                experience: profile.experience,
+                category: profile.category,
+                date: nowMs,
+                installationUuid: installationUuid
+            )
+            try connection.run("""
+            UPDATE user_data SET balance = ?, experience = ?, category = ?, date = ?, md5 = ? WHERE id = 1;
+            """, bindings: [
+                .integer(Int64(profile.balance)),
+                .integer(Int64(profile.experience)),
+                .integer(Int64(profile.category)),
+                .integer(nowMs),
+                .text(newProfileMd5)
+            ])
+
+            quest.made = 2
+            quest.date = nowMs
+            quest.md5 = FishingChecksum.questMd5(
+                id: quest.id,
+                type: quest.type,
+                fish: quest.fishCsv,
+                bait: quest.baitCsv,
+                num: quest.numCsv,
+                weight: quest.weightCsv,
+                cat: quest.requiredCategory,
+                nag: quest.rewardCsv,
+                res: quest.progressRes,
+                made: quest.made,
+                date: quest.date,
+                installationUuid: installationUuid
+            )
+            try connection.run("""
+            UPDATE quests SET made = ?, date = ?, md5 = ? WHERE id = ?;
+            """, bindings: [
+                .integer(Int64(quest.made)),
+                .integer(quest.date),
+                .text(quest.md5),
+                .integer(Int64(quest.id))
+            ])
+
+            return QuestRewardClaimResult(
+                questId: quest.id,
+                coinsAwarded: rewards.coins,
+                experienceAwarded: rewards.experience,
+                newBalance: profile.balance,
+                newExperience: profile.experience,
+                newCategoryRank: profile.category
+            )
         }
     }
 

@@ -50,6 +50,20 @@ public enum MissingTackleComponent: String, CaseIterable, Sendable {
 }
 
 /// Provides localized strings across all 5 languages (`ru`, `en`, `de`, `es`, `pt`) and pond/achievement/quest title resolution.
+
+/// Expandable FAQ entry from `AboutGameActivity.Q` (`query0..16` / `answer0..16` in `resources.arsc`).
+public struct AboutGameFaqItem: Sendable, Equatable, Identifiable {
+    public let id: Int
+    public let question: String
+    public let answer: String
+
+    public init(id: Int, question: String, answer: String) {
+        self.id = id
+        self.question = question
+        self.answer = answer
+    }
+}
+
 public struct FishingLocaleManager: Sendable, Equatable {
     /// Original 14 achievement titles from `resources.arsc` (`0x7f030000 array/achievements`, RU).
     public static let achievementTitlesRu: [String] = [
@@ -287,6 +301,115 @@ public struct FishingLocaleManager: Sendable, Equatable {
             return ""
         }
         return table[idx]
+    }
+
+
+    /// Original 17 FAQ pairs (`query0..16` / `answer0..16`) from `AboutGameActivity.Q` (`resources.arsc`).
+    public func aboutGameFaqItems(versionString: String = "1.81") -> [AboutGameFaqItem] {
+        let isRu = (currentLanguage == .ru)
+        let pairs: [(String, String)] = isRu ? [
+            (
+                "Как начать карьеру?",
+                "Заходим в магазин, покупаем удочку, катушку, леску, крючок и наживку.\nТеперь заходим в рюкзак и собираем нашу снасть: в каждом разделе рюкзака нажимаем на нужную снасть.\nИдем на водоем и забрасываем прикосновением к экрану.\nПравило ловли: чем дальше от берега, тем крупнее рыба и чаще клев.\nПри поклевке сработает вибрация или звук, если все включено в настройках."
+            ),
+            (
+                "Как получить задание?",
+                "Отметьте в настройках пункт «Задания».\nТеперь заходим в раздел «О себе» или «Рекорды / Задания» и открываем вкладку «Задание».\nПолучаем задание. Статистику текущего задания можно посмотреть этим же способом.\nЛовим по заданию рыбу и после выполнения получаем повышенный опыт."
+            ),
+            (
+                "Зачем нужен путевой купон?",
+                "Купон нужен с 12 разряда. Последние пять локаций требуют наличия купона, без которого на них не зайти несмотря на разряд."
+            ),
+            (
+                "Как поменять картинку водоема на свою?",
+                "В настройках игры можно переключать наборы оформления водоёмов и включать живой шейдер воды."
+            ),
+            (
+                "Как отправить рыбу в турнир, таблицу рекордов?",
+                "Для участия в турнирах и отправки результатов в таблицу рекордов необходимо войти в Учетную запись в игре.\nПосле входа заходим в настройки и включаем «Онлайн-режим», далее просто ловим рыбу."
+            ),
+            (
+                "Как восстановить опыт?",
+                "НИ В КОЕМ СЛУЧАЕ НЕ ОТПРАВЛЯЙТЕ ОПЫТ ПЕРЕД ВОССТАНОВЛЕНИЕМ!\nЗаходим в «Онлайн-игра → Профиль» и жмем «Войти в аккаунт / Восстановить», в итоге получим опыт, деньги и снасти, которые были у вас при последней отправке."
+            ),
+            (
+                "Как продать рыбу?",
+                "Нажмите на иконку «Продать рыбу» на главном экране базы или кнопку продажи внутри «Садка». После этого вся рыба в садке будет продана."
+            ),
+            (
+                "Зачем нужна Учетная запись?",
+                "Учетная запись в игре нужна для участия в турнирах, отправки результатов в таблицу рекордов, получения опыта за достижения, доступа в «Онлайн-магазин» и сохранения прогресса на сервере."
+            ),
+            (
+                "Как создать Учетную запись?",
+                "Для создания Учетной записи перейдите в раздел «Онлайн-игра → Профиль», введите логин (на английском языке) и пароль и нажмите «Регистрация» или «Войти в аккаунт».\nДанные учетной записи также используются для входа на сайт игры fish-mob.ru."
+            ),
+            (
+                "Где купить снасти на рыбу более 179 кг?",
+                "Самые крепкие элитные снасти (до 1825 кг) представлены в разделе «Онлайн-магазин» за жемчуг (баллы), который синхронизируется с вашим профилем."
+            ),
+            (
+                "Кончились игровые деньги, что делать?",
+                "1. Продайте пойманную рыбу из садка на базе.\n2. Выполняйте сюжетные квесты (раздел «Квест») и получайте денежные награды и опыт.\n3. Проверьте серверные награды («Получить награды» в онлайн-профиле)."
+            ),
+            (
+                "Как работают Квесты (44 сюжетных квеста)?",
+                "Квесты открываются последовательно по мере роста вашего разряда. В каждом квесте нужно выловить указанные виды рыб нужного веса или количества (иногда на определённую наживку). Когда все позиции отмечены галочкой, нажмите кнопку «Получить награду»!"
+            ),
+            (
+                "Как работают Задания (Поручения)?",
+                "В отличие от квестов, задания генерируются бесконечно под ваш текущий разряд и открытые водоёмы. За выполнение задания начисляется повышенный опыт и растёт достижение «Любитель заданий». Неудобное задание можно сменить за (разряд + 1) × 500 руб."
+            ),
+            (
+                "Остались вопросы?",
+                "FAQ и база знаний: fish-mob.ru/faq\nОфициальный сайт: fish-mob.ru\nСообщество ВКонтакте: vk.com/fishmobfff\nПоддержка: fishmob72@gmail.com"
+            ),
+            (
+                "Конфиденциальность",
+                "Политика конфиденциальности: fish-mob.ru/policy/confidence_ru.html"
+            ),
+            (
+                "Об авторах",
+                "© Developed by Evados Studio & FishMob\nОтдельное спасибо Javier Martín за помощь в работе с OpenGL.\niOS-порт: Рыбалка для Друзей v\(versionString) (Metal + SwiftUI + SQLite)."
+            ),
+            (
+                "Версия игры",
+                "Рыбалка для Друзей • Версия \(versionString) (Порт Android-версии на iOS)"
+            )
+        ] : [
+            (
+                "How to start your career?",
+                "Enter the store, buy a rod, a reel, a fishing line, a hook and a bait.\nNow enter the backpack and assemble your tackle.\nGo to the water and cast a line by touching the screen.\nThe rule of catching: the farther from the coast, the bigger the fish and more frequent biting."
+            ),
+            (
+                "How to get a task?",
+                "Enable Tasks in settings, then open Progress -> Task to receive and track procedural fishing contracts for bonus XP."
+            ),
+            (
+                "Why do I need a route coupon?",
+                "The coupon is needed from the 12th category. On the last five locations you require an active coupon."
+            ),
+            (
+                "How to send a fish to a tournament or the table of records?",
+                "Log in to your account in Online -> Profile and enable Online Mode in settings, then catch fish as usual."
+            ),
+            (
+                "How to sell fish?",
+                "Tap Sell Fish on the main base screen or inside the Fishnet screen."
+            ),
+            (
+                "Where to buy tackle for fish over 179 kg?",
+                "Elite tackle is available in the Online Store for pearls/points."
+            ),
+            (
+                "About the authors & Version",
+                "© Developed by Evados Studio & FishMob • Fishing for Friends v\(versionString) (iOS Port)"
+            )
+        ]
+
+        return pairs.enumerated().map { idx, pair in
+            AboutGameFaqItem(id: idx, question: pair.0, answer: pair.1)
+        }
     }
 
     public func tabTitle(for tab: AppNavigationTab) -> String {

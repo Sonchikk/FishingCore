@@ -4,6 +4,17 @@ import FishingCore
 import FishingDatabase
 
 /// Top-level navigation destinations for the iOS port of «Рыбалка для друзей» v1.81.
+
+/// Sub-tabs inside `ProgressAndRecordsView` (`QuestActivity`, `TaskActivity`, `AchievementsActivity`, `MyRecordsActivity`).
+public enum ProgressSectionTab: String, CaseIterable, Sendable, Identifiable {
+    case achievements = "Достижения"
+    case quests = "Квест"
+    case tasks = "Задание"
+    case records = "Рекорды"
+
+    public var id: String { rawValue }
+}
+
 public enum AppNavigationTab: String, CaseIterable, Sendable, Identifiable {
     case fishingPond = "pond"
     case baseHub = "base"
@@ -324,6 +335,15 @@ public final class FishingAppCoordinator: ObservableObject {
         }
     }
     @Published public private(set) var activeContract: UserTaskContractRecord? = nil
+    @Published public var selectedProgressSection: ProgressSectionTab = .achievements
+    @Published public private(set) var fishEncyclopediaGuide: [FishEncyclopediaGuideEntry] = []
+    @Published public private(set) var pondEncyclopediaGuide: [PondEncyclopediaGuideEntry] = []
+    @Published public private(set) var lastCatchQuestTaskBanner: String = ""
+
+    /// Active quest for the player's current category (`QuestActivity.onCreate`: first quest with `made <= 1 && cat <= category`).
+    public var activeQuestForPlayer: QuestRecord? {
+        quests.first(where: { $0.made <= 1 && $0.requiredCategory <= profile.category })
+    }
 
     public var localeManager: FishingLocaleManager {
         FishingLocaleManager(
@@ -1094,22 +1114,41 @@ public final class FishingAppCoordinator: ObservableObject {
             case .fishCaught(let caughtFish):
                 audioHaptics.handleCatchSignalWhat1(nowMs: nowMs)
                 do {
+                    let prevQuest = activeQuestForPlayer
+                    let prevContract = activeContract
                     let result = try repository.recordCaughtFish(caughtFish, nowMs: nowMs)
                     try repository.evaluateAchievementsOnCatch(caughtFish, nowMs: nowMs)
-                    _ = try repository.evaluateQuestsOnCatch(
+                    let updatedQuest = try repository.evaluateQuestsOnCatch(
                         caughtFish,
                         playerCategory: result.categoryRankAfter,
                         tasksEnabled: tasksEnabled,
                         languageCode: languageCode,
                         nowMs: nowMs
                     )
-                    _ = try repository.evaluateUserTaskOnCatch(
+                    let taskBonusXp = try repository.evaluateUserTaskOnCatch(
                         caughtFish,
                         isLanguageSupported: localeManager.areQuestsAndTasksActive,
                         nowMs: nowMs
                     )
                     lastCaughtFishForSync = caughtFish
                     try reloadAllStateFromDatabase()
+
+                    var banners: [String] = []
+                    if let updatedQuest, let prevQuest, updatedQuest.id == prevQuest.id {
+                        if prevQuest.made == 0 && updatedQuest.made == 1 {
+                            banners.append("🎉 Квест «\(localeManager.questTitle(id1Based: updatedQuest.id))» завершён! Получите награду в разделе «Квест».")
+                        } else if updatedQuest.progressRes != prevQuest.progressRes {
+                            banners.append("✅ Засчитано в квест «\(localeManager.questTitle(id1Based: updatedQuest.id))»")
+                        }
+                    }
+                    if taskBonusXp > 0 {
+                        banners.append("🏆 Задание выполнено! Начислено +\(taskBonusXp) опыта.")
+                    } else if let prevContract, let curContract = activeContract,
+                              prevContract.id == curContract.id,
+                              (curContract.currentCount > prevContract.currentCount || curContract.currentWeightGrams > prevContract.currentWeightGrams) {
+                        banners.append("📋 Засчитано в задание (\(curContract.goalSummaryDescriptionRu))")
+                    }
+                    lastCatchQuestTaskBanner = banners.joined(separator: "\n")
                     activeAlert = .catchDialog(
                         fish: caughtFish,
                         result: result,
@@ -1300,6 +1339,84 @@ public final class FishingAppCoordinator: ObservableObject {
         )
         try reloadAllStateFromDatabase()
         return record
+    }
+
+    /// Claims the reward (`coins` + `experience`) for a completed quest (`made == 1`, `QuestActivity.W`),
+    /// transitions `quest.made` from `1` to `2`, and syncs with `achievs.php` (`includeQuests: true`) if online.
+    @discardableResult
+    public func claimQuestReward(
+        questId: Int,
+        nowMs: Int64 = Int64(Date().timeIntervalSince1970 * 1000)
+    ) -> QuestRewardClaimResult? {
+        do {
+            let summary = try repository.claimQuestReward(questId: questId, nowMs: nowMs)
+            try reloadAllStateFromDatabase()
+            let hasOnlineCreds = !savedOnlineLogin.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                && !savedOnlinePassword.isEmpty
+            if (onlineModeEnabled || hasOnlineCreds) && questId >= 3 {
+                syncAchievementsAndQuestsLive(includeQuests: true, silent: true)
+            }
+            activeAlert = .operationError(
+                message: "Квест сдан. Награда за квест получена!\n+\(summary.coinsAwarded) руб • +\(summary.experienceAwarded) опыта (Разряд \(summary.newCategoryRank))"
+            )
+            return summary
+        } catch let err as PlayerPersistenceError {
+            activeAlert = .operationError(message: describePersistenceError(err))
+            return nil
+        } catch {
+            activeAlert = .operationError(message: "Не удалось получить награду за квест: \(error)")
+            return nil
+        }
+    }
+
+    /// Reconstructs `TaskActivity.onCreate` -> `TaskActivity$f`:
+    /// Ensures there is an active uncompleted contract (`made == 0`), generating a new procedural contract if none is active.
+    @discardableResult
+    public func generateOrEnsureUserTask(
+        nowMs: Int64 = Int64(Date().timeIntervalSince1970 * 1000)
+    ) -> UserTaskContractRecord? {
+        if let existing = activeContract, existing.made == 0 {
+            return existing
+        }
+        do {
+            let generated = try repository.generateProceduralUserTask(nowMs: nowMs, rng: &systemRng)
+            try reloadAllStateFromDatabase()
+            return generated
+        } catch {
+            activeAlert = .operationError(message: "Не удалось сформировать задание: \(error)")
+            return nil
+        }
+    }
+
+    /// Reconstructs `TaskActivity$b.onClick`:
+    /// Replaces the current fisherman contract for `(profile.category + 1) * 500` rubles.
+    @discardableResult
+    public func rerollActiveUserTask(
+        nowMs: Int64 = Int64(Date().timeIntervalSince1970 * 1000)
+    ) -> UserTaskContractRecord? {
+        do {
+            let outcome = try repository.rerollUserTaskContract(nowMs: nowMs, rng: &systemRng)
+            try reloadAllStateFromDatabase()
+            activeAlert = .operationError(
+                message: "Получено новое задание (-\(outcome.costCoins) руб). Остаток: \(outcome.newBalance) руб."
+            )
+            return outcome.newContract
+        } catch let err as PlayerPersistenceError {
+            activeAlert = .operationError(message: describePersistenceError(err))
+            return nil
+        } catch {
+            activeAlert = .operationError(message: "Не удалось сменить задание: \(error)")
+            return nil
+        }
+    }
+
+    /// Populates `fishEncyclopediaGuide` (141 species) and `pondEncyclopediaGuide` (15 locations) from SQLite reference tables.
+    public func ensureEncyclopediaGuideLoaded() {
+        guard fishEncyclopediaGuide.isEmpty || pondEncyclopediaGuide.isEmpty else { return }
+        if let built = try? catalog.buildFishAndPondEncyclopediaGuide(balanceTables: balanceTables) {
+            fishEncyclopediaGuide = built.fishGuide
+            pondEncyclopediaGuide = built.pondGuide
+        }
     }
 
     // MARK: - Phase 10: Sleep-Mode Clock Catch-Up (`GameActivity.onResume`) & Tournament `tourType` Resolution
