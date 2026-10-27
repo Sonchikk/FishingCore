@@ -218,6 +218,15 @@ private struct CatchDialogModalCard: View {
                 )
             }
 
+            if result.isNewPersonalRecord || fish.weightGrams >= 5_000 {
+                Text(result.isNewPersonalRecord ? "🏆 НОВЫЙ ЛИЧНЫЙ РЕКОРД!" : "✨ ТРОФЕЙНЫЙ ЭКЗЕМПЛЯР")
+                    .font(.system(size: 11, weight: .heavy))
+                    .foregroundStyle(.black)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 3)
+                    .background(result.isNewPersonalRecord ? Color.yellow : Color.cyan, in: Capsule())
+            }
+
             Text(result.isNewPersonalRecord ? "\(fish.fish.name) (Рекорд!)" : fish.fish.name)
                 .font(.system(size: 20, weight: .bold))
                 .foregroundStyle(result.isNewPersonalRecord ? OriginalGameTheme.recordRed : OriginalGameTheme.goldText)
@@ -491,6 +500,29 @@ private struct BaseDashboardSubView: View {
             }
 
             HStack {
+                Button {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                        coordinator.isRemasterModeEnabled.toggle()
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: coordinator.isRemasterModeEnabled ? "sparkles" : "clock.arrow.circlepath")
+                            .font(.system(size: 11, weight: .bold))
+                        Text(coordinator.isRemasterModeEnabled ? "Ремастер" : "Классика")
+                            .font(.system(size: 11, weight: .bold))
+                    }
+                    .foregroundStyle(coordinator.isRemasterModeEnabled ? .black : .white)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(
+                        coordinator.isRemasterModeEnabled
+                            ? AnyShapeStyle(OriginalGameTheme.goldText)
+                            : AnyShapeStyle(Color.black.opacity(0.65)),
+                        in: Capsule()
+                    )
+                }
+                .buttonStyle(.plain)
+
                 Spacer()
                 Button {
                     coordinator.selectedTab = .online
@@ -512,6 +544,9 @@ private struct BaseDashboardSubView: View {
     private var dashboardGridScroll: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 14) {
+                if coordinator.isRemasterModeEnabled {
+                    remasterQuickStatusCard
+                }
                 dashboardRow1
                 dashboardRow2
                 dashboardRow3
@@ -520,6 +555,87 @@ private struct BaseDashboardSubView: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
         }
+    }
+
+    private var remasterQuickStatusCard: some View {
+        let pondTitle = coordinator.currentPondItem.map { coordinator.localeManager.pondName(for: $0).capitalized } ?? "Кедровый остров"
+        let rodText = coordinator.assembledTackle.userRod.map { "\($0.rod.name) (\($0.rod.weight) кг)" } ?? "Не выбрано"
+        let lineText = coordinator.assembledTackle.userLine.map { "\($0.line.weight) кг (\($0.length) м)" } ?? "Нет"
+        let baitText = coordinator.assembledTackle.userBait.map { "\($0.bait.name.capitalized) (\($0.amount) шт.)" } ?? "Нет"
+
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("✨ Снаряжение и быстрый выезд")
+                        .font(.system(size: 13, weight: .heavy))
+                        .foregroundStyle(OriginalGameTheme.goldText)
+                    Text("Удочка: \(rodText) • Леска: \(lineText) • Наживка: \(baitText)")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.9))
+                        .lineLimit(1)
+                }
+                Spacer()
+                Button {
+                    coordinator.equipBestOwnedTackle()
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "wand.and.stars")
+                            .font(.system(size: 11, weight: .bold))
+                        Text(coordinator.assembledTackle.isComplete ? "Лучшая снасть" : "Собрать снасть")
+                            .font(.system(size: 11, weight: .bold))
+                    }
+                    .foregroundStyle(.black)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(
+                        coordinator.assembledTackle.isComplete ? Color.cyan : OriginalGameTheme.goldText,
+                        in: Capsule()
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+
+            HStack(spacing: 8) {
+                Button {
+                    coordinator.selectedTab = .fishingPond
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "water.waves")
+                            .font(.system(size: 13, weight: .bold))
+                        Text("Рыбачить: \(pondTitle)")
+                            .font(.system(size: 13, weight: .bold))
+                    }
+                    .foregroundStyle(.black)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                    .background(OriginalGameTheme.goldText, in: RoundedRectangle(cornerRadius: 8))
+                }
+                .buttonStyle(.plain)
+
+                if !coordinator.fishnetEntries.isEmpty {
+                    Button {
+                        coordinator.sellAllFishInFishnet()
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "rublesign.circle.fill")
+                            Text("Продать (\(coordinator.fishnetEntries.count))")
+                                .font(.system(size: 12, weight: .bold))
+                        }
+                        .foregroundStyle(.black)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(Color.green, in: RoundedRectangle(cornerRadius: 8))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .padding(12)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(OriginalGameTheme.goldText.opacity(0.45), lineWidth: 1)
+        )
     }
 
     private var dashboardRow1: some View {
@@ -994,6 +1110,36 @@ private struct SettingsSubView: View {
 
                 ScrollView {
                     VStack(spacing: 12) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Toggle("✨ Режим «Ремастер» (новый визуал и удобства)", isOn: $coordinator.isRemasterModeEnabled)
+                                .foregroundStyle(Color.cyan)
+                            Text("Включает плавные градиенты рассвета/заката/ночи, погодные эффекты, подводный силуэт рыбы, брызги, бесплатный эхолот клёва, быструю оснастку на берегу и продвинутую тактильную отдачу. Выключите для возврата к оригинальному виду v1.81.")
+                                .font(.system(size: 11, weight: .regular))
+                                .foregroundStyle(.white.opacity(0.8))
+
+                            if coordinator.isRemasterModeEnabled {
+                                Toggle("Встроенный эхолот и радар клёва", isOn: $coordinator.isSonarRadarVisible)
+                                    .foregroundStyle(OriginalGameTheme.goldText)
+                                HStack {
+                                    Text("Погода на водоёме:")
+                                        .foregroundStyle(OriginalGameTheme.goldText)
+                                    Spacer()
+                                    Picker("Погода", selection: $coordinator.remasterWeatherPreference) {
+                                        ForEach(RemasterWeatherKind.allCases) { kind in
+                                            Text(kind.titleRu).tag(kind)
+                                        }
+                                    }
+                                    .pickerStyle(.menu)
+                                }
+                            }
+                        }
+                        .padding(10)
+                        .background(Color.cyan.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.cyan.opacity(0.4), lineWidth: 1)
+                        )
+
                         Toggle("Анимация воды", isOn: $coordinator.isWaterShaderEnabled)
                             .foregroundStyle(OriginalGameTheme.goldText)
                         Toggle("Квесты и задания", isOn: $coordinator.tasksEnabled)
@@ -1517,11 +1663,16 @@ public struct ShopView: View {
     }
 
     private var shopRodsList: some View {
-        ForEach(coordinator.catalogRods, id: \.id) { rod in
+        let currentRodKg = coordinator.assembledTackle.userRod?.rod.weight ?? 0
+        return ForEach(coordinator.catalogRods, id: \.id) { rod in
+            let diffKg = rod.weight - currentRodKg
+            let diffSuffix = (coordinator.isRemasterModeEnabled && currentRodKg > 0 && diffKg > 0)
+                ? "  •  🔼 +\(diffKg) кг к текущей"
+                : ""
             ShopItemRowView(
                 drawableName: "fishing_rods",
                 title: rod.name,
-                subtitle: "Макс. вес: \(rod.weight) кг  •  Прочность: 100%",
+                subtitle: "Макс. вес: \(rod.weight) кг  •  Прочность: 100%\(diffSuffix)",
                 priceCoins: rod.price,
                 canAfford: coordinator.profile.balance >= rod.price
             ) {
@@ -1715,6 +1866,22 @@ public struct InventoryView: View {
                     coordinator.selectedTab = .baseHub
                 }
 
+                if coordinator.isRemasterModeEnabled {
+                    Button {
+                        coordinator.equipBestOwnedTackle()
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "wand.and.stars")
+                            Text("Авто-сборка лучшей снасти в 1 тап")
+                                .font(.system(size: 13, weight: .bold))
+                        }
+                        .foregroundStyle(.black)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(OriginalGameTheme.goldText, in: Capsule())
+                    }
+                    .buttonStyle(.plain)
+                }
                 BackpackCategoryStripView(selectedCategory: $selectedCategory)
                 backpackItemsScrollView
             }

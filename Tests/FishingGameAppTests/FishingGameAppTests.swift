@@ -1345,4 +1345,47 @@ final class FishingGameAppTests: XCTestCase {
             XCTAssertGreaterThan(currentY - startY, 35.0)
         }
     }
+
+    @MainActor
+    func testRemasterModeToggleSonarForecastAutoTackleAndHaptics() throws {
+        let coordinator = try FishingAppCoordinator(
+            databasePath: ":memory:",
+            nowMs: 1_700_000_000_000,
+            notificationScheduling: NoopSystemNotifications()
+        )
+        XCTAssertTrue(coordinator.isRemasterModeEnabled)
+        XCTAssertTrue(coordinator.isSonarRadarVisible)
+        XCTAssertEqual(coordinator.remasterWeatherPreference, .auto)
+
+        // Toggle to Classic mode and verify persistence in SQLite runtime counters
+        coordinator.isRemasterModeEnabled = false
+        coordinator.remasterWeatherPreference = .rain
+        coordinator.loadPersistedSettingsFromDatabase()
+        XCTAssertFalse(coordinator.isRemasterModeEnabled)
+        XCTAssertEqual(coordinator.remasterWeatherPreference, .rain)
+        XCTAssertEqual(coordinator.currentResolvedWeather, .rain)
+
+        // Re-enable Remaster mode and test 1-tap auto-tackle assembly
+        coordinator.isRemasterModeEnabled = true
+        coordinator.equipBestOwnedTackle(nowMs: 1_700_000_001_000)
+        XCTAssertTrue(coordinator.assembledTackle.isComplete)
+
+        // Verify built-in free Echolot / Bite Radar forecast for Pond #1 + Bait #1 (Worm)
+        let forecast = coordinator.currentPondBiteForecast
+        XCTAssertFalse(forecast.isEmpty)
+        XCTAssertGreaterThan(forecast[0].probabilityPercent, 0)
+        XCTAssertGreaterThanOrEqual(coordinator.currentCastDepthFactor, 1)
+        XCTAssertLessThanOrEqual(coordinator.currentCastDepthFactor, 10)
+
+        // Verify Remaster fight tick haptics fire during fishFight
+        let castWallMs: Int64 = 1_700_000_002_000
+        coordinator.castAt(x: 640, y: 450, nowMs: castWallMs)
+        coordinator.fastForwardToScheduledBite(nowMs: castWallMs + 500)
+        XCTAssertEqual(coordinator.stateMachine.state, .fishFight)
+
+        let pulsesBefore = coordinator.audioHaptics.fightHapticPulseCount
+        coordinator.setReelPulled(true)
+        coordinator.stepSimulationTick(nowMs: castWallMs + 600)
+        XCTAssertGreaterThan(coordinator.audioHaptics.fightHapticPulseCount, pulsesBefore)
+    }
 }

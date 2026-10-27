@@ -757,6 +757,103 @@ public struct FishingAudioAndHapticsController: Sendable, Equatable {
     /// Reconstructs `FishingService$e.handleMessage(what = 1)` (`pc=001f..0050`, `MECHANICS.md` Section 7.3):
     /// Stops reel sound, computes `FishingService.i` (`BEGINTIME - prev_CATCHTIME` BEFORE updating `CATCHTIME = nowMs`)
     /// and `FishingService.j` (`(BITETIME - BEGINTIME) / 1000`), and records `CATCHTIME = nowMs`.
+    public private(set) var fightHapticPulseCount: Int = 0
+    public private(set) var catchHapticPulseCount: Int = 0
+
+    /// Advanced Remaster tactile feedback during `waitingForBite` nibbles and `fishFight` reeling/tension peaks.
+    public mutating func triggerRemasterFightTickHaptic(
+        tension: Int,
+        isPulled: Bool,
+        isPreHookBobbing: Bool,
+        isExhausted: Bool
+    ) {
+        guard vibrationEnabled && vibrationDurationMs > 0 else { return }
+        fightHapticPulseCount += 1
+        Self.triggerPlatformFightTickHaptic(
+            tension: tension,
+            isPulled: isPulled,
+            isPreHookBobbing: isPreHookBobbing,
+            isExhausted: isExhausted
+        )
+    }
+
+    /// Celebratory multi-stage haptic crescendo on landing a fish in Remaster mode.
+    public mutating func triggerRemasterCatchCelebrationHaptic(
+        weightGrams: Int,
+        isNewRecord: Bool
+    ) {
+        guard vibrationEnabled && vibrationDurationMs > 0 else { return }
+        catchHapticPulseCount += 1
+        Self.triggerPlatformCatchCelebrationHaptic(
+            weightGrams: weightGrams,
+            isNewRecord: isNewRecord
+        )
+    }
+
+    private static func triggerPlatformFightTickHaptic(
+        tension: Int,
+        isPulled: Bool,
+        isPreHookBobbing: Bool,
+        isExhausted: Bool
+    ) {
+        guard !LiveAudioPlaybackEngine.isRunningUnderXCTest else { return }
+        #if canImport(UIKit) && !os(watchOS)
+        Task { @MainActor in
+            if isPreHookBobbing {
+                let soft = UIImpactFeedbackGenerator(style: .soft)
+                soft.prepare()
+                soft.impactOccurred(intensity: 0.45)
+                return
+            }
+            if isPulled {
+                if tension >= 195 {
+                    let heavy = UIImpactFeedbackGenerator(style: .heavy)
+                    heavy.prepare()
+                    heavy.impactOccurred(intensity: 1.0)
+                    #if canImport(AudioToolbox)
+                    AudioServicesPlaySystemSound(1520)
+                    #endif
+                } else if tension >= 140 {
+                    let rigid = UIImpactFeedbackGenerator(style: .rigid)
+                    rigid.prepare()
+                    let norm = CGFloat(min(1.0, max(0.55, Double(tension - 100) / 100.0)))
+                    rigid.impactOccurred(intensity: norm)
+                } else {
+                    let light = UIImpactFeedbackGenerator(style: isExhausted ? .soft : .light)
+                    light.prepare()
+                    let norm = CGFloat(min(0.80, max(0.35, Double(tension) / 150.0 + 0.30)))
+                    light.impactOccurred(intensity: norm)
+                }
+            } else if tension >= 175 && !isExhausted {
+                // Subtle line-slip tension release pulse
+                let soft = UIImpactFeedbackGenerator(style: .soft)
+                soft.prepare()
+                soft.impactOccurred(intensity: 0.40)
+            }
+        }
+        #endif
+    }
+
+    private static func triggerPlatformCatchCelebrationHaptic(
+        weightGrams: Int,
+        isNewRecord: Bool
+    ) {
+        guard !LiveAudioPlaybackEngine.isRunningUnderXCTest else { return }
+        #if canImport(UIKit) && !os(watchOS)
+        Task { @MainActor in
+            let notif = UINotificationFeedbackGenerator()
+            notif.prepare()
+            notif.notificationOccurred(.success)
+            if isNewRecord || weightGrams >= 5_000 {
+                let heavy = UIImpactFeedbackGenerator(style: .heavy)
+                heavy.prepare()
+                try? await Task.sleep(nanoseconds: 140_000_000)
+                heavy.impactOccurred(intensity: 1.0)
+            }
+        }
+        #endif
+    }
+
     public mutating func handleCatchSignalWhat1(nowMs: Int64) {
         if isReelLoopPlaying {
             isReelLoopPlaying = false

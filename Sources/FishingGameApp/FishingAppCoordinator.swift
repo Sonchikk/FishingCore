@@ -150,6 +150,92 @@ public enum FishingModalAlert: Equatable, Sendable, Identifiable {
 /// Main integration coordinator connecting SwiftUI screens with `FishingCore` (`FishingStateMachine`,
 /// `GameClockTimer`), `FishingDatabase` (`SQLiteConnection`, `ReferenceCatalogStore`, `PlayerStateRepository`,
 /// `QuestAndAchievementEngine`), and the 3-pass Metal water renderer (`WaterMetalRenderer`).
+/// Weather & atmospheric effects mode in Remaster (`Режим Ремастера`).
+public enum RemasterWeatherKind: Int, CaseIterable, Sendable, Identifiable {
+    case auto = 0
+    case clear = 1
+    case morningMist = 2
+    case rain = 3
+    case thunderstorm = 4
+    case starryCalm = 5
+
+    public var id: Int { rawValue }
+
+    public var titleRu: String {
+        switch self {
+        case .auto: return "Авто-погода"
+        case .clear: return "Ясно и блики"
+        case .morningMist: return "Туман над водой"
+        case .rain: return "Грибной дождь"
+        case .thunderstorm: return "Ливень и гроза"
+        case .starryCalm: return "Ночные светлячки"
+        }
+    }
+
+    public var shortBadgeRu: String {
+        switch self {
+        case .auto: return "Авто"
+        case .clear: return "Ясно"
+        case .morningMist: return "Туман"
+        case .rain: return "Дождь"
+        case .thunderstorm: return "Гроза"
+        case .starryCalm: return "Штиль"
+        }
+    }
+
+    public var symbolName: String {
+        switch self {
+        case .auto: return "sparkles"
+        case .clear: return "sun.max.fill"
+        case .morningMist: return "cloud.fog.fill"
+        case .rain: return "cloud.rain.fill"
+        case .thunderstorm: return "cloud.bolt.rain.fill"
+        case .starryCalm: return "moon.stars.fill"
+        }
+    }
+
+    public static func resolveAutomatic(hour: Int, pondIndex: Int) -> RemasterWeatherKind {
+        let cycle = (max(0, pondIndex) * 3 + max(0, hour)) % 12
+        if hour >= 5 && hour <= 8 {
+            return .morningMist
+        } else if hour >= 22 || hour < 5 {
+            return .starryCalm
+        } else if cycle == 4 || cycle == 9 {
+            return .rain
+        } else if cycle == 11 {
+            return .thunderstorm
+        } else {
+            return .clear
+        }
+    }
+}
+
+/// Built-in free Echolot / Bite Radar forecast entry for the active pond, bait, and time of day.
+public struct RemasterSonarForecastEntry: Sendable, Equatable, Identifiable {
+    public let id: Int
+    public let fishName: String
+    public let probabilityPercent: Int
+    public let minWeightGrams: Int
+    public let maxWeightGrams: Int
+    public let isQuestOrTaskTarget: Bool
+
+    public init(
+        id: Int,
+        fishName: String,
+        probabilityPercent: Int,
+        minWeightGrams: Int,
+        maxWeightGrams: Int,
+        isQuestOrTaskTarget: Bool
+    ) {
+        self.id = id
+        self.fishName = fishName
+        self.probabilityPercent = probabilityPercent
+        self.minWeightGrams = minWeightGrams
+        self.maxWeightGrams = maxWeightGrams
+        self.isQuestOrTaskTarget = isQuestOrTaskTarget
+    }
+}
+
 @MainActor
 public final class FishingAppCoordinator: ObservableObject {
     public let connection: SQLiteConnection
@@ -206,6 +292,41 @@ public final class FishingAppCoordinator: ObservableObject {
                 savePersistedSettingsToDatabase()
             }
         }
+    }
+
+    /// Toggles between the modernized Remaster experience (`true`) and the classic 2013 v1.81 look & feel (`false`).
+    /// Never alters SQLite schema, balance tables, or MD5 anti-cheat signatures.
+    @Published public var isRemasterModeEnabled: Bool = true {
+        didSet {
+            if !isLoadingPersistedSettings {
+                savePersistedSettingsToDatabase()
+            }
+        }
+    }
+
+    /// Free built-in Echolot / Bite Radar toggle on the pond screen in Remaster mode.
+    @Published public var isSonarRadarVisible: Bool = true {
+        didSet {
+            if !isLoadingPersistedSettings {
+                savePersistedSettingsToDatabase()
+            }
+        }
+    }
+
+    /// Weather preference in Remaster mode (`.auto` or manual selection).
+    @Published public var remasterWeatherPreference: RemasterWeatherKind = .auto {
+        didSet {
+            if !isLoadingPersistedSettings {
+                savePersistedSettingsToDatabase()
+            }
+        }
+    }
+
+    public var currentResolvedWeather: RemasterWeatherKind {
+        if remasterWeatherPreference == .auto {
+            return RemasterWeatherKind.resolveAutomatic(hour: gameClock.hour, pondIndex: selectedPondIndex)
+        }
+        return remasterWeatherPreference
     }
 
     /// Corresponds to `SharedPreferences("FFF-ANDROID")["CHECKMODE"]` (`GameView.q` background bite alarm).
@@ -539,7 +660,10 @@ public final class FishingAppCoordinator: ObservableObject {
             ("pref_vibration_duration_ms", audioHaptics.vibrationDurationMs),
             ("pref_selected_pond_index", selectedPondIndex),
             ("pref_clock_hour", gameClock.hour),
-            ("pref_clock_minute", gameClock.minute)
+            ("pref_clock_minute", gameClock.minute),
+            ("pref_remaster_mode", isRemasterModeEnabled ? 1 : 0),
+            ("pref_remaster_sonar", isSonarRadarVisible ? 1 : 0),
+            ("pref_remaster_weather", remasterWeatherPreference.rawValue)
         ]
         for (key, value) in entries {
             _ = try? connection.run("""
@@ -577,6 +701,11 @@ public final class FishingAppCoordinator: ObservableObject {
         if let v = map["pref_water_shader"] { isWaterShaderEnabled = (v != 0) }
         if let v = map["pref_pond_fon_set"] { pondBackgroundSetIndex = v }
         if let v = map["pref_debug_overlay"] { isDebugOverlayEnabled = (v != 0) }
+        if let v = map["pref_remaster_mode"] { isRemasterModeEnabled = (v != 0) }
+        if let v = map["pref_remaster_sonar"] { isSonarRadarVisible = (v != 0) }
+        if let v = map["pref_remaster_weather"], let kind = RemasterWeatherKind(rawValue: v) {
+            remasterWeatherPreference = kind
+        }
         if let v = map["pref_check_mode"] { checkModeEnabled = (v != 0) }
         if let v = map["pref_online_mode"] { onlineModeEnabled = (v != 0) }
         if let v = map["pref_tasks_enabled"] { tasksEnabled = (v != 0) }
@@ -708,6 +837,132 @@ public final class FishingAppCoordinator: ObservableObject {
             activeAlert = .operationError(message: describePersistenceError(error))
         } catch {
             activeAlert = .operationError(message: "Ошибка покупки стартового набора: \(error)")
+        }
+    }
+
+    /// One-tap Remaster QoL helper: automatically equips the strongest owned rod, coil, line, hook,
+    /// and a bait that works on the currently selected pond (or buys the starter kit if inventory is empty).
+    public func equipBestOwnedTackle(nowMs: Int64 = Int64(Date().timeIntervalSince1970 * 1000)) {
+        if ownedRods.isEmpty && ownedCoils.isEmpty && ownedLines.isEmpty && ownedHooks.isEmpty && ownedBaits.isEmpty {
+            buyAndEquipStarterKit(nowMs: nowMs)
+            return
+        }
+        do {
+            var slots = try repository.loadTackleSlots()
+            if let bestRod = ownedRods.max(by: { $0.rod.weight < $1.rod.weight }) {
+                slots.fishingRodId = bestRod.id
+            }
+            if let bestCoil = ownedCoils.max(by: { $0.coil.bearingCount < $1.coil.bearingCount }) {
+                slots.coilId = bestCoil.id
+            }
+            if let bestLine = ownedLines.max(by: { $0.line.weight < $1.line.weight }) {
+                slots.fishingLineId = bestLine.id
+            }
+            if let bestHook = ownedHooks.max(by: { $0.hook.id < $1.hook.id }) {
+                slots.hookId = bestHook.id
+            }
+            let activeBait0Set = Set(stateMachine.pondData.activeBaitIndices0Based)
+            if let currentBait = assembledTackle.userBait,
+               activeBait0Set.contains(currentBait.bait.id - 1) {
+                slots.baitId = currentBait.id
+            } else if let matchingPondBait = ownedBaits.first(where: { activeBait0Set.contains($0.bait.id - 1) }) {
+                slots.baitId = matchingPondBait.id
+            } else if let firstBait = ownedBaits.first {
+                slots.baitId = firstBait.id
+            }
+            try repository.saveTackleSlots(slots)
+            try reloadAllStateFromDatabase()
+        } catch {
+            activeAlert = .operationError(message: "Не удалось автоматически собрать снасть: \(error)")
+        }
+    }
+
+    /// Cycle through Remaster weather modes with a single tap on the pond weather pill.
+    public func cycleRemasterWeather() {
+        let all = RemasterWeatherKind.allCases
+        if let idx = all.firstIndex(of: remasterWeatherPreference) {
+            remasterWeatherPreference = all[(idx + 1) % all.count]
+        } else {
+            remasterWeatherPreference = .auto
+        }
+    }
+
+    /// Computes the exact `v3` cast depth/distance factor (`1..10`) from `GameView$c.p()` (`MECHANICS.md` Section 3.2).
+    public var currentCastDepthFactor: Int {
+        let y = stateMachine.bobber?.y
+            ?? stateMachine.lastCastMetadata?.bobberY
+            ?? (Float(stateMachine.viewHeight) * 0.55)
+        let v10 = y - Float(stateMachine.viewHeight / 5) - Float(stateMachine.bobberBitmapHeight)
+        let span = max(1.0, stateMachine.waterVerticalSpan)
+        let raw = Int(((span - v10) / span) * 10.0 + 1.0)
+        return max(1, min(10, raw))
+    }
+
+    public var currentCastDepthZoneTitleRu: String {
+        let v3 = currentCastDepthFactor
+        if v3 < 4 {
+            return "Берег • Мелководье (глубина \(v3)/10)"
+        } else if v3 < 8 {
+            return "Средняя бровка (глубина \(v3)/10, +\(v3)% к весу)"
+        } else {
+            return "Дальняя трофейная яма (глубина \(v3)/10, +\(v3)% к весу)"
+        }
+    }
+
+    /// Built-in free Echolot / Bite Radar forecast for the current pond, equipped bait, and time of day.
+    public var currentPondBiteForecast: [RemasterSonarForecastEntry] {
+        guard let userBait = assembledTackle.userBait else { return [] }
+        let baitIdx0 = userBait.bait.id - 1
+        let pondData = stateMachine.pondData
+        let factorsBySlot = pondData.factors(for: stateMachine.timeOfDay)
+
+        var weightMap: [Int: (Int, Int)] = [:]
+        for w in pondData.fishWeightRanges {
+            weightMap[w.fishIndex0Based] = (w.minWeightGrams, w.maxWeightGrams)
+        }
+
+        var targetFishIds = Set<Int>()
+        if let contract = activeContract, contract.made == 0, contract.targetFishId > 0 {
+            targetFishIds.insert(contract.targetFishId)
+        }
+        if let quest = activeQuestForPlayer, quest.made == 0 {
+            let slots = PlayerStateRepository.buildQuestTargetSlots(for: quest, fishCatalogById: fishCatalogById)
+            for slot in slots where !slot.isCompleted && slot.fishId > 0 {
+                targetFishIds.insert(slot.fishId)
+            }
+        }
+
+        var entries: [RemasterSonarForecastEntry] = []
+        for slot in 0..<pondData.activeBaitIndices0Based.count {
+            guard pondData.activeBaitIndices0Based[slot] == baitIdx0,
+                  slot < pondData.catchableFishByBaitSlot.count,
+                  slot < factorsBySlot.count else { continue }
+            let slotCatches = pondData.catchableFishByBaitSlot[slot]
+            let slotFactors = factorsBySlot[slot]
+            for fishIdx0 in slotCatches {
+                if let factor = slotFactors.first(where: { $0.fishIndex0Based == fishIdx0 }),
+                   factor.probabilityPercent > 0 {
+                    let fishId1 = fishIdx0 + 1
+                    let name = fishCatalogById[fishId1]?.name ?? "Рыба #\(fishId1)"
+                    let bounds = weightMap[fishIdx0] ?? (50, 1000)
+                    entries.append(
+                        RemasterSonarForecastEntry(
+                            id: fishId1,
+                            fishName: name,
+                            probabilityPercent: factor.probabilityPercent,
+                            minWeightGrams: bounds.0,
+                            maxWeightGrams: bounds.1,
+                            isQuestOrTaskTarget: targetFishIds.contains(fishId1)
+                        )
+                    )
+                }
+            }
+        }
+        return entries.sorted {
+            if $0.isQuestOrTaskTarget != $1.isQuestOrTaskTarget {
+                return $0.isQuestOrTaskTarget && !$1.isQuestOrTaskTarget
+            }
+            return $0.probabilityPercent > $1.probabilityPercent
         }
     }
 
@@ -1106,8 +1361,15 @@ public final class FishingAppCoordinator: ObservableObject {
             case .missingTackle(let missing):
                 activeAlert = .missingTackle(missingComponents: missing)
 
-            case .tensionChanged:
-                break
+            case .tensionChanged(let currentTension):
+                if isRemasterModeEnabled && stateMachine.state == .fishFight {
+                    audioHaptics.triggerRemasterFightTickHaptic(
+                        tension: currentTension,
+                        isPulled: stateMachine.isPulled,
+                        isPreHookBobbing: stateMachine.isPreHookBobbing,
+                        isExhausted: stateMachine.fishController?.isExhausted ?? false
+                    )
+                }
 
             case .biteTriggered:
                 if biteNotificationScheduler.isNotificationPending {
@@ -1124,6 +1386,12 @@ public final class FishingAppCoordinator: ObservableObject {
                     let prevQuest = activeQuestForPlayer
                     let prevContract = activeContract
                     let result = try repository.recordCaughtFish(caughtFish, nowMs: nowMs)
+                    if isRemasterModeEnabled {
+                        audioHaptics.triggerRemasterCatchCelebrationHaptic(
+                            weightGrams: caughtFish.weightGrams,
+                            isNewRecord: result.isNewPersonalRecord
+                        )
+                    }
                     try repository.evaluateAchievementsOnCatch(caughtFish, nowMs: nowMs)
                     let updatedQuest = try repository.evaluateQuestsOnCatch(
                         caughtFish,
