@@ -41,6 +41,7 @@ public struct QuestTargetSlotProgress: Sendable, Equatable, Identifiable {
     public let currentValue: Int
     public let goalValue: Int
     public let isSlotCompleted: Bool
+    public var isCompleted: Bool { isSlotCompleted }
 
     public init(
         slotIndex: Int,

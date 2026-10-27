@@ -927,7 +927,7 @@ public final class FishingAppCoordinator: ObservableObject {
         }
         if let quest = activeQuestForPlayer, quest.made == 0 {
             let slots = PlayerStateRepository.buildQuestTargetSlots(for: quest, fishCatalogById: fishCatalogById)
-            for slot in slots where !slot.isCompleted && slot.fishId > 0 {
+            for slot in slots where !slot.isSlotCompleted && slot.fishId > 0 {
                 targetFishIds.insert(slot.fishId)
             }
         }
