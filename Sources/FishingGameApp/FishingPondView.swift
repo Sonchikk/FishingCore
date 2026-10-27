@@ -3,20 +3,24 @@ import FishingCore
 import FishingDatabase
 
 /// Authentic fishing pond screen (`GameActivity` + `GameView` + `F0.n` `WaterMetalRenderer`),
-/// supporting two distinct, non-overlapping visual modes controlled from Settings (`coordinator.isRemasterModeEnabled`):
-/// 1. **Classic v1.81 Mode (`false`)**: 1:1 reconstruction of the 2013 Android layout (`res/Ak.xml`) with classic PNG buttons;
-/// 2. **Remaster Mode (`true`)**: calm Matte-Slate (`#182026`) & Warm-Brass (`#E2B872`) outdoor design inspired by *Russian Fishing 4*,
-///    with enhanced multi-wave water shimmer, soft horizon mist, swaying foreground shoreline reeds, underwater fish silhouette,
-///    water splashes, single-line non-clipping top bar, collapsible Echolot/Bite Radar, 3-tile matte control deck, and a brushed-metal circular reel wheel.
+/// supporting two distinct visual modes controlled from Settings (`coordinator.isRemasterModeEnabled`):
+/// 1. **Classic v1.81 Mode (`false`)**: 1:1 reconstruction of the 2013 Android layout (`res/Ak.xml`) with classic PNG sprites;
+/// 2. **Remaster Mode (`true`)**:
+///    - Living procedural vector Carbon-Fiber Spinning Rod & Reel (with idle breathing sway, whipping cast motion,
+///      continuous physics bend `0..225`, tip tremor, ceramic line guides, and rotating reel handle);
+///    - High-detail vector Waggler Float (with underwater stem reflection, wave buoyancy bobbing, fluorescent multi-band antenna, and dive wake);
+///    - Kinematic parabolic cast flight trajectory with airborne float + uncoiling spiral line + water impact splash crown;
+///    - Multi-layer water surface caustics, sun/moon reflection path, floating lily pads, and swaying shoreline reeds;
+///    - Dedicated 4-tile Matte-Slate & Warm-Brass bottom control deck (with a separate «Вымотать» tile when cast, never overlapping «Садок»).
 public struct FishingPondView: View {
     @ObservedObject public var coordinator: FishingAppCoordinator
     @State private var isBaitChooserPresented: Bool = false
     @State private var isQuickTackleSheetPresented: Bool = false
 
-    public static let goldTextColor = Color(red: 226.0 / 255.0, green: 184.0 / 255.0, blue: 114.0 / 255.0) // #E2B872 warm brass
-    public static let sageAccentColor = Color(red: 78.0 / 255.0, green: 159.0 / 255.0, blue: 110.0 / 255.0) // #4E9F6E muted sage
-    public static let matteSlateSurface = Color(red: 24.0 / 255.0, green: 32.0 / 255.0, blue: 38.0 / 255.0) // #182026 matte slate
-    public static let matteCardSurface = Color(red: 32.0 / 255.0, green: 42.0 / 255.0, blue: 50.0 / 255.0) // #202A32 card fill
+    public static let goldTextColor = Color(red: 221.0 / 255.0, green: 180.0 / 255.0, blue: 109.0 / 255.0) // #DDB46D warm brass
+    public static let sageAccentColor = Color(red: 86.0 / 255.0, green: 158.0 / 255.0, blue: 114.0 / 255.0) // #569E72 muted sage
+    public static let matteSlateSurface = Color(red: 21.0 / 255.0, green: 30.0 / 255.0, blue: 35.0 / 255.0) // #151E23 matte slate
+    public static let matteCardSurface = Color(red: 28.0 / 255.0, green: 37.0 / 255.0, blue: 44.0 / 255.0) // #1C252C card fill
 
     public init(coordinator: FishingAppCoordinator) {
         self.coordinator = coordinator
@@ -172,21 +176,44 @@ public struct FishingPondView: View {
     private func pondCanvasLayer(viewportWidth: Int, viewportHeight: Int) -> some View {
         TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: !coordinator.isRemasterModeEnabled)) { timeline in
             let phaseSec = timeline.date.timeIntervalSinceReferenceDate
+            let nowMs = Int64(timeline.date.timeIntervalSince1970 * 1000.0)
             Canvas { context, size in
                 let activeRod = resolvedRodSprite(for: size)
                 if coordinator.isRemasterModeEnabled {
                     drawRemasterWaterDepthAndHorizonSoftener(in: &context, size: size, phaseSec: phaseSec)
                     drawRemasterSkyStarsAndFireflies(in: &context, size: size, phaseSec: phaseSec)
                     drawRemasterUnderwaterFishSilhouette(in: &context, size: size, phaseSec: phaseSec)
-                }
-                drawFishingLine(in: &context, rod: activeRod)
-                drawRipplesAndBobber(in: &context, canvasWidth: max(1, Int(size.width)), phaseSec: phaseSec)
-                if coordinator.isRemasterModeEnabled {
+
+                    let rodGeometry = computeRemasterProceduralRodGeometry(
+                        size: size,
+                        phaseSec: phaseSec,
+                        nowMs: nowMs
+                    )
+                    drawRemasterFishingLineAndCastFlight(
+                        in: &context,
+                        rodTip: rodGeometry.tip,
+                        phaseSec: phaseSec,
+                        nowMs: nowMs
+                    )
+                    drawRemasterRipplesAndProceduralFloat(
+                        in: &context,
+                        canvasWidth: max(1, Int(size.width)),
+                        phaseSec: phaseSec,
+                        nowMs: nowMs
+                    )
                     drawRemasterWaterSplashes(in: &context, phaseSec: phaseSec)
                     drawRemasterWeatherParticles(in: &context, size: size, phaseSec: phaseSec)
-                    drawRemasterForegroundShorelineReeds(in: &context, size: size, phaseSec: phaseSec)
+                    drawRemasterForegroundShorelineReedsAndLilies(in: &context, size: size, phaseSec: phaseSec)
+                    drawRemasterProceduralRodAndReel(
+                        in: &context,
+                        geometry: rodGeometry,
+                        phaseSec: phaseSec
+                    )
+                } else {
+                    drawClassicFishingLine(in: &context, rod: activeRod)
+                    drawClassicRipplesAndBobber(in: &context, canvasWidth: max(1, Int(size.width)))
+                    drawClassicRodSprite(in: &context, rod: activeRod)
                 }
-                drawRodSprite(in: &context, rod: activeRod)
             }
             .contentShape(Rectangle())
             .gesture(
@@ -204,7 +231,7 @@ public struct FishingPondView: View {
         }
     }
 
-    // MARK: - Modular Canvas Drawing Helpers (`GameView.draw(Canvas)` + Remaster Scenic Water & Effects)
+    // MARK: - Modular Canvas Drawing Helpers (`GameView.draw(Canvas)` + Remaster Scenic Water, Procedural Rod, Float & Cast)
 
     private func resolvedRodSprite(for canvasSize: CGSize) -> RodSpriteState {
         let w = max(1, Int(canvasSize.width.rounded()))
@@ -225,22 +252,38 @@ public struct FishingPondView: View {
         return rod
     }
 
-    /// Softens the 25% horizon seam of the original 2013 texture with natural shoreline mist,
-    /// subtle animated wave ribbons, and bottom depth vignetting.
+    /// Enhances the water surface with shoreline mist, sun/moon shimmer column, multi-octave wave ribbons, and deep-water vignetting.
     private func drawRemasterWaterDepthAndHorizonSoftener(
         in context: inout GraphicsContext,
         size: CGSize,
         phaseSec: Double
     ) {
         let horizonY = size.height * 0.245
-        // 1. Soft atmospheric mist band along the distant shoreline (`y ≈ 0.20..0.30`)
-        let mistBand = CGRect(x: 0, y: horizonY - 26, width: size.width, height: 56)
+        let isDay = coordinator.dayNightLighting.isDayLight
+
+        // 1. Fresnel deep-water vertical gradient over the lower 75% water region
+        let waterRect = CGRect(x: 0, y: horizonY, width: size.width, height: size.height - horizonY)
+        context.fill(
+            Path(waterRect),
+            with: .linearGradient(
+                Gradient(colors: [
+                    Color(red: 0.14, green: 0.30, blue: 0.38).opacity(isDay ? 0.14 : 0.24),
+                    Color(red: 0.06, green: 0.16, blue: 0.22).opacity(isDay ? 0.22 : 0.32),
+                    Color(red: 0.03, green: 0.08, blue: 0.12).opacity(0.46)
+                ]),
+                startPoint: CGPoint(x: size.width * 0.5, y: horizonY),
+                endPoint: CGPoint(x: size.width * 0.5, y: size.height)
+            )
+        )
+
+        // 2. Soft atmospheric mist band along the distant shoreline (`y ≈ 0.20..0.30`)
+        let mistBand = CGRect(x: 0, y: horizonY - 28, width: size.width, height: 60)
         context.fill(
             Path(mistBand),
             with: .linearGradient(
                 Gradient(colors: [
                     Color.white.opacity(0.0),
-                    Color(red: 0.86, green: 0.90, blue: 0.92).opacity(coordinator.dayNightLighting.isDayLight ? 0.18 : 0.08),
+                    Color(red: 0.86, green: 0.90, blue: 0.92).opacity(isDay ? 0.20 : 0.09),
                     Color.white.opacity(0.0)
                 ]),
                 startPoint: CGPoint(x: size.width * 0.5, y: mistBand.minY),
@@ -248,51 +291,90 @@ public struct FishingPondView: View {
             )
         )
 
-        // 2. Gentle horizontal water wave shimmer lines across the lake surface
-        for row in 0..<11 {
-            let normY = Double(row) / 10.0
-            let y = horizonY + 14.0 + CGFloat(pow(normY, 1.35)) * (size.height * 0.70)
-            let waveShift = CGFloat(sin(phaseSec * (0.7 + Double(row % 3) * 0.25) + Double(row) * 1.4)) * 24.0
-            let segWidth = size.width * CGFloat(0.28 + 0.18 * (Double(row % 4) / 3.0))
-            let centerX = size.width * CGFloat(0.22 + 0.56 * (0.5 + 0.5 * sin(Double(row * 31 + 7)))) + waveShift
-            let rect = CGRect(x: centerX - segWidth * 0.5, y: y, width: segWidth, height: 1.4)
-            let alpha = (1.0 - normY * 0.55) * (coordinator.dayNightLighting.isDayLight ? 0.11 : 0.06)
-            context.fill(
-                Path(roundedRect: rect, cornerRadius: 1),
-                with: .color(Color(red: 0.88, green: 0.94, blue: 0.98).opacity(alpha))
-            )
+        // 3. Shimmering Sun / Moon reflection path (`дорожка света на воде`)
+        let lightColumnCenterX = size.width * 0.46
+        for step in 0..<22 {
+            let norm = Double(step) / 21.0
+            let y = horizonY + 8.0 + CGFloat(pow(norm, 1.45)) * (size.height * 0.66)
+            let sway = CGFloat(sin(phaseSec * 2.4 + Double(step) * 0.85)) * (6.0 + CGFloat(norm) * 14.0)
+            let w = CGFloat(18.0 + norm * 68.0) * CGFloat(0.75 + 0.25 * cos(phaseSec * 3.1 + Double(step)))
+            let h: CGFloat = CGFloat(1.6 + norm * 2.2)
+            let glintRect = CGRect(x: lightColumnCenterX + sway - w * 0.5, y: y, width: w, height: h)
+            let glintColor = isDay
+                ? Color(red: 0.98, green: 0.88, blue: 0.64).opacity((1.0 - norm * 0.65) * 0.18)
+                : Color(red: 0.72, green: 0.86, blue: 0.98).opacity((1.0 - norm * 0.65) * 0.14)
+            context.fill(Path(ellipseIn: glintRect), with: .color(glintColor))
         }
 
-        // 3. Subtle dark-water depth vignette near the bottom shore
-        let bottomVignette = CGRect(x: 0, y: size.height * 0.72, width: size.width, height: size.height * 0.28)
-        context.fill(
-            Path(bottomVignette),
-            with: .linearGradient(
-                Gradient(colors: [
-                    Color.black.opacity(0.0),
-                    Color(red: 0.04, green: 0.08, blue: 0.11).opacity(0.42)
-                ]),
-                startPoint: CGPoint(x: size.width * 0.5, y: bottomVignette.minY),
-                endPoint: CGPoint(x: size.width * 0.5, y: bottomVignette.maxY)
+        // 4. Multi-octave animated wave crest ribbons across the lake
+        for row in 0..<16 {
+            let normY = Double(row) / 15.0
+            let y = horizonY + 12.0 + CGFloat(pow(normY, 1.32)) * (size.height * 0.72)
+            let waveShift = CGFloat(sin(phaseSec * (0.85 + Double(row % 4) * 0.22) + Double(row) * 1.3)) * 28.0
+            let segWidth = size.width * CGFloat(0.24 + 0.20 * (Double(row % 5) / 4.0))
+            let centerX = size.width * CGFloat(0.18 + 0.64 * (0.5 + 0.5 * sin(Double(row * 37 + 11)))) + waveShift
+
+            var wavePath = Path()
+            let crestAmp = CGFloat(1.2 + normY * 2.4) * CGFloat(sin(phaseSec * 1.9 + Double(row)))
+            wavePath.move(to: CGPoint(x: centerX - segWidth * 0.5, y: y))
+            wavePath.addQuadCurve(
+                to: CGPoint(x: centerX + segWidth * 0.5, y: y),
+                control: CGPoint(x: centerX, y: y + crestAmp)
             )
-        )
+            let alpha = (1.0 - normY * 0.45) * (isDay ? 0.14 : 0.08)
+            context.stroke(
+                wavePath,
+                with: .color(Color(red: 0.88, green: 0.94, blue: 0.98).opacity(alpha)),
+                lineWidth: 1.3
+            )
+        }
     }
 
-    /// Swaying foreground shoreline reeds (`камыши у берега`) in the bottom-left corner for depth and framing.
-    private func drawRemasterForegroundShorelineReeds(
+    /// Swaying foreground shoreline reeds (`камыши`) and floating water-lily pads (`кувшинки`) for rich foreground depth.
+    private func drawRemasterForegroundShorelineReedsAndLilies(
         in context: inout GraphicsContext,
         size: CGSize,
         phaseSec: Double
     ) {
-        let baseOrigins: [(CGFloat, CGFloat, CGFloat)] = [
-            (14, size.height, 92),
-            (26, size.height, 114),
-            (38, size.height, 84),
-            (52, size.height, 102),
-            (66, size.height, 74)
+        // 1. Floating water-lily pads near the lower-left shore
+        let lilies: [(CGFloat, CGFloat, CGFloat)] = [
+            (78, size.height - 46, 22),
+            (108, size.height - 34, 18),
+            (54, size.height - 28, 16)
         ]
-        for (idx, blade) in baseOrigins.enumerated() {
-            let sway = CGFloat(sin(phaseSec * 1.35 + Double(idx) * 0.7)) * 7.0
+        for (i, lily) in lilies.enumerated() {
+            let bobX = lily.0 + CGFloat(sin(phaseSec * 1.1 + Double(i))) * 2.5
+            let bobY = lily.1 + CGFloat(cos(phaseSec * 1.4 + Double(i))) * 1.2
+            let padRect = CGRect(x: bobX - lily.2 * 0.5, y: bobY - lily.2 * 0.24, width: lily.2, height: lily.2 * 0.48)
+            context.fill(
+                Path(ellipseIn: padRect),
+                with: .color(Color(red: 0.16, green: 0.34, blue: 0.22).opacity(0.76))
+            )
+            context.stroke(
+                Path(ellipseIn: padRect),
+                with: .color(Color(red: 0.28, green: 0.50, blue: 0.34).opacity(0.55)),
+                lineWidth: 1.0
+            )
+            if i == 0 {
+                // Small white-pink water-lily blossom on the first pad
+                let flowerRect = CGRect(x: bobX - 3.5, y: bobY - 4.5, width: 7.0, height: 5.0)
+                context.fill(
+                    Path(ellipseIn: flowerRect),
+                    with: .color(Color(red: 0.96, green: 0.92, blue: 0.88).opacity(0.88))
+                )
+            }
+        }
+
+        // 2. Swaying cattail reeds on the bottom-left and bottom-right shore edges
+        let leftReeds: [(CGFloat, CGFloat, CGFloat)] = [
+            (12, size.height, 96),
+            (24, size.height, 118),
+            (36, size.height, 86),
+            (48, size.height, 106),
+            (62, size.height, 76)
+        ]
+        for (idx, blade) in leftReeds.enumerated() {
+            let sway = CGFloat(sin(phaseSec * 1.35 + Double(idx) * 0.7)) * 7.5
             let start = CGPoint(x: blade.0, y: blade.1 + 4)
             let tip = CGPoint(x: blade.0 + sway + CGFloat(idx - 2) * 4.0, y: blade.1 - blade.2)
             let ctrl = CGPoint(x: blade.0 + sway * 0.4, y: blade.1 - blade.2 * 0.55)
@@ -302,29 +384,570 @@ public struct FishingPondView: View {
             stem.addQuadCurve(to: tip, control: ctrl)
             context.stroke(
                 stem,
-                with: .color(Color(red: 0.09, green: 0.16, blue: 0.13).opacity(0.68)),
-                lineWidth: 2.4
+                with: .color(Color(red: 0.09, green: 0.17, blue: 0.13).opacity(0.74)),
+                lineWidth: 2.5
             )
 
-            // Cattail reed head on tall stems
             if idx == 1 || idx == 3 {
-                let headStart = CGPoint(
-                    x: (ctrl.x + tip.x) * 0.5,
-                    y: (ctrl.y + tip.y) * 0.5
-                )
+                let headStart = CGPoint(x: (ctrl.x + tip.x) * 0.5, y: (ctrl.y + tip.y) * 0.5)
                 var head = Path()
                 head.move(to: headStart)
                 head.addLine(to: CGPoint(x: tip.x - sway * 0.15, y: tip.y + 12))
                 context.stroke(
                     head,
-                    with: .color(Color(red: 0.22, green: 0.15, blue: 0.10).opacity(0.78)),
-                    lineWidth: 5.0
+                    with: .color(Color(red: 0.24, green: 0.16, blue: 0.10).opacity(0.84)),
+                    lineWidth: 5.2
                 )
             }
         }
     }
 
-    /// Twinkling night stars above horizon and glowing shoreline fireflies / sunbeam motes in Remaster mode.
+    // MARK: - Living Procedural Carbon-Fiber Spinning Rod & Animated Reel (`Remaster Mode`)
+
+    private struct RemasterRodGeometry {
+        let butt: CGPoint
+        let handleTop: CGPoint
+        let reelCenter: CGPoint
+        let control1: CGPoint
+        let control2: CGPoint
+        let tip: CGPoint
+        let tensionNorm: CGFloat
+    }
+
+    /// Computes the live, breathing, whipping, and physics-bent geometry of the procedural carbon-fiber rod.
+    private func computeRemasterProceduralRodGeometry(
+        size: CGSize,
+        phaseSec: Double,
+        nowMs: Int64
+    ) -> RemasterRodGeometry {
+        let state = coordinator.stateMachine.state
+        let tension = coordinator.stateMachine.tension
+        let tensionNorm = CGFloat(min(225, max(0, tension))) / 225.0
+        let isPulled = coordinator.stateMachine.isPulled
+
+        // 1. Idle & waiting breathing sway (so the rod feels held in living hands, never frozen)
+        let breathX = CGFloat(sin(phaseSec * 1.45)) * 4.5 + CGFloat(cos(phaseSec * 0.8)) * 2.0
+        let breathY = CGFloat(cos(phaseSec * 1.45)) * 3.2
+
+        // 2. Whipping forward-cast impulse during cast animation (`castProgress` 0..1)
+        var castWhipX: CGFloat = 0.0
+        var castWhipY: CGFloat = 0.0
+        if let lineGeo = coordinator.stateMachine.lineGeometry, lineGeo.isCastAnimating {
+            let p = CGFloat(lineGeo.castProgress)
+            // Back-swing on p < 0.25, sharp forward whip at p ≈ 0.45, elastic damping oscillation on p > 0.5
+            let whipWave = sin(p * .pi * 2.2) * exp(-p * 2.4)
+            castWhipX = -whipWave * 42.0
+            castWhipY = abs(whipWave) * 28.0
+        }
+
+        // 3. High-frequency fight vibration at the rod tip when fish pulls or surges
+        var fightJitterX: CGFloat = 0.0
+        var fightJitterY: CGFloat = 0.0
+        if state == .fishFight {
+            let vibAmp: CGFloat = isPulled ? (2.2 + tensionNorm * 5.5) : (1.0 + tensionNorm * 2.5)
+            fightJitterX = CGFloat(sin(phaseSec * 29.0)) * vibAmp
+            fightJitterY = CGFloat(cos(phaseSec * 34.0)) * (vibAmp * 0.75)
+        } else if state == .waitingForBite && coordinator.stateMachine.isPreHookBobbing {
+            fightJitterY = CGFloat(sin(phaseSec * 18.0)) * 2.5
+        }
+
+        // Base anchor at bottom-right (`x ≈ 78%` of width, `y = size.height + 10`)
+        let buttX = size.width * 0.79 + breathX * 0.35
+        let buttY = size.height + 8.0
+        let rodSpanH = min(size.height * 0.54, 340.0)
+
+        let handleTop = CGPoint(
+            x: buttX - 14.0 + breathX * 0.5 + castWhipX * 0.20,
+            y: buttY - rodSpanH * 0.26 + breathY * 0.4
+        )
+        let reelCenter = CGPoint(
+            x: handleTop.x - 10.0,
+            y: handleTop.y + 18.0
+        )
+
+        // Dynamic bend deflection toward the water/bobber under load (`tensionNorm` 0..1)
+        var targetPullSign: CGFloat = -1.0
+        if let bobber = coordinator.stateMachine.bobber {
+            let disp = coordinator.renderedBobberPosition ?? Point2D(x: bobber.x, y: bobber.y)
+            targetPullSign = (CGFloat(disp.x) < buttX) ? -1.0 : 0.35
+        }
+        let bendHorizontal = targetPullSign * (24.0 + tensionNorm * 112.0) + breathX + castWhipX + fightJitterX
+        let bendVerticalDrop = (tensionNorm * tensionNorm) * (rodSpanH * 0.38) + breathY + castWhipY + fightJitterY
+
+        let tip = CGPoint(
+            x: max(28.0, min(size.width - 24.0, buttX + bendHorizontal)),
+            y: max(size.height * 0.26, (buttY - rodSpanH) + bendVerticalDrop)
+        )
+
+        // Cubic Bezier control points giving a realistic progressive parabolic action (`строй удилища`)
+        let control1 = CGPoint(
+            x: handleTop.x - 10.0 + bendHorizontal * 0.15,
+            y: handleTop.y - rodSpanH * 0.28
+        )
+        let control2 = CGPoint(
+            x: handleTop.x + bendHorizontal * 0.58,
+            y: tip.y - rodSpanH * (0.14 * (1.0 - tensionNorm * 0.7))
+        )
+
+        return RemasterRodGeometry(
+            butt: CGPoint(x: buttX, y: buttY),
+            handleTop: handleTop,
+            reelCenter: reelCenter,
+            control1: control1,
+            control2: control2,
+            tip: tip,
+            tensionNorm: tensionNorm
+        )
+    }
+
+    /// Evaluates a point along the cubic Bezier rod blank (`t in 0..1`).
+    private func cubicBezierPoint(
+        t: CGFloat,
+        p0: CGPoint,
+        p1: CGPoint,
+        p2: CGPoint,
+        p3: CGPoint
+    ) -> CGPoint {
+        let u = 1.0 - t
+        let tt = t * t
+        let uu = u * u
+        let uuu = uu * u
+        let ttt = tt * t
+        let x = uuu * p0.x + 3.0 * uu * t * p1.x + 3.0 * u * tt * p2.x + ttt * p3.x
+        let y = uuu * p0.y + 3.0 * uu * t * p1.y + 3.0 * u * tt * p2.y + ttt * p3.y
+        return CGPoint(x: x, y: y)
+    }
+
+    /// Draws the procedural Carbon-Fiber Spinning Rod, ceramic line guides, cork/EVA handle, and animated spinning reel.
+    private func drawRemasterProceduralRodAndReel(
+        in context: inout GraphicsContext,
+        geometry: RemasterRodGeometry,
+        phaseSec: Double
+    ) {
+        // 1. Under-slung Spinning Reel mounted at `geometry.reelCenter`
+        let rc = geometry.reelCenter
+        var stemPath = Path()
+        stemPath.move(to: geometry.handleTop)
+        stemPath.addLine(to: rc)
+        context.stroke(stemPath, with: .color(Color(red: 0.55, green: 0.60, blue: 0.65)), lineWidth: 3.5)
+
+        let spoolRect = CGRect(x: rc.x - 11.0, y: rc.y - 9.0, width: 22.0, height: 18.0)
+        context.fill(
+            Path(roundedRect: spoolRect, cornerRadius: 5),
+            with: .color(Color(red: 0.16, green: 0.20, blue: 0.24))
+        )
+        context.stroke(
+            Path(roundedRect: spoolRect, cornerRadius: 5),
+            with: .color(Self.goldTextColor.opacity(0.85)),
+            lineWidth: 1.5
+        )
+
+        // Rotating reel handle crank when pulling (`isPulled`)
+        let crankAngle = coordinator.stateMachine.isPulled ? (phaseSec * 14.0) : 0.6
+        let knobPt = CGPoint(
+            x: rc.x + CGFloat(cos(crankAngle)) * 11.0,
+            y: rc.y + CGFloat(sin(crankAngle)) * 11.0
+        )
+        var crankPath = Path()
+        crankPath.move(to: rc)
+        crankPath.addLine(to: knobPt)
+        context.stroke(crankPath, with: .color(Color.white.opacity(0.85)), lineWidth: 2.0)
+        context.fill(
+            Path(ellipseIn: CGRect(x: knobPt.x - 3.0, y: knobPt.y - 3.0, width: 6.0, height: 6.0)),
+            with: .color(Self.goldTextColor)
+        )
+
+        // 2. Cork & Matte-EVA Butt Handle (`butt -> handleTop`)
+        var handlePath = Path()
+        handlePath.move(to: geometry.butt)
+        handlePath.addLine(to: geometry.handleTop)
+        context.stroke(
+            handlePath,
+            with: .color(Color(red: 0.12, green: 0.15, blue: 0.18)),
+            style: StrokeStyle(lineWidth: 11.0, lineCap: .round)
+        )
+        // Warm cork grip accent
+        var corkPath = Path()
+        corkPath.move(to: CGPoint(
+            x: geometry.butt.x * 0.45 + geometry.handleTop.x * 0.55,
+            y: geometry.butt.y * 0.45 + geometry.handleTop.y * 0.55
+        ))
+        corkPath.addLine(to: geometry.handleTop)
+        context.stroke(
+            corkPath,
+            with: .color(Color(red: 0.68, green: 0.50, blue: 0.32)),
+            style: StrokeStyle(lineWidth: 9.0, lineCap: .round)
+        )
+
+        // 3. Tapered Carbon-Fiber Rod Blank (segmented along cubic Bezier so width tapers smoothly from 6.5pt to 1.6pt)
+        let segments = 18
+        for i in 0..<segments {
+            let t0 = CGFloat(i) / CGFloat(segments)
+            let t1 = CGFloat(i + 1) / CGFloat(segments)
+            let p0 = cubicBezierPoint(t: t0, p0: geometry.handleTop, p1: geometry.control1, p2: geometry.control2, p3: geometry.tip)
+            let p1 = cubicBezierPoint(t: t1, p0: geometry.handleTop, p1: geometry.control1, p2: geometry.control2, p3: geometry.tip)
+
+            var seg = Path()
+            seg.move(to: p0)
+            seg.addLine(to: p1)
+
+            let width = 6.2 * (1.0 - t0 * 0.74)
+            // High-visibility signal orange-gold tip on the top 15% of the blank (`quiver tip`)
+            let segColor: Color
+            if i >= segments - 3 {
+                segColor = Color(red: 0.96, green: 0.48, blue: 0.18)
+            } else if i == 2 || i == 7 || i == 12 {
+                // Metallic gold thread wrap accent at guide stations
+                segColor = Self.goldTextColor
+            } else {
+                segColor = Color(red: 0.18, green: 0.22, blue: 0.26)
+            }
+
+            context.stroke(
+                seg,
+                with: .color(segColor),
+                style: StrokeStyle(lineWidth: width, lineCap: .round)
+            )
+        }
+
+        // 4. Ceramic Line Guides (`пропускные кольца`) along the underside of the blank
+        let guidePositions: [CGFloat] = [0.16, 0.36, 0.56, 0.74, 0.88, 0.99]
+        for (gIdx, gt) in guidePositions.enumerated() {
+            let pt = cubicBezierPoint(t: gt, p0: geometry.handleTop, p1: geometry.control1, p2: geometry.control2, p3: geometry.tip)
+            let ringRadius = max(2.0, 5.2 - CGFloat(gIdx) * 0.65)
+            let ringCenter = CGPoint(x: pt.x - ringRadius * 0.85, y: pt.y + ringRadius * 0.35)
+            let ringRect = CGRect(
+                x: ringCenter.x - ringRadius,
+                y: ringCenter.y - ringRadius,
+                width: ringRadius * 2.0,
+                height: ringRadius * 2.0
+            )
+            context.stroke(
+                Path(ellipseIn: ringRect),
+                with: .color(Color(red: 0.68, green: 0.74, blue: 0.78).opacity(0.85)),
+                lineWidth: 1.2
+            )
+        }
+    }
+
+    // MARK: - Kinematic Cast Flight Trajectory + Fishing Line (`Remaster Mode`)
+
+    private func drawRemasterFishingLineAndCastFlight(
+        in context: inout GraphicsContext,
+        rodTip: CGPoint,
+        phaseSec: Double,
+        nowMs: Int64
+    ) {
+        guard let bobber = coordinator.stateMachine.bobber else { return }
+        let targetPos = coordinator.renderedBobberPosition ?? Point2D(x: bobber.x, y: bobber.y)
+        let targetPt = CGPoint(x: CGFloat(targetPos.x), y: CGFloat(targetPos.y))
+
+        // 1. Active Kinematic Cast Flight (`isCastAnimating && castProgress < 1.0`)
+        if let lineGeo = coordinator.stateMachine.lineGeometry,
+           lineGeo.isCastAnimating && lineGeo.castProgress < 1.0 {
+            let p = CGFloat(max(0.02, min(1.0, lineGeo.castProgress)))
+            let arcHeight: CGFloat = 145.0 * sin(p * .pi)
+
+            let flyingFloatPt = CGPoint(
+                x: rodTip.x + (targetPt.x - rodTip.x) * p,
+                y: rodTip.y + (targetPt.y - rodTip.y) * p - arcHeight
+            )
+
+            // Uncoiling helical whip line from rodTip to flyingFloatPt
+            var whipLine = Path()
+            whipLine.move(to: rodTip)
+            let steps = 16
+            for s in 1...steps {
+                let st = CGFloat(s) / CGFloat(steps)
+                let baseX = rodTip.x + (flyingFloatPt.x - rodTip.x) * st
+                let baseY = rodTip.y + (flyingFloatPt.y - rodTip.y) * st - sin(st * .pi) * 28.0
+                let coilWave = sin(st * .pi * 5.0 - CGFloat(phaseSec) * 24.0) * (1.0 - p) * 9.0 * sin(st * .pi)
+                whipLine.addLine(to: CGPoint(x: baseX + coilWave, y: baseY + coilWave * 0.5))
+            }
+            context.stroke(
+                whipLine,
+                with: .color(Color.white.opacity(0.82)),
+                lineWidth: 1.4
+            )
+
+            // Motion-blur air streak behind flying float
+            let prevP = max(0.0, p - 0.10)
+            let prevArc = 145.0 * sin(prevP * .pi)
+            let trailStart = CGPoint(
+                x: rodTip.x + (targetPt.x - rodTip.x) * prevP,
+                y: rodTip.y + (targetPt.y - rodTip.y) * prevP - prevArc
+            )
+            var blurTrail = Path()
+            blurTrail.move(to: trailStart)
+            blurTrail.addLine(to: flyingFloatPt)
+            context.stroke(
+                blurTrail,
+                with: .linearGradient(
+                    Gradient(colors: [Color.white.opacity(0.0), Self.goldTextColor.opacity(0.75)]),
+                    startPoint: trailStart,
+                    endPoint: flyingFloatPt
+                ),
+                style: StrokeStyle(lineWidth: 3.0, lineCap: .round)
+            )
+
+            // Airborne lead sinker + waggler float silhouette in mid-flight
+            let flightAngle = atan2(flyingFloatPt.y - trailStart.y, flyingFloatPt.x - trailStart.x)
+            context.drawLayer { layer in
+                layer.translateBy(x: flyingFloatPt.x, y: flyingFloatPt.y)
+                layer.rotate(by: .radians(Double(flightAngle)))
+                let bodyRect = CGRect(x: -10, y: -2.5, width: 16, height: 5)
+                let tipRect = CGRect(x: 4, y: -1.8, width: 8, height: 3.6)
+                layer.fill(Path(ellipseIn: bodyRect), with: .color(Color(red: 0.22, green: 0.28, blue: 0.24)))
+                layer.fill(Path(ellipseIn: tipRect), with: .color(Color(red: 0.98, green: 0.32, blue: 0.20)))
+            }
+
+            // Target landing marker ring on water surface
+            let targetRingW: CGFloat = 28.0 * (1.15 - p * 0.65)
+            let targetRingH = targetRingW * 0.44
+            let targetRingRect = CGRect(
+                x: targetPt.x - targetRingW * 0.5,
+                y: targetPt.y - targetRingH * 0.5,
+                width: targetRingW,
+                height: targetRingH
+            )
+            context.stroke(
+                Path(ellipseIn: targetRingRect),
+                with: .color(Self.goldTextColor.opacity(Double(1.0 - p) * 0.55)),
+                style: StrokeStyle(lineWidth: 1.2, dash: [4, 3])
+            )
+            return
+        }
+
+        // 2. Settled / Active Fishing Line from live `rodTip` to float attachment point
+        guard let curve = coordinator.currentLineCurve else { return }
+        let state = coordinator.stateMachine.state
+        let tension = coordinator.stateMachine.tension
+        let tensionNorm = CGFloat(min(225, max(0, tension))) / 225.0
+
+        // When waiting for bite, line Gently sags onto the water surface; during fight, it pulls taut!
+        let ctrlPoint: CGPoint
+        if state == .fishFight && coordinator.stateMachine.isPulled {
+            let jitter = CGFloat(sin(phaseSec * 32.0)) * (1.5 + tensionNorm * 3.0)
+            ctrlPoint = CGPoint(
+                x: (rodTip.x + targetPt.x) * 0.5 + jitter,
+                y: (rodTip.y + targetPt.y) * 0.5 + (1.0 - tensionNorm) * 16.0
+            )
+        } else {
+            let breeze = CGFloat(sin(phaseSec * 1.8)) * 5.0
+            ctrlPoint = CGPoint(
+                x: (rodTip.x + targetPt.x) * 0.5 + breeze,
+                y: max(rodTip.y, targetPt.y) + 28.0
+            )
+        }
+
+        var linePath = Path()
+        linePath.move(to: rodTip)
+        linePath.addQuadCurve(to: targetPt, control: ctrlPoint)
+
+        let alpha = Double(curve.alpha) / 255.0
+        let lineColor: Color
+        if state == .fishFight && tension >= 195 {
+            lineColor = Color(red: 0.96, green: 0.42, blue: 0.36).opacity(min(1.0, alpha + 0.15))
+        } else {
+            lineColor = Color(red: 0.90, green: 0.95, blue: 0.98).opacity(min(0.92, alpha + 0.08))
+        }
+        context.stroke(
+            linePath,
+            with: .color(lineColor),
+            lineWidth: state == .fishFight ? (1.4 + tensionNorm * 0.8) : 1.25
+        )
+    }
+
+    // MARK: - High-Detail Procedural Waggler Float + Water Plunge Splash (`Remaster Mode`)
+
+    private func drawRemasterRipplesAndProceduralFloat(
+        in context: inout GraphicsContext,
+        canvasWidth: Int,
+        phaseSec: Double,
+        nowMs: Int64
+    ) {
+        guard let bobber = coordinator.stateMachine.bobber else { return }
+        if let lineGeo = coordinator.stateMachine.lineGeometry,
+           lineGeo.isCastAnimating && lineGeo.castProgress <= 0.92 {
+            return
+        }
+
+        // 1. Expanding water ripples (`bobber.ripples`)
+        for oval in bobber.ripples {
+            let rect = CGRect(
+                x: CGFloat(oval.left),
+                y: CGFloat(oval.top),
+                width: CGFloat(max(2.0, oval.width)),
+                height: CGFloat(max(2.0, oval.height))
+            )
+            let alphaInt = BobberState.rippleAlpha(ovalWidth: oval.width, canvasWidth: canvasWidth)
+            let alpha = Double(alphaInt) / 255.0
+            context.stroke(
+                Path(ellipseIn: rect),
+                with: .color(Color(red: 0.88, green: 0.95, blue: 0.99).opacity(min(1.0, alpha * 1.1))),
+                lineWidth: 1.8
+            )
+        }
+
+        let displayPos = coordinator.renderedBobberPosition ?? Point2D(x: bobber.x, y: bobber.y)
+        let baseCenter = CGPoint(x: CGFloat(displayPos.x), y: CGFloat(displayPos.y))
+
+        // 2. Post-Cast Water Plunge Splash Crown (first 550ms after float lands on water)
+        let elapsedSinceCastMs = nowMs - coordinator.stateMachine.castBeginTimeMs
+        // Cast flight takes ~15 frames (~450ms), so touchdown splash occurs around 350..950ms after castBeginTimeMs
+        let splashElapsedMs = elapsedSinceCastMs - 380
+        var landingDipY: CGFloat = 0.0
+        if splashElapsedMs >= 0 && splashElapsedMs < 620 {
+            let st = Double(splashElapsedMs) / 620.0
+            landingDipY = CGFloat(sin(st * .pi * 2.0) * exp(-st * 3.2)) * 9.0
+
+            // Expanding foam shockwave ring
+            let ringW = CGFloat(14.0 + st * 58.0)
+            let ringH = ringW * 0.42
+            let ringRect = CGRect(
+                x: baseCenter.x - ringW * 0.5,
+                y: baseCenter.y - ringH * 0.5,
+                width: ringW,
+                height: ringH
+            )
+            context.stroke(
+                Path(ellipseIn: ringRect),
+                with: .color(Color.white.opacity((1.0 - st) * 0.65)),
+                lineWidth: CGFloat(2.8 * (1.0 - st * 0.6))
+            )
+
+            // Crown of 10 airborne water droplets on cast plop
+            for d in 0..<10 {
+                let angle = -Double.pi * (0.10 + 0.80 * (Double(d) / 9.0))
+                let speed = 18.0 + Double((d * 7) % 14)
+                let dist = st * speed
+                let lift = -sin(st * .pi) * (14.0 + Double(d % 3) * 6.0)
+                let dx = baseCenter.x + CGFloat(cos(angle) * dist)
+                let dy = baseCenter.y + CGFloat(sin(angle) * dist * 0.4 + lift)
+                let r = CGFloat(max(1.5, (1.0 - st) * 3.6))
+                context.fill(
+                    Path(ellipseIn: CGRect(x: dx - r * 0.5, y: dy - r * 0.5, width: r, height: r * 1.3)),
+                    with: .color(Color.white.opacity((1.0 - st) * 0.85))
+                )
+            }
+        }
+
+        // 3. Procedural Waggler Float with Wave Buoyancy & Tilt
+        let isFighting = (coordinator.stateMachine.state == .fishFight)
+        let isPreHook = coordinator.stateMachine.isPreHookBobbing
+        let isPulled = coordinator.stateMachine.isPulled
+
+        let waveBobY: CGFloat
+        let tiltRadians: Double
+        if isFighting && !isPreHook {
+            waveBobY = isPulled ? 4.0 : 6.0
+            tiltRadians = (isPulled ? -0.34 : 0.30) + sin(phaseSec * 7.5) * 0.08
+        } else if isPreHook {
+            waveBobY = CGFloat(sin(phaseSec * 11.0)) * 3.5 + 2.0
+            tiltRadians = sin(phaseSec * 9.0) * 0.16
+        } else {
+            waveBobY = CGFloat(sin(phaseSec * 2.6)) * 2.2 + landingDipY
+            tiltRadians = sin(phaseSec * 1.9) * 0.065
+        }
+
+        let waterlineCenter = CGPoint(x: baseCenter.x, y: baseCenter.y + waveBobY)
+
+        // Subtle waterline meniscus ring around the float stem
+        let meniscusRect = CGRect(x: waterlineCenter.x - 7.0, y: waterlineCenter.y - 2.2, width: 14.0, height: 4.4)
+        context.stroke(
+            Path(ellipseIn: meniscusRect),
+            with: .color(Color.white.opacity(0.38)),
+            lineWidth: 1.1
+        )
+
+        context.drawLayer { layer in
+            layer.translateBy(x: waterlineCenter.x, y: waterlineCenter.y)
+            layer.rotate(by: .radians(tiltRadians))
+
+            if bobber.isBiteTexture && !isPreHook {
+                // Submerged fight state: underwater balsa body shadow + glowing red/amber antenna tip piercing the surface
+                let submergedBody = CGRect(x: -3.5, y: 2.0, width: 7.0, height: 18.0)
+                layer.fill(
+                    Path(ellipseIn: submergedBody),
+                    with: .color(Color(red: 0.08, green: 0.16, blue: 0.18).opacity(0.55))
+                )
+
+                // Luminous halo around the submerged antenna tip
+                let pulse = 0.70 + 0.30 * sin(phaseSec * 6.5)
+                let glowRect = CGRect(x: -10.0, y: -12.0, width: 20.0, height: 20.0)
+                layer.fill(
+                    Path(ellipseIn: glowRect),
+                    with: .color(Color(red: 0.98, green: 0.32, blue: 0.20).opacity(0.36 * pulse))
+                )
+
+                // Yellow lower band + glowing crimson tip
+                let bandYellow = CGRect(x: -1.6, y: -4.0, width: 3.2, height: 6.0)
+                let bandRed = CGRect(x: -2.0, y: -11.0, width: 4.0, height: 8.0)
+                layer.fill(Path(roundedRect: bandYellow, cornerRadius: 1.5), with: .color(Color(red: 0.98, green: 0.86, blue: 0.24)))
+                layer.fill(Path(roundedRect: bandRed, cornerRadius: 2.0), with: .color(Color(red: 1.0, green: 0.26, blue: 0.16)))
+            } else {
+                // Full Waggler Float standing on the water:
+                // (a) Underwater refracted stem + lead weight reflection below y = 0
+                var underStem = Path()
+                underStem.move(to: CGPoint(x: 0, y: 0))
+                underStem.addLine(to: CGPoint(x: 0, y: 22))
+                layer.stroke(
+                    underStem,
+                    with: .color(Color(red: 0.12, green: 0.22, blue: 0.26).opacity(0.45)),
+                    lineWidth: 1.5
+                )
+                let underwaterBulb = CGRect(x: -4.2, y: -2.0, width: 8.4, height: 16.0)
+                layer.fill(
+                    Path(ellipseIn: underwaterBulb),
+                    with: .color(Color(red: 0.12, green: 0.24, blue: 0.22).opacity(0.62))
+                )
+
+                // (b) Above-water tapered balsa body (`y: -14 .. +2`)
+                let balsaRect = CGRect(x: -4.5, y: -14.0, width: 9.0, height: 16.0)
+                layer.fill(
+                    Path(ellipseIn: balsaRect),
+                    with: .linearGradient(
+                        Gradient(colors: [
+                            Color(red: 0.20, green: 0.30, blue: 0.24),
+                            Color(red: 0.10, green: 0.16, blue: 0.14)
+                        ]),
+                        startPoint: CGPoint(x: -4.5, y: -6.0),
+                        endPoint: CGPoint(x: 4.5, y: -6.0)
+                    )
+                )
+                layer.stroke(
+                    Path(ellipseIn: balsaRect),
+                    with: .color(Self.goldTextColor.opacity(0.75)),
+                    lineWidth: 1.0
+                )
+
+                // (c) Thin carbon stem (`y: -26 .. -13`)
+                var upperStem = Path()
+                upperStem.move(to: CGPoint(x: 0, y: -13.0))
+                upperStem.addLine(to: CGPoint(x: 0, y: -26.0))
+                layer.stroke(upperStem, with: .color(Color.white.opacity(0.85)), lineWidth: 1.6)
+
+                // (d) 3-band high-visibility fluorescent antenna (`y: -38 .. -20`)
+                let limeBand = CGRect(x: -1.4, y: -25.0, width: 2.8, height: 6.0)
+                let whiteBand = CGRect(x: -1.5, y: -30.0, width: 3.0, height: 5.0)
+                let redTip = CGRect(x: -2.1, y: -38.0, width: 4.2, height: 8.5)
+
+                // Soft luminous halo around the antenna tip
+                let pulse = 0.65 + 0.35 * sin(phaseSec * 5.0)
+                let haloRect = CGRect(x: -9.0, y: -41.0, width: 18.0, height: 18.0)
+                layer.fill(
+                    Path(ellipseIn: haloRect),
+                    with: .color(Color(red: 1.0, green: 0.34, blue: 0.20).opacity(0.32 * pulse))
+                )
+
+                layer.fill(Path(roundedRect: limeBand, cornerRadius: 1.2), with: .color(Color(red: 0.72, green: 0.98, blue: 0.28)))
+                layer.fill(Path(roundedRect: whiteBand, cornerRadius: 1.2), with: .color(Color.white))
+                layer.fill(Path(roundedRect: redTip, cornerRadius: 2.1), with: .color(Color(red: 1.0, green: 0.25, blue: 0.16)))
+            }
+        }
+    }
+
+    /// Twinkling night stars above horizon and glowing shoreline fireflies in Remaster mode.
     private func drawRemasterSkyStarsAndFireflies(
         in context: inout GraphicsContext,
         size: CGSize,
@@ -594,14 +1217,15 @@ public struct FishingPondView: View {
         }
     }
 
-    private func drawRipplesAndBobber(in context: inout GraphicsContext, canvasWidth: Int, phaseSec: Double) {
+    // MARK: - Classic v1.81 Canvas Renderers (Preserved 100% when Remaster is OFF)
+
+    private func drawClassicRipplesAndBobber(in context: inout GraphicsContext, canvasWidth: Int) {
         guard let bobber = coordinator.stateMachine.bobber else { return }
         if let lineGeo = coordinator.stateMachine.lineGeometry,
            lineGeo.isCastAnimating && lineGeo.castProgress <= 0.95 {
             return
         }
 
-        let isRemaster = coordinator.isRemasterModeEnabled
         for oval in bobber.ripples {
             let rect = CGRect(
                 x: CGFloat(oval.left),
@@ -612,10 +1236,7 @@ public struct FishingPondView: View {
             let path = Path(ellipseIn: rect)
             let alphaInt = BobberState.rippleAlpha(ovalWidth: oval.width, canvasWidth: canvasWidth)
             let alpha = Double(alphaInt) / 255.0
-            let rippleColor: Color = isRemaster
-                ? Color(red: 0.88, green: 0.94, blue: 0.98).opacity(min(1.0, alpha * 1.05))
-                : Color.white.opacity(alpha)
-            context.stroke(path, with: .color(rippleColor), lineWidth: isRemaster ? 2.0 : 2.0)
+            context.stroke(path, with: .color(Color.white.opacity(alpha)), lineWidth: 2.0)
         }
 
         let displayPos = coordinator.renderedBobberPosition ?? Point2D(x: bobber.x, y: bobber.y)
@@ -638,25 +1259,6 @@ public struct FishingPondView: View {
             )
         }
 
-        if isRemaster {
-            let isNight = !coordinator.dayNightLighting.isDayLight
-            if bobber.isBiteTexture || isNight {
-                let pulse = 0.65 + 0.35 * sin(phaseSec * 5.5)
-                let glowRadius: CGFloat = bobber.isBiteTexture ? 12.0 : 9.0
-                let glowCenterY = bobber.isBiteTexture ? CGFloat(displayPos.y) : (bobberRect.minY + 8.0)
-                let glowRect = CGRect(
-                    x: CGFloat(displayPos.x) - glowRadius,
-                    y: glowCenterY - glowRadius,
-                    width: glowRadius * 2.0,
-                    height: glowRadius * 2.0
-                )
-                let glowColor = bobber.isBiteTexture
-                    ? Color(red: 0.96, green: 0.32, blue: 0.22).opacity(0.38 * pulse)
-                    : Color(red: 0.45, green: 0.92, blue: 0.65).opacity(0.30 * pulse)
-                context.fill(Path(ellipseIn: glowRect), with: .color(glowColor))
-            }
-        }
-
         if let bobberImg = OriginalGameAssetsLoader.image(named: bobberDrawableName) {
             let resolved = context.resolve(bobberImg)
             context.draw(resolved, in: bobberRect)
@@ -670,7 +1272,7 @@ public struct FishingPondView: View {
         }
     }
 
-    private func drawRodSprite(in context: inout GraphicsContext, rod: RodSpriteState) {
+    private func drawClassicRodSprite(in context: inout GraphicsContext, rod: RodSpriteState) {
         let clampedFrame = min(15, max(0, rod.frameIndex))
         let rodFrameName = "fishing_rod_\(clampedFrame)"
         let rodWidthCG = CGFloat(rod.width)
@@ -702,7 +1304,7 @@ public struct FishingPondView: View {
         }
     }
 
-    private func drawFishingLine(in context: inout GraphicsContext, rod: RodSpriteState) {
+    private func drawClassicFishingLine(in context: inout GraphicsContext, rod: RodSpriteState) {
         guard let curve = coordinator.currentLineCurve else { return }
         let startTip = FishingLineGeometry.rodTipPoint(for: rod)
         var linePath = Path()
@@ -712,23 +1314,11 @@ public struct FishingPondView: View {
             control: CGPoint(x: CGFloat(curve.control.x), y: CGFloat(curve.control.y))
         )
         let alpha = Double(curve.alpha) / 255.0
-        if coordinator.isRemasterModeEnabled && coordinator.stateMachine.state == .fishFight {
-            let tension = coordinator.stateMachine.tension
-            let lineColor: Color = tension >= 195
-                ? Color(red: 0.96, green: 0.45, blue: 0.38).opacity(min(1.0, alpha + 0.12))
-                : Color(red: 0.90, green: 0.94, blue: 0.98).opacity(min(1.0, alpha + 0.08))
-            context.stroke(
-                linePath,
-                with: .color(lineColor),
-                lineWidth: CGFloat(curve.strokeWidth) + 0.25
-            )
-        } else {
-            context.stroke(
-                linePath,
-                with: .color(.white.opacity(alpha)),
-                lineWidth: CGFloat(curve.strokeWidth)
-            )
-        }
+        context.stroke(
+            linePath,
+            with: .color(.white.opacity(alpha)),
+            lineWidth: CGFloat(curve.strokeWidth)
+        )
     }
 }
 
@@ -923,7 +1513,6 @@ private struct PondTopOverlayBarView: View {
 
     private var remasterSingleRowTopBar: some View {
         HStack(spacing: 8) {
-            // 1. Back / Reset button (fixed compact pill)
             Button {
                 if coordinator.stateMachine.state == .fishFight {
                     return
@@ -950,7 +1539,6 @@ private struct PondTopOverlayBarView: View {
             .buttonStyle(.plain)
             .fixedSize(horizontal: true, vertical: true)
 
-            // 2. Centered single-line Pond Name Pill (never wraps onto 2 lines!)
             Button {
                 if coordinator.stateMachine.state == .idle {
                     onOpenQuickTackle()
@@ -979,7 +1567,6 @@ private struct PondTopOverlayBarView: View {
                 }
             )
 
-            // 3. Three fixed 34x34 circular icon buttons (Weather, Sonar, Quests/Tasks)
             HStack(spacing: 6) {
                 Button {
                     coordinator.cycleRemasterWeather()
@@ -1196,7 +1783,6 @@ private struct RemasterLiveFightTelemetryBanner: View {
     }
 }
 
-/// Compact top-left Echolot widget matching the approved mockup (`Карась 65%`, `Карп 40%`, depth radar display).
 private struct RemasterCompactSonarWidgetView: View {
     @ObservedObject var coordinator: FishingAppCoordinator
     let onOpenBaitChooser: () -> Void
@@ -1206,7 +1792,6 @@ private struct RemasterCompactSonarWidgetView: View {
         let baitName = coordinator.assembledTackle.userBait?.bait.name.capitalized ?? "Нет наживки"
 
         VStack(alignment: .leading, spacing: 6) {
-            // Mini sonar screen header
             ZStack(alignment: .bottomTrailing) {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(Color.black.opacity(0.45))
@@ -1354,7 +1939,7 @@ private struct PondDeveloperDebugToolbarView: View {
     }
 }
 
-// MARK: - 4A. Remaster Bottom Control Deck (Matte-Slate 3-Tile Layout + Brushed-Metal Reel Wheel)
+// MARK: - 4A. Remaster Bottom Control Deck (With Dedicated Separate "Вымотать" Tile!)
 
 private struct RemasterPondBottomDeckView: View {
     @ObservedObject var coordinator: FishingAppCoordinator
@@ -1384,7 +1969,7 @@ private struct RemasterPondBottomDeckView: View {
     }
 
     var body: some View {
-        HStack(alignment: .center, spacing: 12) {
+        HStack(alignment: .center, spacing: 10) {
             VStack(alignment: .leading, spacing: 8) {
                 // 1. Tension header & calm smooth progress bar
                 VStack(alignment: .leading, spacing: 4) {
@@ -1426,25 +2011,26 @@ private struct RemasterPondBottomDeckView: View {
                     .frame(height: 8)
                 }
 
-                // 2. Three equal-height Matte-Slate Tiles (Bait, Tackle/Durability, Fishnet & Reset)
-                HStack(spacing: 8) {
+                // 2. Four distinct Matte-Slate Tiles: Наживка, Снасть, Садок (clean, no X!), and dedicated Вымотать / Сброс
+                HStack(spacing: 6) {
                     // Tile 1: Bait
                     Button(action: onPresentBaitChooser) {
-                        VStack(spacing: 4) {
+                        VStack(spacing: 3) {
                             let baitDrawable = equippedBaitId > 0 ? "bait_\(equippedBaitId)" : "bait_empty"
                             OriginalSpriteOrFallbackIcon(
                                 drawableName: baitDrawable,
                                 fallbackSystemName: "circle.hexagongrid.fill",
-                                width: 30,
-                                height: 30
+                                width: 26,
+                                height: 26
                             )
-                            Text("\(equippedBaitAmount)")
-                                .font(.system(size: 12, weight: .bold).monospacedDigit())
+                            Text("\(equippedBaitAmount) шт.")
+                                .font(.system(size: 10, weight: .bold).monospacedDigit())
                                 .foregroundStyle(.white)
                                 .lineLimit(1)
+                                .minimumScaleFactor(0.75)
                         }
                         .frame(maxWidth: .infinity)
-                        .frame(height: 62)
+                        .frame(height: 60)
                         .background(FishingPondView.matteCardSurface, in: RoundedRectangle(cornerRadius: 12))
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)
@@ -1456,18 +2042,18 @@ private struct RemasterPondBottomDeckView: View {
 
                     // Tile 2: Tackle & Durability
                     Button(action: onPresentQuickTackle) {
-                        VStack(spacing: 5) {
+                        VStack(spacing: 4) {
                             Image(systemName: "figure.fishing")
-                                .font(.system(size: 18, weight: .semibold))
+                                .font(.system(size: 17, weight: .semibold))
                                 .foregroundStyle(FishingPondView.goldTextColor)
-                            Text("У \(rodStrength)% • К \(coilStrength)%")
+                            Text("У\(rodStrength)%•К\(coilStrength)%")
                                 .font(.system(size: 10, weight: .semibold).monospacedDigit())
-                                .foregroundStyle(.white.opacity(0.9))
+                                .foregroundStyle(.white.opacity(0.92))
                                 .lineLimit(1)
-                                .minimumScaleFactor(0.75)
+                                .minimumScaleFactor(0.7)
                         }
                         .frame(maxWidth: .infinity)
-                        .frame(height: 62)
+                        .frame(height: 60)
                         .background(FishingPondView.matteCardSurface, in: RoundedRectangle(cornerRadius: 12))
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)
@@ -1477,24 +2063,75 @@ private struct RemasterPondBottomDeckView: View {
                     }
                     .buttonStyle(.plain)
 
-                    // Tile 3: Fishnet + Quick Reset badge in top-right corner
-                    ZStack(alignment: .topTrailing) {
+                    // Tile 3: Fishnet (clean — never has a delete/close X on top of it!)
+                    Button {
+                        guard coordinator.stateMachine.state == .idle else { return }
+                        coordinator.selectedTab = .fishnet
+                    } label: {
+                        VStack(spacing: 3) {
+                            Image(systemName: "basket.fill")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundStyle(FishingPondView.sageAccentColor)
+                            Text("\(coordinator.fishnetEntries.count)/\(PlayerStateRepository.maxFishnetCapacity)")
+                                .font(.system(size: 11, weight: .bold).monospacedDigit())
+                                .foregroundStyle(FishingPondView.goldTextColor)
+                                .lineLimit(1)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 60)
+                        .background(FishingPondView.matteCardSurface, in: RoundedRectangle(cornerRadius: 12))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                        )
+                        .opacity(coordinator.stateMachine.state == .idle ? 1.0 : 0.55)
+                    }
+                    .buttonStyle(.plain)
+
+                    // Tile 4: Dedicated "Вымотать" (Reel-In / Cancel Cast) when cast, or "Продать" when idle
+                    if coordinator.stateMachine.state != .idle {
                         Button {
-                            guard coordinator.stateMachine.state == .idle else { return }
-                            coordinator.selectedTab = .fishnet
+                            coordinator.resetCastToIdle()
                         } label: {
                             VStack(spacing: 3) {
-                                Text("Садок")
-                                    .font(.system(size: 11, weight: .semibold))
-                                    .foregroundStyle(.white.opacity(0.85))
+                                Image(systemName: "arrow.uturn.down.circle.fill")
+                                    .font(.system(size: 17, weight: .semibold))
+                                    .foregroundStyle(Color(red: 0.94, green: 0.45, blue: 0.38))
+                                Text("Вымотать")
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundStyle(.white.opacity(0.95))
                                     .lineLimit(1)
-                                Text("\(coordinator.fishnetEntries.count)/\(PlayerStateRepository.maxFishnetCapacity)")
-                                    .font(.system(size: 12, weight: .bold).monospacedDigit())
-                                    .foregroundStyle(FishingPondView.goldTextColor)
-                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.7)
                             }
                             .frame(maxWidth: .infinity)
-                            .frame(height: 62)
+                            .frame(height: 60)
+                            .background(FishingPondView.matteCardSurface, in: RoundedRectangle(cornerRadius: 12))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color(red: 0.94, green: 0.45, blue: 0.38).opacity(0.45), lineWidth: 1)
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    } else {
+                        Button {
+                            if coordinator.fishnetEntries.isEmpty {
+                                onPresentQuickTackle()
+                            } else {
+                                coordinator.sellAllFishInFishnet()
+                            }
+                        } label: {
+                            VStack(spacing: 3) {
+                                Image(systemName: coordinator.fishnetEntries.isEmpty ? "slider.horizontal.3" : "rublesign.circle.fill")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundStyle(coordinator.fishnetEntries.isEmpty ? FishingPondView.goldTextColor : FishingPondView.sageAccentColor)
+                                Text(coordinator.fishnetEntries.isEmpty ? "Оснастка" : "Продать")
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundStyle(.white.opacity(0.92))
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.7)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 60)
                             .background(FishingPondView.matteCardSurface, in: RoundedRectangle(cornerRadius: 12))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 12)
@@ -1502,32 +2139,6 @@ private struct RemasterPondBottomDeckView: View {
                             )
                         }
                         .buttonStyle(.plain)
-
-                        if coordinator.stateMachine.state != .idle {
-                            Button {
-                                coordinator.resetCastToIdle()
-                            } label: {
-                                Image(systemName: "xmark")
-                                    .font(.system(size: 10, weight: .bold))
-                                    .foregroundStyle(.white)
-                                    .frame(width: 20, height: 20)
-                                    .background(Color.white.opacity(0.22), in: Circle())
-                            }
-                            .buttonStyle(.plain)
-                            .padding(5)
-                        } else if !coordinator.fishnetEntries.isEmpty {
-                            Button {
-                                coordinator.sellAllFishInFishnet()
-                            } label: {
-                                Image(systemName: "rublesign")
-                                    .font(.system(size: 10, weight: .bold))
-                                    .foregroundStyle(.black)
-                                    .frame(width: 20, height: 20)
-                                    .background(FishingPondView.sageAccentColor, in: Circle())
-                            }
-                            .buttonStyle(.plain)
-                            .padding(5)
-                        }
                     }
                 }
             }
@@ -1588,7 +2199,6 @@ private struct RemasterMetallicReelWheelView: View {
                 : 0.0
 
             ZStack {
-                // Outer track arc
                 Circle()
                     .trim(from: 0.12, to: 0.88)
                     .stroke(
@@ -1598,7 +2208,6 @@ private struct RemasterMetallicReelWheelView: View {
                     .rotationEffect(.degrees(90))
                     .frame(width: 92, height: 92)
 
-                // Active tension gauge arc
                 Circle()
                     .trim(from: 0.12, to: 0.12 + 0.76 * CGFloat(max(0.02, tensionFraction)))
                     .stroke(
@@ -1616,7 +2225,6 @@ private struct RemasterMetallicReelWheelView: View {
                     .frame(width: 92, height: 92)
                     .animation(.linear(duration: 0.05), value: tensionFraction)
 
-                // Brushed dark-titanium outer housing ring
                 Circle()
                     .fill(
                         LinearGradient(
@@ -1637,7 +2245,6 @@ private struct RemasterMetallicReelWheelView: View {
                             )
                     )
 
-                // Conic brushed-steel rotor disc (rotates smoothly while pulling)
                 Circle()
                     .fill(
                         AngularGradient(
@@ -1654,7 +2261,6 @@ private struct RemasterMetallicReelWheelView: View {
                     .frame(width: 62, height: 62)
                     .rotationEffect(.degrees(spinDegrees))
 
-                // Center hub cap & label
                 Circle()
                     .fill(FishingPondView.matteSlateSurface)
                     .frame(width: 24, height: 24)

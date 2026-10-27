@@ -492,18 +492,19 @@ public enum WaterMetalShaderSource: Sendable {
         return out;
     }
 
-    // 4. PSBlit0.glsl (Daylight Blit Fragment Shader, 05:00..21:59)
+    // 4. PSBlit0.glsl (Daylight Blit Fragment Shader, 05:00..21:59) with smooth shoreline feathering
     fragment float4 fragmentBlit0Day(
         BlitVaryings in [[stage_in]],
         texture2d<float> vTexture0 [[texture(0)]],
         sampler linearSampler [[sampler(0)]]
     ) {
         float4 c = vTexture0.sample(linearSampler, in.vTexCoords);
-        c.a = 0.9;
+        float edgeFeather = smoothstep(1.0, 0.88, in.vTexCoords.y);
+        c.a = 0.92 * (0.25 + 0.75 * edgeFeather);
         return c;
     }
 
-    // 5. PSBlit0_night.glsl (Night Blit Fragment Shader, 22:00..04:59)
+    // 5. PSBlit0_night.glsl (Night Blit Fragment Shader, 22:00..04:59) with smooth shoreline feathering
     fragment float4 fragmentBlit0Night(
         BlitVaryings in [[stage_in]],
         texture2d<float> vTexture0 [[texture(0)]],
@@ -512,8 +513,9 @@ public enum WaterMetalShaderSource: Sendable {
         float4 c = vTexture0.sample(linearSampler, in.vTexCoords);
         c.r *= 0.25;
         c.g *= 0.25;
-        c.b *= 0.40;
-        c.a = 0.9;
+        c.b *= 0.42;
+        float edgeFeather = smoothstep(1.0, 0.88, in.vTexCoords.y);
+        c.a = 0.92 * (0.25 + 0.75 * edgeFeather);
         return c;
     }
     """

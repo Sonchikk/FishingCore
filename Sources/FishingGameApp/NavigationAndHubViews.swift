@@ -13,6 +13,30 @@ private enum OriginalGameTheme {
     static let repdigitCyan = Color(red: 0.35, green: 0.92, blue: 1.0)
 }
 
+private enum RemasterHubPalette {
+    static let bgTop = Color(red: 0.07, green: 0.10, blue: 0.13)
+    static let bgMid = Color(red: 0.09, green: 0.13, blue: 0.16)
+    static let bgBottom = Color(red: 0.11, green: 0.16, blue: 0.19)
+    static let cardBg = Color(red: 0.11, green: 0.15, blue: 0.18)
+    static let cardElevated = Color(red: 0.14, green: 0.19, blue: 0.23)
+    static let stroke = Color.white.opacity(0.09)
+    static let brass = Color(red: 0.87, green: 0.71, blue: 0.43)
+    static let sage = Color(red: 0.34, green: 0.62, blue: 0.45)
+    static let textPrimary = Color(red: 0.95, green: 0.96, blue: 0.97)
+    static let textSecondary = Color(red: 0.62, green: 0.68, blue: 0.73)
+}
+
+private struct RemasterModeEnvironmentKey: EnvironmentKey {
+    static let defaultValue: Bool = true
+}
+
+extension EnvironmentValues {
+    var isRemasterMode: Bool {
+        get { self[RemasterModeEnvironmentKey.self] }
+        set { self[RemasterModeEnvironmentKey.self] = newValue }
+    }
+}
+
 /// Root container view replacing the generic iOS `TabView` with the authentic full-screen
 /// screen switching of «Рыбалка для друзей» v1.81 (`SplashScreenActivity`, `MainActivity`, `PondListActivity`,
 /// `GameActivity`, `ShopActivity`, `BackpackActivity`, `FishpondActivity`, `MyRecordsActivity`, `OnlineGameActivity`)
@@ -58,6 +82,7 @@ public struct FishingRootView: View {
                 .transition(.opacity.combined(with: .scale(scale: 0.95)))
             }
         }
+        .environment(\.isRemasterMode, coordinator.isRemasterModeEnabled)
         .animation(.easeInOut(duration: 0.2), value: isShowingSplash)
         .animation(.easeInOut(duration: 0.15), value: coordinator.activeAlert?.id)
         .onReceive(gameLoopTimer) { _ in
@@ -316,23 +341,44 @@ private struct StandardGameDialogModalCard: View {
 }
 
 private struct OriginalModalCardBackground: View {
+    @Environment(\.isRemasterMode) private var isRemasterMode
+
     var body: some View {
-        ZStack {
-            if let bg = OriginalGameAssetsLoader.image(named: "second_background") {
-                bg.resizable()
-            } else {
-                Color(red: 0.12, green: 0.16, blue: 0.20)
+        if isRemasterMode {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            RemasterHubPalette.cardElevated,
+                            RemasterHubPalette.cardBg
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(RemasterHubPalette.brass.opacity(0.45), lineWidth: 1.2)
+                )
+        } else {
+            ZStack {
+                if let bg = OriginalGameAssetsLoader.image(named: "second_background") {
+                    bg.resizable()
+                } else {
+                    Color(red: 0.12, green: 0.16, blue: 0.20)
+                }
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(OriginalGameTheme.goldText.opacity(0.8), lineWidth: 2)
             }
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(OriginalGameTheme.goldText.opacity(0.8), lineWidth: 2)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
         }
-        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }
 
-// MARK: - Shared Original Screen Header (`@drawable/sback_r` + `@drawable/info_background`)
+// MARK: - Shared Original & Remaster Screen Header (`@drawable/sback_r` + `@drawable/info_background`)
 
 private struct OriginalScreenTopBar: View {
+    @Environment(\.isRemasterMode) private var isRemasterMode
     let title: String
     let subtitle: String?
     let onBack: () -> Void
@@ -344,74 +390,180 @@ private struct OriginalScreenTopBar: View {
     }
 
     var body: some View {
-        HStack(spacing: 10) {
-            Button(action: onBack) {
-                OriginalSpriteOrFallbackIcon(
-                    drawableName: "sback_r",
-                    fallbackSystemName: "chevron.backward.square.fill",
-                    width: 34,
-                    height: 40
-                )
-            }
-            .buttonStyle(.plain)
-
-            ZStack {
-                if let infoBg = OriginalGameAssetsLoader.image(named: "info_background") {
-                    infoBg.resizable().frame(height: 42)
-                } else {
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(Color.black.opacity(0.6))
-                        .frame(height: 42)
+        if isRemasterMode {
+            HStack(spacing: 10) {
+                Button(action: onBack) {
+                    HStack(spacing: 5) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 14, weight: .bold))
+                        Text("Назад")
+                            .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    }
+                    .foregroundStyle(RemasterHubPalette.brass)
+                    .padding(.horizontal, 12)
+                    .frame(height: 38)
+                    .background(RemasterHubPalette.cardElevated, in: Capsule())
+                    .overlay(
+                        Capsule()
+                            .stroke(RemasterHubPalette.brass.opacity(0.30), lineWidth: 1)
+                    )
                 }
-                HStack {
+                .buttonStyle(.plain)
+
+                HStack(spacing: 8) {
                     Text(title)
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundStyle(OriginalGameTheme.goldText)
+                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                        .foregroundStyle(RemasterHubPalette.textPrimary)
+                        .lineLimit(1)
+
+                    Spacer(minLength: 4)
+
                     if let subtitle {
-                        Spacer()
                         Text(subtitle)
-                            .font(.system(size: 14, weight: .semibold).monospacedDigit())
-                            .foregroundStyle(.white)
+                            .font(.system(size: 12, weight: .bold, design: .rounded).monospacedDigit())
+                            .foregroundStyle(RemasterHubPalette.brass)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(Color.black.opacity(0.28), in: Capsule())
+                            .overlay(
+                                Capsule()
+                                    .stroke(RemasterHubPalette.brass.opacity(0.25), lineWidth: 0.8)
+                            )
+                            .lineLimit(1)
                     }
                 }
-                .padding(.horizontal, 12)
+                .padding(.horizontal, 14)
+                .frame(height: 42)
+                .background(RemasterHubPalette.cardBg.opacity(0.94), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(RemasterHubPalette.stroke, lineWidth: 1)
+                )
             }
+            .padding(.horizontal, 12)
+            .padding(.top, 8)
+            .padding(.bottom, 6)
+        } else {
+            HStack(spacing: 10) {
+                Button(action: onBack) {
+                    OriginalSpriteOrFallbackIcon(
+                        drawableName: "sback_r",
+                        fallbackSystemName: "chevron.backward.square.fill",
+                        width: 34,
+                        height: 40
+                    )
+                }
+                .buttonStyle(.plain)
+
+                ZStack {
+                    if let infoBg = OriginalGameAssetsLoader.image(named: "info_background") {
+                        infoBg.resizable().frame(height: 42)
+                    } else {
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(Color.black.opacity(0.6))
+                            .frame(height: 42)
+                    }
+                    HStack {
+                        Text(title)
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundStyle(OriginalGameTheme.goldText)
+                        if let subtitle {
+                            Spacer()
+                            Text(subtitle)
+                                .font(.system(size: 14, weight: .semibold).monospacedDigit())
+                                .foregroundStyle(.white)
+                        }
+                    }
+                    .padding(.horizontal, 12)
+                }
+            }
+            .padding(.horizontal, 8)
+            .padding(.top, 6)
+            .padding(.bottom, 4)
         }
-        .padding(.horizontal, 8)
-        .padding(.top, 6)
-        .padding(.bottom, 4)
     }
 }
 
 private struct OriginalStyledActionButtonLabel: View {
+    @Environment(\.isRemasterMode) private var isRemasterMode
     let title: String
     var minWidth: CGFloat = 100
 
     var body: some View {
-        ZStack {
-            if let btnBg = OriginalGameAssetsLoader.image(named: "btn_background") {
-                btnBg
-                    .resizable()
-                    .frame(minWidth: minWidth, minHeight: 38, maxHeight: 38)
-            } else {
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(Color(red: 0.25, green: 0.20, blue: 0.14))
-                    .frame(minWidth: minWidth, minHeight: 38, maxHeight: 38)
-            }
+        if isRemasterMode {
             Text(title)
-                .font(.system(size: 14, weight: .bold))
-                .foregroundStyle(OriginalGameTheme.goldText)
+                .font(.system(size: 13, weight: .bold, design: .rounded))
+                .foregroundStyle(RemasterHubPalette.brass)
                 .padding(.horizontal, 14)
+                .frame(minWidth: minWidth, minHeight: 38, maxHeight: 38)
+                .background(
+                    LinearGradient(
+                        colors: [
+                            RemasterHubPalette.cardElevated,
+                            RemasterHubPalette.cardBg
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    ),
+                    in: RoundedRectangle(cornerRadius: 11, style: .continuous)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 11, style: .continuous)
+                        .stroke(RemasterHubPalette.brass.opacity(0.38), lineWidth: 1)
+                )
+        } else {
+            ZStack {
+                if let btnBg = OriginalGameAssetsLoader.image(named: "btn_background") {
+                    btnBg
+                        .resizable()
+                        .frame(minWidth: minWidth, minHeight: 38, maxHeight: 38)
+                } else {
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(Color(red: 0.25, green: 0.20, blue: 0.14))
+                        .frame(minWidth: minWidth, minHeight: 38, maxHeight: 38)
+                }
+                Text(title)
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(OriginalGameTheme.goldText)
+                    .padding(.horizontal, 14)
+            }
         }
     }
 }
 
 private struct OriginalSecondBackgroundView: View {
+    @Environment(\.isRemasterMode) private var isRemasterMode
+
     var body: some View {
-        if let bg = OriginalGameAssetsLoader.image(named: "second_background") {
-            bg.resizable().ignoresSafeArea()
+        if isRemasterMode {
+            ZStack {
+                LinearGradient(
+                    colors: [
+                        RemasterHubPalette.bgTop,
+                        RemasterHubPalette.bgMid,
+                        RemasterHubPalette.bgBottom
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                RadialGradient(
+                    colors: [
+                        RemasterHubPalette.sage.opacity(0.11),
+                        RemasterHubPalette.brass.opacity(0.05),
+                        Color.clear
+                    ],
+                    center: .topTrailing,
+                    startRadius: 20,
+                    endRadius: 360
+                )
+            }
+            .ignoresSafeArea()
         } else {
-            Color(red: 0.08, green: 0.12, blue: 0.16).ignoresSafeArea()
+            if let bg = OriginalGameAssetsLoader.image(named: "second_background") {
+                bg.resizable().ignoresSafeArea()
+            } else {
+                Color(red: 0.08, green: 0.12, blue: 0.16).ignoresSafeArea()
+            }
         }
     }
 }
@@ -436,20 +588,23 @@ public struct BaseHubView: View {
     }
 
     public var body: some View {
-        switch subScreen {
-        case .mainDashboard:
-            BaseDashboardSubView(coordinator: coordinator, subScreen: $subScreen)
-        case .pondListGrid:
-            PondListGridSubView(coordinator: coordinator, subScreen: $subScreen)
-        case .aboutMe:
-            AboutMeSubView(coordinator: coordinator, subScreen: $subScreen)
-        case .onlineShop:
-            OnlineShopSubView(coordinator: coordinator, subScreen: $subScreen)
-        case .settings:
-            SettingsSubView(coordinator: coordinator, subScreen: $subScreen)
-        case .aboutGame:
-            AboutGameSubView(coordinator: coordinator, subScreen: $subScreen)
+        Group {
+            switch subScreen {
+            case .mainDashboard:
+                BaseDashboardSubView(coordinator: coordinator, subScreen: $subScreen)
+            case .pondListGrid:
+                PondListGridSubView(coordinator: coordinator, subScreen: $subScreen)
+            case .aboutMe:
+                AboutMeSubView(coordinator: coordinator, subScreen: $subScreen)
+            case .onlineShop:
+                OnlineShopSubView(coordinator: coordinator, subScreen: $subScreen)
+            case .settings:
+                SettingsSubView(coordinator: coordinator, subScreen: $subScreen)
+            case .aboutGame:
+                AboutGameSubView(coordinator: coordinator, subScreen: $subScreen)
+            }
         }
+        .environment(\.isRemasterMode, coordinator.isRemasterModeEnabled)
     }
 }
 
@@ -1138,6 +1293,7 @@ private struct PondListGridSubView: View {
 }
 
 private struct PondGridCellView: View {
+    @Environment(\.isRemasterMode) private var isRemasterMode
     let pond: PondCatalogItem
     let localizedName: String
     let isSelected: Bool
@@ -1147,35 +1303,97 @@ private struct PondGridCellView: View {
     var body: some View {
         let pondNumber = max(1, min(15, pond.id + 1))
         let badgeText = pond.requiresCoupon ? "Разр. \(pond.requiredRank) • Купон" : "Разр. \(pond.requiredRank)"
-        let badgeBg = isUnlocked ? Color.black.opacity(0.7) : Color.red.opacity(0.85)
-        let strokeColor = isSelected ? Color.green : OriginalGameTheme.goldText.opacity(0.8)
-        let strokeWidth: CGFloat = isSelected ? 2.5 : 1.5
 
-        Button(action: onSelect) {
-            VStack(spacing: 6) {
-                ZStack(alignment: .topTrailing) {
-                    pondThumbnail(pondNumber: pondNumber)
-                    Text(badgeText)
-                        .font(.system(size: 10, weight: .bold))
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(badgeBg, in: RoundedRectangle(cornerRadius: 4))
+        if isRemasterMode {
+            Button(action: onSelect) {
+                VStack(alignment: .leading, spacing: 0) {
+                    ZStack(alignment: .topTrailing) {
+                        pondThumbnail(pondNumber: pondNumber)
+                            .overlay(
+                                LinearGradient(
+                                    colors: [Color.clear, Color.black.opacity(0.55)],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
+
+                        HStack(spacing: 4) {
+                            Image(systemName: isUnlocked ? (isSelected ? "checkmark.circle.fill" : "lock.open.fill") : "lock.fill")
+                                .font(.system(size: 9, weight: .bold))
+                            Text(badgeText)
+                                .font(.system(size: 10, weight: .bold, design: .rounded))
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(
+                            (isUnlocked ? (isSelected ? RemasterHubPalette.sage : Color.black.opacity(0.72)) : Color.red.opacity(0.80)),
+                            in: Capsule()
+                        )
                         .foregroundStyle(.white)
-                        .padding(4)
-                }
-                .clipShape(RoundedRectangle(cornerRadius: 6))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6)
-                        .stroke(strokeColor, lineWidth: strokeWidth)
-                )
+                        .padding(8)
+                    }
 
-                Text(localizedName)
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(OriginalGameTheme.goldText)
-                    .lineLimit(1)
+                    HStack(spacing: 6) {
+                        Text("#\(pondNumber)")
+                            .font(.system(size: 11, weight: .bold, design: .rounded).monospacedDigit())
+                            .foregroundStyle(RemasterHubPalette.brass)
+                        Text(localizedName)
+                            .font(.system(size: 14, weight: .bold, design: .rounded))
+                            .foregroundStyle(RemasterHubPalette.textPrimary)
+                            .lineLimit(1)
+                        Spacer(minLength: 2)
+                        if isSelected {
+                            Image(systemName: "location.fill")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundStyle(RemasterHubPalette.sage)
+                        }
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 9)
+                    .background(RemasterHubPalette.cardBg)
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(
+                            isSelected ? RemasterHubPalette.sage : (isUnlocked ? RemasterHubPalette.brass.opacity(0.28) : Color.white.opacity(0.08)),
+                            lineWidth: isSelected ? 2.0 : 1.0
+                        )
+                )
+                .opacity(isUnlocked ? 1.0 : 0.72)
             }
+            .buttonStyle(.plain)
+        } else {
+            let badgeBg = isUnlocked ? Color.black.opacity(0.7) : Color.red.opacity(0.85)
+            let strokeColor = isSelected ? Color.green : OriginalGameTheme.goldText.opacity(0.8)
+            let strokeWidth: CGFloat = isSelected ? 2.5 : 1.5
+
+            Button(action: onSelect) {
+                VStack(spacing: 6) {
+                    ZStack(alignment: .topTrailing) {
+                        pondThumbnail(pondNumber: pondNumber)
+                        Text(badgeText)
+                            .font(.system(size: 10, weight: .bold))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(badgeBg, in: RoundedRectangle(cornerRadius: 4))
+                            .foregroundStyle(.white)
+                            .padding(4)
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(strokeColor, lineWidth: strokeWidth)
+                    )
+
+                    Text(localizedName)
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(OriginalGameTheme.goldText)
+                        .lineLimit(1)
+                }
+            }
+            .buttonStyle(.plain)
         }
-        .buttonStyle(.plain)
     }
 
     @ViewBuilder
@@ -1965,6 +2183,7 @@ public struct ShopView: View {
                 shopItemsScrollView
             }
         }
+        .environment(\.isRemasterMode, coordinator.isRemasterModeEnabled)
     }
 
     private var shopItemsScrollView: some View {
@@ -2066,43 +2285,70 @@ public struct ShopView: View {
 }
 
 private struct ShopCategoryStripView: View {
+    @Environment(\.isRemasterMode) private var isRemasterMode
     @Binding var selectedCategory: ShopView.ShopCategory
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 12) {
+            HStack(spacing: isRemasterMode ? 8 : 12) {
                 ForEach(ShopView.ShopCategory.allCases) { cat in
                     let isSelected = (selectedCategory == cat)
                     Button {
                         selectedCategory = cat
                     } label: {
-                        VStack(spacing: 3) {
-                            OriginalSpriteOrFallbackIcon(
-                                drawableName: cat.drawableName,
-                                fallbackSystemName: "shippingbox.fill",
-                                width: 48,
-                                height: 36
+                        if isRemasterMode {
+                            HStack(spacing: 7) {
+                                OriginalSpriteOrFallbackIcon(
+                                    drawableName: cat.drawableName,
+                                    fallbackSystemName: "shippingbox.fill",
+                                    width: 26,
+                                    height: 22
+                                )
+                                Text(cat.rawValue.capitalized)
+                                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                                    .foregroundStyle(isSelected ? RemasterHubPalette.textPrimary : RemasterHubPalette.textSecondary)
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(
+                                isSelected ? RemasterHubPalette.cardElevated : RemasterHubPalette.cardBg.opacity(0.85),
+                                in: Capsule()
                             )
-                            Text(cat.rawValue.capitalized)
-                                .font(.system(size: 12, weight: .bold))
-                                .foregroundStyle(isSelected ? .white : OriginalGameTheme.goldText)
+                            .overlay(
+                                Capsule()
+                                    .stroke(isSelected ? RemasterHubPalette.brass : RemasterHubPalette.stroke, lineWidth: isSelected ? 1.4 : 1.0)
+                            )
+                        } else {
+                            VStack(spacing: 3) {
+                                OriginalSpriteOrFallbackIcon(
+                                    drawableName: cat.drawableName,
+                                    fallbackSystemName: "shippingbox.fill",
+                                    width: 48,
+                                    height: 36
+                                )
+                                Text(cat.rawValue.capitalized)
+                                    .font(.system(size: 12, weight: .bold))
+                                    .foregroundStyle(isSelected ? .white : OriginalGameTheme.goldText)
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(
+                                isSelected ? Color.white.opacity(0.22) : Color.black.opacity(0.35),
+                                in: RoundedRectangle(cornerRadius: 8)
+                            )
                         }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(
-                            isSelected ? Color.white.opacity(0.22) : Color.black.opacity(0.35),
-                            in: RoundedRectangle(cornerRadius: 8)
-                        )
                     }
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 10)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 2)
         }
     }
 }
 
 private struct ShopItemRowView: View {
+    @Environment(\.isRemasterMode) private var isRemasterMode
     let drawableName: String
     let title: String
     let subtitle: String
@@ -2111,40 +2357,99 @@ private struct ShopItemRowView: View {
     let onBuy: () -> Void
 
     var body: some View {
-        HStack(spacing: 12) {
-            OriginalSpriteOrFallbackIcon(
-                drawableName: drawableName,
-                fallbackSystemName: "shippingbox.fill",
-                width: 48,
-                height: 48
+        if isRemasterMode {
+            HStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color.black.opacity(0.28))
+                        .frame(width: 54, height: 54)
+                    OriginalSpriteOrFallbackIcon(
+                        drawableName: drawableName,
+                        fallbackSystemName: "shippingbox.fill",
+                        width: 42,
+                        height: 42
+                    )
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                        .foregroundStyle(RemasterHubPalette.textPrimary)
+                    Text(subtitle)
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .foregroundStyle(RemasterHubPalette.textSecondary)
+                }
+
+                Spacer(minLength: 6)
+
+                Button(action: onBuy) {
+                    VStack(spacing: 2) {
+                        HStack(spacing: 4) {
+                            Image(systemName: canAfford ? "cart.fill.badge.plus" : "lock.fill")
+                                .font(.system(size: 11, weight: .bold))
+                            Text("\(priceCoins) ₽")
+                                .font(.system(size: 13, weight: .bold, design: .rounded).monospacedDigit())
+                        }
+                        Text(canAfford ? "Купить" : "Недоступно")
+                            .font(.system(size: 10, weight: .semibold, design: .rounded))
+                            .opacity(0.9)
+                    }
+                    .foregroundStyle(canAfford ? .white : RemasterHubPalette.textSecondary)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(
+                        canAfford ? RemasterHubPalette.sage : Color.white.opacity(0.06),
+                        in: RoundedRectangle(cornerRadius: 11, style: .continuous)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 11, style: .continuous)
+                            .stroke(canAfford ? Color.white.opacity(0.18) : RemasterHubPalette.stroke, lineWidth: 1)
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(12)
+            .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(RemasterHubPalette.stroke, lineWidth: 1)
             )
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text(title)
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(OriginalGameTheme.goldText)
-                Text(subtitle)
-                    .font(.system(size: 12))
-                    .foregroundStyle(.white.opacity(0.85))
-                Text("Цена: \(priceCoins) руб")
-                    .font(.system(size: 13, weight: .semibold).monospacedDigit())
-                    .foregroundStyle(canAfford ? .green : .red)
-            }
-
-            Spacer()
-
-            Button(action: onBuy) {
+        } else {
+            HStack(spacing: 12) {
                 OriginalSpriteOrFallbackIcon(
-                    drawableName: canAfford ? "sbuy_on" : "sbuy_off",
-                    fallbackSystemName: "cart.badge.plus",
-                    width: 44,
-                    height: 44
+                    drawableName: drawableName,
+                    fallbackSystemName: "shippingbox.fill",
+                    width: 48,
+                    height: 48
                 )
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title)
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(OriginalGameTheme.goldText)
+                    Text(subtitle)
+                        .font(.system(size: 12))
+                        .foregroundStyle(.white.opacity(0.85))
+                    Text("Цена: \(priceCoins) руб")
+                        .font(.system(size: 13, weight: .semibold).monospacedDigit())
+                        .foregroundStyle(canAfford ? .green : .red)
+                }
+
+                Spacer()
+
+                Button(action: onBuy) {
+                    OriginalSpriteOrFallbackIcon(
+                        drawableName: canAfford ? "sbuy_on" : "sbuy_off",
+                        fallbackSystemName: "cart.badge.plus",
+                        width: 44,
+                        height: 44
+                    )
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
+            .padding(10)
+            .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 8))
         }
-        .padding(10)
-        .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 8))
     }
 }
 
@@ -2211,6 +2516,7 @@ public struct InventoryView: View {
                 backpackItemsScrollView
             }
         }
+        .environment(\.isRemasterMode, coordinator.isRemasterModeEnabled)
     }
 
     private var backpackItemsScrollView: some View {
@@ -2300,43 +2606,70 @@ public struct InventoryView: View {
 }
 
 private struct BackpackCategoryStripView: View {
+    @Environment(\.isRemasterMode) private var isRemasterMode
     @Binding var selectedCategory: InventoryView.BackpackCategory
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 12) {
+            HStack(spacing: isRemasterMode ? 8 : 12) {
                 ForEach(InventoryView.BackpackCategory.allCases) { cat in
                     let isSelected = (selectedCategory == cat)
                     Button {
                         selectedCategory = cat
                     } label: {
-                        VStack(spacing: 3) {
-                            OriginalSpriteOrFallbackIcon(
-                                drawableName: cat.drawableName,
-                                fallbackSystemName: "backpack.fill",
-                                width: 48,
-                                height: 36
+                        if isRemasterMode {
+                            HStack(spacing: 7) {
+                                OriginalSpriteOrFallbackIcon(
+                                    drawableName: cat.drawableName,
+                                    fallbackSystemName: "backpack.fill",
+                                    width: 26,
+                                    height: 22
+                                )
+                                Text(cat.rawValue.capitalized)
+                                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                                    .foregroundStyle(isSelected ? RemasterHubPalette.textPrimary : RemasterHubPalette.textSecondary)
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(
+                                isSelected ? RemasterHubPalette.cardElevated : RemasterHubPalette.cardBg.opacity(0.85),
+                                in: Capsule()
                             )
-                            Text(cat.rawValue.capitalized)
-                                .font(.system(size: 12, weight: .bold))
-                                .foregroundStyle(isSelected ? .white : OriginalGameTheme.goldText)
+                            .overlay(
+                                Capsule()
+                                    .stroke(isSelected ? RemasterHubPalette.brass : RemasterHubPalette.stroke, lineWidth: isSelected ? 1.4 : 1.0)
+                            )
+                        } else {
+                            VStack(spacing: 3) {
+                                OriginalSpriteOrFallbackIcon(
+                                    drawableName: cat.drawableName,
+                                    fallbackSystemName: "backpack.fill",
+                                    width: 48,
+                                    height: 36
+                                )
+                                Text(cat.rawValue.capitalized)
+                                    .font(.system(size: 12, weight: .bold))
+                                    .foregroundStyle(isSelected ? .white : OriginalGameTheme.goldText)
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(
+                                isSelected ? Color.white.opacity(0.22) : Color.black.opacity(0.35),
+                                in: RoundedRectangle(cornerRadius: 8)
+                            )
                         }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(
-                            isSelected ? Color.white.opacity(0.22) : Color.black.opacity(0.35),
-                            in: RoundedRectangle(cornerRadius: 8)
-                        )
                     }
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 10)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 2)
         }
     }
 }
 
 private struct BackpackItemRowView: View {
+    @Environment(\.isRemasterMode) private var isRemasterMode
     let drawableName: String
     let title: String
     let subtitle: String
@@ -2345,31 +2678,82 @@ private struct BackpackItemRowView: View {
 
     var body: some View {
         Button(action: onEquip) {
-            HStack(spacing: 12) {
-                OriginalSpriteOrFallbackIcon(
-                    drawableName: drawableName,
-                    fallbackSystemName: "circle.fill",
-                    width: 46,
-                    height: 46
-                )
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(title)
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundStyle(OriginalGameTheme.goldText)
-                    Text(subtitle)
-                        .font(.system(size: 12))
-                        .foregroundStyle(.white.opacity(0.85))
+            if isRemasterMode {
+                HStack(spacing: 12) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(Color.black.opacity(0.28))
+                            .frame(width: 52, height: 52)
+                        OriginalSpriteOrFallbackIcon(
+                            drawableName: drawableName,
+                            fallbackSystemName: "circle.fill",
+                            width: 40,
+                            height: 40
+                        )
+                    }
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(title)
+                            .font(.system(size: 15, weight: .bold, design: .rounded))
+                            .foregroundStyle(RemasterHubPalette.textPrimary)
+                        Text(subtitle)
+                            .font(.system(size: 12, weight: .medium, design: .rounded))
+                            .foregroundStyle(RemasterHubPalette.textSecondary)
+                    }
+                    Spacer(minLength: 6)
+                    HStack(spacing: 5) {
+                        Image(systemName: isEquipped ? "checkmark.circle.fill" : "circle")
+                            .font(.system(size: 13, weight: .bold))
+                        Text(isEquipped ? "Надето" : "Выбрать")
+                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                    }
+                    .foregroundStyle(isEquipped ? .white : RemasterHubPalette.brass)
+                    .padding(.horizontal, 11)
+                    .padding(.vertical, 7)
+                    .background(
+                        isEquipped ? RemasterHubPalette.sage : RemasterHubPalette.cardElevated,
+                        in: Capsule()
+                    )
+                    .overlay(
+                        Capsule()
+                            .stroke(isEquipped ? Color.white.opacity(0.22) : RemasterHubPalette.brass.opacity(0.35), lineWidth: 1)
+                    )
                 }
-                Spacer()
-                OriginalSpriteOrFallbackIcon(
-                    drawableName: isEquipped ? "tick" : "tick_empty",
-                    fallbackSystemName: isEquipped ? "checkmark.circle.fill" : "circle",
-                    width: 32,
-                    height: 32
+                .padding(12)
+                .background(
+                    isEquipped ? RemasterHubPalette.cardElevated : RemasterHubPalette.cardBg,
+                    in: RoundedRectangle(cornerRadius: 14, style: .continuous)
                 )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(isEquipped ? RemasterHubPalette.sage.opacity(0.75) : RemasterHubPalette.stroke, lineWidth: isEquipped ? 1.5 : 1.0)
+                )
+            } else {
+                HStack(spacing: 12) {
+                    OriginalSpriteOrFallbackIcon(
+                        drawableName: drawableName,
+                        fallbackSystemName: "circle.fill",
+                        width: 46,
+                        height: 46
+                    )
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(title)
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundStyle(OriginalGameTheme.goldText)
+                        Text(subtitle)
+                            .font(.system(size: 12))
+                            .foregroundStyle(.white.opacity(0.85))
+                    }
+                    Spacer()
+                    OriginalSpriteOrFallbackIcon(
+                        drawableName: isEquipped ? "tick" : "tick_empty",
+                        fallbackSystemName: isEquipped ? "checkmark.circle.fill" : "circle",
+                        width: 32,
+                        height: 32
+                    )
+                }
+                .padding(10)
+                .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 8))
             }
-            .padding(10)
-            .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 8))
         }
         .buttonStyle(.plain)
     }
@@ -2440,62 +2824,152 @@ public struct FishnetView: View {
                 }
             }
         }
+        .environment(\.isRemasterMode, coordinator.isRemasterModeEnabled)
     }
 }
 
 private struct FishnetSummaryPlaqueView: View {
+    @Environment(\.isRemasterMode) private var isRemasterMode
     let totalWeightGrams: Int
     let fishCount: Int
     let totalValueCoins: Int
 
     var body: some View {
-        ZStack {
-            if let timeBg = OriginalGameAssetsLoader.image(named: "time_background") {
-                timeBg.resizable().frame(height: 76)
-            } else {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.black.opacity(0.6))
-                    .frame(height: 76)
+        if isRemasterMode {
+            HStack(spacing: 10) {
+                summaryMetricTile(
+                    icon: "basket.fill",
+                    label: "Рыб в садке",
+                    value: "\(fishCount) шт.",
+                    accent: RemasterHubPalette.brass
+                )
+                summaryMetricTile(
+                    icon: "scalemass.fill",
+                    label: "Общий вес",
+                    value: PlayerStateRepository.formatGramsAsKgOrGrams(totalWeightGrams),
+                    accent: RemasterHubPalette.textPrimary
+                )
+                summaryMetricTile(
+                    icon: "rublesign.circle.fill",
+                    label: "Оценка улова",
+                    value: "\(totalValueCoins) ₽",
+                    accent: RemasterHubPalette.sage
+                )
             }
-            VStack(spacing: 3) {
-                Text("Общий вес: \(totalWeightGrams) г")
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(OriginalGameTheme.goldText)
-                Text("Количество рыб: \(fishCount) шт.")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(OriginalGameTheme.goldText)
-                Text("Стоимость улова: \(totalValueCoins) руб")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(.green)
+            .padding(.horizontal, 12)
+        } else {
+            ZStack {
+                if let timeBg = OriginalGameAssetsLoader.image(named: "time_background") {
+                    timeBg.resizable().frame(height: 76)
+                } else {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.black.opacity(0.6))
+                        .frame(height: 76)
+                }
+                VStack(spacing: 3) {
+                    Text("Общий вес: \(totalWeightGrams) г")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(OriginalGameTheme.goldText)
+                    Text("Количество рыб: \(fishCount) шт.")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(OriginalGameTheme.goldText)
+                    Text("Стоимость улова: \(totalValueCoins) руб")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(.green)
+                }
             }
+            .padding(.horizontal, 10)
         }
+    }
+
+    private func summaryMetricTile(icon: String, label: String, value: String, accent: Color) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 5) {
+                Image(systemName: icon)
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(accent)
+                Text(label)
+                    .font(.system(size: 10, weight: .semibold, design: .rounded))
+                    .foregroundStyle(RemasterHubPalette.textSecondary)
+                    .lineLimit(1)
+            }
+            Text(value)
+                .font(.system(size: 14, weight: .bold, design: .rounded).monospacedDigit())
+                .foregroundStyle(accent)
+                .lineLimit(1)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 10)
+        .padding(.vertical, 9)
+        .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(RemasterHubPalette.stroke, lineWidth: 1)
+        )
     }
 }
 
 private struct FishnetEntryRowView: View {
+    @Environment(\.isRemasterMode) private var isRemasterMode
     let entry: FishnetEntryRecord
 
     var body: some View {
-        HStack(spacing: 12) {
-            OriginalSpriteOrFallbackIcon(
-                drawableName: "fish_\(entry.caughtFish.fish.id)",
-                fallbackSystemName: "fish.fill",
-                width: 72,
-                height: 48
-            )
-            VStack(alignment: .leading, spacing: 2) {
-                Text(entry.caughtFish.fish.name)
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(OriginalGameTheme.goldText)
-                Text("Вес: \(entry.caughtFish.weightGrams) г  •  Цена: \(entry.caughtFish.sellingPriceCoins) руб")
-                    .font(.system(size: 13))
-                    .foregroundStyle(.white)
+        if isRemasterMode {
+            HStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color.black.opacity(0.28))
+                        .frame(width: 72, height: 50)
+                    OriginalSpriteOrFallbackIcon(
+                        drawableName: "fish_\(entry.caughtFish.fish.id)",
+                        fallbackSystemName: "fish.fill",
+                        width: 64,
+                        height: 42
+                    )
+                }
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(entry.caughtFish.fish.name)
+                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                        .foregroundStyle(RemasterHubPalette.textPrimary)
+                    Text("Вес: \(PlayerStateRepository.formatGramsAsKgOrGrams(entry.caughtFish.weightGrams))")
+                        .font(.system(size: 12, weight: .medium, design: .rounded).monospacedDigit())
+                        .foregroundStyle(RemasterHubPalette.textSecondary)
+                }
+                Spacer()
+                Text("+\(entry.caughtFish.sellingPriceCoins) ₽")
+                    .font(.system(size: 13, weight: .bold, design: .rounded).monospacedDigit())
+                    .foregroundStyle(RemasterHubPalette.sage)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(RemasterHubPalette.sage.opacity(0.14), in: Capsule())
             }
-            Spacer()
+            .padding(11)
+            .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(RemasterHubPalette.stroke, lineWidth: 1)
+            )
+        } else {
+            HStack(spacing: 12) {
+                OriginalSpriteOrFallbackIcon(
+                    drawableName: "fish_\(entry.caughtFish.fish.id)",
+                    fallbackSystemName: "fish.fill",
+                    width: 72,
+                    height: 48
+                )
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(entry.caughtFish.fish.name)
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(OriginalGameTheme.goldText)
+                    Text("Вес: \(entry.caughtFish.weightGrams) г  •  Цена: \(entry.caughtFish.sellingPriceCoins) руб")
+                        .font(.system(size: 13))
+                        .foregroundStyle(.white)
+                }
+                Spacer()
+            }
+            .padding(10)
+            .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 8))
         }
-        .padding(10)
-        .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 8))
     }
 }
 
@@ -2548,6 +3022,7 @@ public struct ProgressAndRecordsView: View {
                 }
             }
         }
+        .environment(\.isRemasterMode, coordinator.isRemasterModeEnabled)
     }
 
     private var sectionTabPicker: some View {
@@ -2669,21 +3144,51 @@ public struct ProgressAndRecordsView: View {
                 let bonusXp = contract.resolvedBonusExperience(balanceTables: coordinator.balanceTables)
 
                 // Top progress plaque (`TaskActivity.onCreate` `0x7f0a02b3` & `0x7f0a03c1`)
-                ZStack {
-                    if let timeBg = OriginalGameAssetsLoader.image(named: "time_background") {
-                        timeBg.resizable().frame(height: 68)
-                    } else {
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.black.opacity(0.6))
-                            .frame(height: 68)
+                if coordinator.isRemasterModeEnabled {
+                    HStack(spacing: 10) {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("Поймано по поручению")
+                                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                                .foregroundStyle(RemasterHubPalette.textSecondary)
+                            Text("\(contract.currentCount) шт.")
+                                .font(.system(size: 16, weight: .bold, design: .rounded).monospacedDigit())
+                                .foregroundStyle(RemasterHubPalette.brass)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(12)
+                        .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 13, style: .continuous).stroke(RemasterHubPalette.stroke, lineWidth: 1))
+
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("Суммарный вес")
+                                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                                .foregroundStyle(RemasterHubPalette.textSecondary)
+                            Text(String(format: "%.3f кг (\(contract.currentWeightGrams) г)", Double(contract.currentWeightGrams) / 1000.0))
+                                .font(.system(size: 15, weight: .bold, design: .rounded).monospacedDigit())
+                                .foregroundStyle(RemasterHubPalette.sage)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(12)
+                        .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 13, style: .continuous).stroke(RemasterHubPalette.stroke, lineWidth: 1))
                     }
-                    VStack(spacing: 4) {
-                        Text("Количество: \(contract.currentCount) шт.")
-                            .font(.system(size: 15, weight: .bold).monospacedDigit())
-                            .foregroundStyle(OriginalGameTheme.goldText)
-                        Text(String(format: "Общий вес: %.3f кг (\(contract.currentWeightGrams) г)", Double(contract.currentWeightGrams) / 1000.0))
-                            .font(.system(size: 14, weight: .semibold).monospacedDigit())
-                            .foregroundStyle(.cyan)
+                } else {
+                    ZStack {
+                        if let timeBg = OriginalGameAssetsLoader.image(named: "time_background") {
+                            timeBg.resizable().frame(height: 68)
+                        } else {
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.black.opacity(0.6))
+                                .frame(height: 68)
+                        }
+                        VStack(spacing: 4) {
+                            Text("Количество: \(contract.currentCount) шт.")
+                                .font(.system(size: 15, weight: .bold).monospacedDigit())
+                                .foregroundStyle(OriginalGameTheme.goldText)
+                            Text(String(format: "Общий вес: %.3f кг (\(contract.currentWeightGrams) г)", Double(contract.currentWeightGrams) / 1000.0))
+                                .font(.system(size: 14, weight: .semibold).monospacedDigit())
+                                .foregroundStyle(.cyan)
+                        }
                     }
                 }
 
@@ -2694,12 +3199,18 @@ public struct ProgressAndRecordsView: View {
                             .font(.system(size: 16, weight: .bold))
                             .foregroundStyle(contract.made >= 1 ? .green : OriginalGameTheme.goldText)
                         Spacer()
-                        OriginalSpriteOrFallbackIcon(
-                            drawableName: contract.made >= 1 ? "tick" : "tick_empty",
-                            fallbackSystemName: contract.made >= 1 ? "checkmark.circle.fill" : "circle",
-                            width: 28,
-                            height: 28
-                        )
+                        if coordinator.isRemasterModeEnabled {
+                            Image(systemName: contract.made >= 1 ? "checkmark.circle.fill" : "circle.dashed")
+                                .font(.system(size: 22, weight: .bold))
+                                .foregroundStyle(contract.made >= 1 ? RemasterHubPalette.sage : RemasterHubPalette.brass)
+                        } else {
+                            OriginalSpriteOrFallbackIcon(
+                                drawableName: contract.made >= 1 ? "tick" : "tick_empty",
+                                fallbackSystemName: contract.made >= 1 ? "checkmark.circle.fill" : "circle",
+                                width: 28,
+                                height: 28
+                            )
+                        }
                     }
 
                     HStack(spacing: 14) {
@@ -2807,6 +3318,7 @@ public struct ProgressAndRecordsView: View {
 }
 
 private struct ActiveQuestDetailCardView: View {
+    @Environment(\.isRemasterMode) private var isRemasterMode
     let quest: QuestRecord
     let title: String
     let descriptionText: String
@@ -2875,12 +3387,18 @@ private struct ActiveQuestDetailCardView: View {
                         Text(slot.progressText)
                             .font(.system(size: 13, weight: .bold).monospacedDigit())
                             .foregroundStyle(slot.isSlotCompleted ? .green : .cyan)
-                        OriginalSpriteOrFallbackIcon(
-                            drawableName: slot.isSlotCompleted ? "tick" : "tick_empty",
-                            fallbackSystemName: slot.isSlotCompleted ? "checkmark.circle.fill" : "circle",
-                            width: 24,
-                            height: 24
-                        )
+                        if isRemasterMode {
+                            Image(systemName: slot.isSlotCompleted ? "checkmark.circle.fill" : "circle")
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundStyle(slot.isSlotCompleted ? RemasterHubPalette.sage : RemasterHubPalette.textSecondary)
+                        } else {
+                            OriginalSpriteOrFallbackIcon(
+                                drawableName: slot.isSlotCompleted ? "tick" : "tick_empty",
+                                fallbackSystemName: slot.isSlotCompleted ? "checkmark.circle.fill" : "circle",
+                                width: 24,
+                                height: 24
+                            )
+                        }
                     }
                     .padding(8)
                     .background(Color.black.opacity(0.42), in: RoundedRectangle(cornerRadius: 6))
@@ -2909,6 +3427,7 @@ private struct ActiveQuestDetailCardView: View {
 }
 
 private struct AchievementRowView: View {
+    @Environment(\.isRemasterMode) private var isRemasterMode
     let achievement: AchievementRecord
     let title: String
     let descriptionText: String
@@ -2923,38 +3442,84 @@ private struct AchievementRowView: View {
     }
 
     var body: some View {
-        HStack(spacing: 12) {
-            OriginalSpriteOrFallbackIcon(
-                drawableName: "md_achiv_\(achievement.id)",
-                fallbackSystemName: "medal.fill",
-                width: 48,
-                height: 48
-            )
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(OriginalGameTheme.goldText)
-                Text(descriptionText)
-                    .font(.system(size: 12))
-                    .foregroundStyle(.white.opacity(0.85))
-                Text("Счёт: \(achievement.score)  •  Уровень: \(achievement.level)/3")
-                    .font(.system(size: 12, weight: .semibold).monospacedDigit())
-                    .foregroundStyle(.cyan)
+        if isRemasterMode {
+            HStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color.black.opacity(0.28))
+                        .frame(width: 54, height: 54)
+                    OriginalSpriteOrFallbackIcon(
+                        drawableName: "md_achiv_\(achievement.id)",
+                        fallbackSystemName: "medal.fill",
+                        width: 42,
+                        height: 42
+                    )
+                }
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                        .foregroundStyle(RemasterHubPalette.textPrimary)
+                    Text(descriptionText)
+                        .font(.system(size: 12, weight: .regular, design: .rounded))
+                        .foregroundStyle(RemasterHubPalette.textSecondary)
+                    HStack(spacing: 8) {
+                        Text("Прогресс: \(achievement.score)")
+                            .font(.system(size: 11, weight: .bold, design: .rounded).monospacedDigit())
+                            .foregroundStyle(RemasterHubPalette.brass)
+                        Text("Ранг \(achievement.level)/3")
+                            .font(.system(size: 11, weight: .bold, design: .rounded).monospacedDigit())
+                            .foregroundStyle(achievement.level > 0 ? RemasterHubPalette.sage : RemasterHubPalette.textSecondary)
+                    }
+                }
+                Spacer(minLength: 4)
+                OriginalSpriteOrFallbackIcon(
+                    drawableName: cupDrawableName,
+                    fallbackSystemName: "trophy.fill",
+                    width: 36,
+                    height: 36
+                )
             }
-            Spacer()
-            OriginalSpriteOrFallbackIcon(
-                drawableName: cupDrawableName,
-                fallbackSystemName: "trophy.fill",
-                width: 36,
-                height: 36
+            .padding(12)
+            .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(achievement.level > 0 ? RemasterHubPalette.brass.opacity(0.32) : RemasterHubPalette.stroke, lineWidth: 1)
             )
+        } else {
+            HStack(spacing: 12) {
+                OriginalSpriteOrFallbackIcon(
+                    drawableName: "md_achiv_\(achievement.id)",
+                    fallbackSystemName: "medal.fill",
+                    width: 48,
+                    height: 48
+                )
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(OriginalGameTheme.goldText)
+                    Text(descriptionText)
+                        .font(.system(size: 12))
+                        .foregroundStyle(.white.opacity(0.85))
+                    Text("Счёт: \(achievement.score)  •  Уровень: \(achievement.level)/3")
+                        .font(.system(size: 12, weight: .semibold).monospacedDigit())
+                        .foregroundStyle(.cyan)
+                }
+                Spacer()
+                OriginalSpriteOrFallbackIcon(
+                    drawableName: cupDrawableName,
+                    fallbackSystemName: "trophy.fill",
+                    width: 36,
+                    height: 36
+                )
+            }
+            .padding(10)
+            .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 8))
         }
-        .padding(10)
-        .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 8))
     }
 }
 
 private struct QuestRowView: View {
+    @Environment(\.isRemasterMode) private var isRemasterMode
     let quest: QuestRecord
     let title: String
     let descriptionText: String
@@ -2980,12 +3545,18 @@ private struct QuestRowView: View {
                 Text(statusText)
                     .font(.system(size: 11, weight: .bold))
                     .foregroundStyle(quest.made >= 1 ? .green : .cyan)
-                OriginalSpriteOrFallbackIcon(
-                    drawableName: quest.made >= 2 ? "tick" : "tick_empty",
-                    fallbackSystemName: quest.made >= 2 ? "checkmark.circle.fill" : "circle",
-                    width: 24,
-                    height: 24
-                )
+                if isRemasterMode {
+                    Image(systemName: quest.made >= 2 ? "checkmark.circle.fill" : (quest.made == 1 ? "seal.fill" : "circle"))
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(quest.made >= 1 ? RemasterHubPalette.sage : RemasterHubPalette.textSecondary)
+                } else {
+                    OriginalSpriteOrFallbackIcon(
+                        drawableName: quest.made >= 2 ? "tick" : "tick_empty",
+                        fallbackSystemName: quest.made >= 2 ? "checkmark.circle.fill" : "circle",
+                        width: 24,
+                        height: 24
+                    )
+                }
             }
             Text(descriptionText)
                 .font(.system(size: 12))
@@ -3022,29 +3593,67 @@ private struct QuestRowView: View {
 }
 
 private struct PersonalRecordRowView: View {
+    @Environment(\.isRemasterMode) private var isRemasterMode
     let record: PersonalSpeciesRecord
 
     var body: some View {
         let isCaught = record.weightGrams > 0
-        HStack(spacing: 12) {
-            OriginalSpriteOrFallbackIcon(
-                drawableName: "fish_\(record.id)",
-                fallbackSystemName: "fish.fill",
-                width: 64,
-                height: 44
-            )
-            VStack(alignment: .leading, spacing: 2) {
-                Text(record.fishName)
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(OriginalGameTheme.goldText)
-                Text(isCaught ? "Рекорд: \(record.weightGrams) г" : "Ещё не поймана")
-                    .font(.system(size: 13))
-                    .foregroundStyle(isCaught ? .green : .white.opacity(0.6))
+        if isRemasterMode {
+            HStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 11, style: .continuous)
+                        .fill(Color.black.opacity(0.28))
+                        .frame(width: 68, height: 48)
+                    OriginalSpriteOrFallbackIcon(
+                        drawableName: "fish_\(record.id)",
+                        fallbackSystemName: "fish.fill",
+                        width: 60,
+                        height: 40
+                    )
+                    .opacity(isCaught ? 1.0 : 0.35)
+                }
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("#\(record.id) \(record.fishName)")
+                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                        .foregroundStyle(isCaught ? RemasterHubPalette.textPrimary : RemasterHubPalette.textSecondary)
+                    Text(isCaught ? "Личный рекорд: \(PlayerStateRepository.formatGramsAsKgOrGrams(record.weightGrams))" : "Ещё не поймана")
+                        .font(.system(size: 12, weight: .semibold, design: .rounded).monospacedDigit())
+                        .foregroundStyle(isCaught ? RemasterHubPalette.sage : RemasterHubPalette.textSecondary.opacity(0.75))
+                }
+                Spacer()
+                if isCaught {
+                    Image(systemName: "trophy.fill")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(RemasterHubPalette.brass)
+                }
             }
-            Spacer()
+            .padding(10)
+            .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                    .stroke(isCaught ? RemasterHubPalette.sage.opacity(0.32) : RemasterHubPalette.stroke, lineWidth: 1)
+            )
+        } else {
+            HStack(spacing: 12) {
+                OriginalSpriteOrFallbackIcon(
+                    drawableName: "fish_\(record.id)",
+                    fallbackSystemName: "fish.fill",
+                    width: 64,
+                    height: 44
+                )
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(record.fishName)
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(OriginalGameTheme.goldText)
+                    Text(isCaught ? "Рекорд: \(record.weightGrams) г" : "Ещё не поймана")
+                        .font(.system(size: 13))
+                        .foregroundStyle(isCaught ? .green : .white.opacity(0.6))
+                }
+                Spacer()
+            }
+            .padding(8)
+            .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 8))
         }
-        .padding(8)
-        .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 8))
     }
 }
 
@@ -3110,6 +3719,7 @@ public struct OnlineAndChatView: View {
                 }
             }
         }
+        .environment(\.isRemasterMode, coordinator.isRemasterModeEnabled)
     }
 
     private var onlineSectionPicker: some View {
