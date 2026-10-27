@@ -387,7 +387,10 @@ public final class FishingAppCoordinator: ObservableObject {
 
     /// Exact activation check (`GameActivity.b0()`): `pond_fon_set_<id> > 0 && WATER_SHADER == true`.
     public var isWaterShaderActive: Bool {
-        WaterShaderActivationPolicy.shouldActivate(
+        if isRemasterModeEnabled && isWaterShaderEnabled {
+            return true
+        }
+        return WaterShaderActivationPolicy.shouldActivate(
             pondBackgroundSetIndex: pondBackgroundSetIndex,
             waterShaderSettingEnabled: isWaterShaderEnabled
         )

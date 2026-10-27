@@ -453,13 +453,21 @@ public struct BaseHubView: View {
     }
 }
 
-// MARK: - 1.1 `MainActivity` (`res/Yj.xml`)
+// MARK: - 1.1 `MainActivity` (`res/Yj.xml` Classic Mode + Full Matte-Slate Remaster 2.0 Bento Dashboard)
 
 private struct BaseDashboardSubView: View {
     @ObservedObject var coordinator: FishingAppCoordinator
     @Binding var subScreen: BaseSubScreen
 
     var body: some View {
+        if coordinator.isRemasterModeEnabled {
+            RemasterMainDashboardView(coordinator: coordinator, subScreen: $subScreen)
+        } else {
+            classicDashboardBody
+        }
+    }
+
+    private var classicDashboardBody: some View {
         ZStack {
             dashboardBackground
             VStack(spacing: 8) {
@@ -500,29 +508,6 @@ private struct BaseDashboardSubView: View {
             }
 
             HStack {
-                Button {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                        coordinator.isRemasterModeEnabled.toggle()
-                    }
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: coordinator.isRemasterModeEnabled ? "sparkles" : "clock.arrow.circlepath")
-                            .font(.system(size: 11, weight: .bold))
-                        Text(coordinator.isRemasterModeEnabled ? "Ремастер" : "Классика")
-                            .font(.system(size: 11, weight: .bold))
-                    }
-                    .foregroundStyle(coordinator.isRemasterModeEnabled ? .black : .white)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(
-                        coordinator.isRemasterModeEnabled
-                            ? AnyShapeStyle(OriginalGameTheme.goldText)
-                            : AnyShapeStyle(Color.black.opacity(0.65)),
-                        in: Capsule()
-                    )
-                }
-                .buttonStyle(.plain)
-
                 Spacer()
                 Button {
                     coordinator.selectedTab = .online
@@ -544,9 +529,6 @@ private struct BaseDashboardSubView: View {
     private var dashboardGridScroll: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 14) {
-                if coordinator.isRemasterModeEnabled {
-                    remasterQuickStatusCard
-                }
                 dashboardRow1
                 dashboardRow2
                 dashboardRow3
@@ -555,87 +537,6 @@ private struct BaseDashboardSubView: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
         }
-    }
-
-    private var remasterQuickStatusCard: some View {
-        let pondTitle = coordinator.currentPondItem.map { coordinator.localeManager.pondName(for: $0).capitalized } ?? "Кедровый остров"
-        let rodText = coordinator.assembledTackle.userRod.map { "\($0.rod.name) (\($0.rod.weight) кг)" } ?? "Не выбрано"
-        let lineText = coordinator.assembledTackle.userLine.map { "\($0.line.weight) кг (\($0.length) м)" } ?? "Нет"
-        let baitText = coordinator.assembledTackle.userBait.map { "\($0.bait.name.capitalized) (\($0.amount) шт.)" } ?? "Нет"
-
-        return VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("✨ Снаряжение и быстрый выезд")
-                        .font(.system(size: 13, weight: .heavy))
-                        .foregroundStyle(OriginalGameTheme.goldText)
-                    Text("Удочка: \(rodText) • Леска: \(lineText) • Наживка: \(baitText)")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.9))
-                        .lineLimit(1)
-                }
-                Spacer()
-                Button {
-                    coordinator.equipBestOwnedTackle()
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "wand.and.stars")
-                            .font(.system(size: 11, weight: .bold))
-                        Text(coordinator.assembledTackle.isComplete ? "Лучшая снасть" : "Собрать снасть")
-                            .font(.system(size: 11, weight: .bold))
-                    }
-                    .foregroundStyle(.black)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(
-                        coordinator.assembledTackle.isComplete ? Color.cyan : OriginalGameTheme.goldText,
-                        in: Capsule()
-                    )
-                }
-                .buttonStyle(.plain)
-            }
-
-            HStack(spacing: 8) {
-                Button {
-                    coordinator.selectedTab = .fishingPond
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "water.waves")
-                            .font(.system(size: 13, weight: .bold))
-                        Text("Рыбачить: \(pondTitle)")
-                            .font(.system(size: 13, weight: .bold))
-                    }
-                    .foregroundStyle(.black)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 8)
-                    .background(OriginalGameTheme.goldText, in: RoundedRectangle(cornerRadius: 8))
-                }
-                .buttonStyle(.plain)
-
-                if !coordinator.fishnetEntries.isEmpty {
-                    Button {
-                        coordinator.sellAllFishInFishnet()
-                    } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "rublesign.circle.fill")
-                            Text("Продать (\(coordinator.fishnetEntries.count))")
-                                .font(.system(size: 12, weight: .bold))
-                        }
-                        .foregroundStyle(.black)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(Color.green, in: RoundedRectangle(cornerRadius: 8))
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-        }
-        .padding(12)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(OriginalGameTheme.goldText.opacity(0.45), lineWidth: 1)
-        )
     }
 
     private var dashboardRow1: some View {
@@ -717,21 +618,445 @@ private struct BaseDashboardSubView: View {
                         .font(.system(size: 15, weight: .bold).monospacedDigit())
                         .foregroundStyle(OriginalGameTheme.goldText)
                     Text("Разряд: \(coordinator.profile.category)  (Опыт: \(coordinator.profile.experience))")
-                        .font(.system(size: 14, weight: .semibold).monospacedDigit())
-                        .foregroundStyle(OriginalGameTheme.goldText)
+                        .font(.system(size: 13, weight: .semibold).monospacedDigit())
+                        .foregroundStyle(.white)
                 }
                 Spacer()
                 Button {
                     coordinator.selectedTab = .fishingPond
                 } label: {
-                    OriginalStyledActionButtonLabel(title: "Ловить →", minWidth: 96)
+                    OriginalStyledActionButtonLabel(title: "Ловить →", minWidth: 110)
                 }
                 .buttonStyle(.plain)
             }
             .padding(.horizontal, 14)
         }
-        .padding(.horizontal, 8)
+        .padding(.horizontal, 10)
         .padding(.bottom, 6)
+    }
+}
+
+/// Completely new, calm Matte-Slate & Warm-Brass Main Menu for Remaster Mode (inspired by *Russian Fishing 4* & modern iOS outdoor apps).
+/// Contains zero 2013 parchment textures or orange square bitmaps; the Remaster switch lives strictly inside Settings.
+private struct RemasterMainDashboardView: View {
+    @ObservedObject var coordinator: FishingAppCoordinator
+    @Binding var subScreen: BaseSubScreen
+
+    private static let bgTop = Color(red: 21.0 / 255.0, green: 30.0 / 255.0, blue: 35.0 / 255.0)
+    private static let bgBottom = Color(red: 13.0 / 255.0, green: 19.0 / 255.0, blue: 23.0 / 255.0)
+    private static let cardFill = Color(red: 28.0 / 255.0, green: 37.0 / 255.0, blue: 44.0 / 255.0)
+    private static let warmBrass = Color(red: 221.0 / 255.0, green: 180.0 / 255.0, blue: 109.0 / 255.0)
+    private static let sageGreen = Color(red: 86.0 / 255.0, green: 158.0 / 255.0, blue: 114.0 / 255.0)
+
+    private var rankProgressFraction: Double {
+        let rank = coordinator.profile.category
+        let thresholds = BalanceTables.playerRankExpThresholds
+        let prev = (rank > 0 && (rank - 1) < thresholds.count) ? thresholds[rank - 1] : 0
+        let next = (rank >= 0 && rank < thresholds.count) ? thresholds[rank] : max(coordinator.profile.experience, 70_000_000)
+        let span = max(1, next - prev)
+        return min(1.0, max(0.0, Double(coordinator.profile.experience - prev) / Double(span)))
+    }
+
+    private var currentPondTitle: String {
+        guard let pond = coordinator.currentPondItem else { return "Кедровый Остров" }
+        return coordinator.localeManager.pondName(for: pond).capitalized
+    }
+
+    var body: some View {
+        ZStack {
+            LinearGradient(
+                colors: [Self.bgTop, Self.bgBottom],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+
+            VStack(spacing: 12) {
+                remasterTopProfileHeader
+
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 12) {
+                        remasterPondHeroCard
+                        remasterBentoGrid
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.bottom, 16)
+                }
+            }
+        }
+    }
+
+    private var remasterTopProfileHeader: some View {
+        HStack(spacing: 10) {
+            Button {
+                subScreen = .aboutMe
+            } label: {
+                ZStack {
+                    Circle()
+                        .stroke(Color.white.opacity(0.12), lineWidth: 3.5)
+                        .frame(width: 48, height: 48)
+                    Circle()
+                        .trim(from: 0, to: CGFloat(rankProgressFraction))
+                        .stroke(
+                            Self.warmBrass,
+                            style: StrokeStyle(lineWidth: 3.5, lineCap: .round)
+                        )
+                        .rotationEffect(.degrees(-90))
+                        .frame(width: 48, height: 48)
+                    VStack(spacing: 0) {
+                        Text("Ранг")
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundStyle(.white.opacity(0.68))
+                        Text("\(coordinator.profile.category)")
+                            .font(.system(size: 15, weight: .bold).monospacedDigit())
+                            .foregroundStyle(.white)
+                    }
+                }
+            }
+            .buttonStyle(.plain)
+
+            Spacer()
+
+            HStack(spacing: 6) {
+                Text("\(coordinator.profile.balance) руб")
+                    .font(.system(size: 14, weight: .semibold).monospacedDigit())
+                    .foregroundStyle(.white.opacity(0.95))
+                Circle()
+                    .fill(Self.warmBrass)
+                    .frame(width: 18, height: 18)
+                    .overlay(
+                        Text("₽")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(.black)
+                    )
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(Self.cardFill, in: Capsule())
+            .overlay(Capsule().stroke(Color.white.opacity(0.10), lineWidth: 1))
+
+            HStack(spacing: 5) {
+                Image(systemName: coordinator.dayNightLighting.isDayLight ? "sun.max.fill" : "moon.stars.fill")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Self.warmBrass)
+                Text(String(format: "%02d:%02d", coordinator.gameClock.hour, coordinator.gameClock.minute))
+                    .font(.system(size: 14, weight: .semibold).monospacedDigit())
+                    .foregroundStyle(.white.opacity(0.95))
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(Self.cardFill, in: Capsule())
+            .overlay(Capsule().stroke(Color.white.opacity(0.10), lineWidth: 1))
+        }
+        .padding(.horizontal, 14)
+        .padding(.top, 8)
+    }
+
+    private var remasterPondHeroCard: some View {
+        let pondNum = max(1, min(15, coordinator.selectedPondIndex + 1))
+        let rodKg = coordinator.assembledTackle.userRod?.rod.weight ?? 0
+        let lineKg = coordinator.assembledTackle.userLine?.line.weight ?? 0
+        let baitCount = coordinator.assembledTackle.userBait?.amount ?? 0
+
+        return VStack(spacing: 0) {
+            ZStack(alignment: .bottom) {
+                if let pondImg = OriginalGameAssetsLoader.image(named: "pond_\(pondNum)_big")
+                    ?? OriginalGameAssetsLoader.image(named: "pond_\(pondNum)") {
+                    pondImg
+                        .resizable()
+                        .scaledToFill()
+                        .frame(height: 176)
+                        .clipped()
+                } else {
+                    LinearGradient(
+                        colors: [Self.bgTop, Self.cardFill],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .frame(height: 176)
+                }
+
+                LinearGradient(
+                    colors: [
+                        Color.black.opacity(0.15),
+                        Color.black.opacity(0.05),
+                        Self.cardFill.opacity(0.95)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(height: 176)
+
+                VStack(spacing: 10) {
+                    Text(currentPondTitle)
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundStyle(.white)
+                        .shadow(color: .black.opacity(0.55), radius: 4, x: 0, y: 2)
+                        .padding(.top, 14)
+
+                    Spacer()
+
+                    HStack(spacing: 6) {
+                        tackleStatPill(
+                            icon: "figure.fishing",
+                            text: rodKg > 0 ? "Удочка \(rodKg) кг" : "Нет удочки",
+                            isReady: rodKg > 0,
+                            highlightSage: true
+                        )
+                        tackleStatPill(
+                            icon: "circle.dotted.circle",
+                            text: lineKg > 0 ? "Леска \(lineKg) кг" : "Нет лески",
+                            isReady: lineKg > 0,
+                            highlightSage: false
+                        )
+                        tackleStatPill(
+                            icon: "leaf.fill",
+                            text: baitCount > 0 ? "Наживка \(baitCount)" : "Нет наживки",
+                            isReady: baitCount > 0,
+                            highlightSage: false
+                        )
+
+                        Button {
+                            coordinator.equipBestOwnedTackle()
+                        } label: {
+                            Image(systemName: "wand.and.stars")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundStyle(Self.warmBrass)
+                                .frame(width: 28, height: 26)
+                                .background(Color.black.opacity(0.45), in: Capsule())
+                                .overlay(Capsule().stroke(Self.warmBrass.opacity(0.45), lineWidth: 1))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(.horizontal, 10)
+
+                    Button {
+                        coordinator.selectedTab = .fishingPond
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "figure.fishing")
+                                .font(.system(size: 15, weight: .bold))
+                            Text("Начать рыбалку")
+                                .font(.system(size: 16, weight: .bold))
+                        }
+                        .foregroundStyle(Color(red: 0.10, green: 0.13, blue: 0.16))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(Self.warmBrass, in: RoundedRectangle(cornerRadius: 12))
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 12)
+                }
+                .frame(height: 176)
+            }
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18)
+                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+        )
+    }
+
+    private func tackleStatPill(
+        icon: String,
+        text: String,
+        isReady: Bool,
+        highlightSage: Bool
+    ) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: icon)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(isReady ? (highlightSage ? .white : Self.sageGreen) : .orange)
+            Text(text)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.95))
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+        }
+        .padding(.horizontal, 9)
+        .padding(.vertical, 5)
+        .background(
+            isReady && highlightSage
+                ? Self.sageGreen.opacity(0.85)
+                : Color.black.opacity(0.48),
+            in: Capsule()
+        )
+        .overlay(
+            Capsule().stroke(Color.white.opacity(0.12), lineWidth: 1)
+        )
+    }
+
+    private var remasterBentoGrid: some View {
+        VStack(spacing: 10) {
+            HStack(spacing: 10) {
+                RemasterBentoCardButton(
+                    icon: "map.fill",
+                    iconColor: Self.sageGreen,
+                    title: "Локации",
+                    badgeText: "(\(coordinator.availablePonds.count))"
+                ) {
+                    subScreen = .pondListGrid
+                }
+
+                RemasterBentoCardButton(
+                    icon: "storefront.fill",
+                    iconColor: Self.warmBrass,
+                    title: "Магазин",
+                    badgeText: nil
+                ) {
+                    coordinator.selectedTab = .shop
+                }
+            }
+
+            HStack(spacing: 10) {
+                RemasterBentoCardButton(
+                    icon: "backpack.fill",
+                    iconColor: Self.warmBrass,
+                    title: "Рюкзак и снасти",
+                    badgeText: nil
+                ) {
+                    coordinator.selectedTab = .inventory
+                }
+
+                RemasterBentoCardButton(
+                    icon: "basket.fill",
+                    iconColor: Self.sageGreen,
+                    title: "Садок",
+                    badgeText: "(\(coordinator.fishnetEntries.count)/\(PlayerStateRepository.maxFishnetCapacity))"
+                ) {
+                    coordinator.selectedTab = .fishnet
+                }
+            }
+
+            HStack(spacing: 10) {
+                RemasterBentoCardButton(
+                    icon: "book.closed.fill",
+                    iconColor: Self.warmBrass,
+                    title: "Квесты и Задания",
+                    badgeText: coordinator.activeQuestForPlayer.map { "#\($0.id)" }
+                ) {
+                    coordinator.selectedProgressSection = .quests
+                    coordinator.selectedTab = .progress
+                }
+
+                RemasterBentoCardButton(
+                    icon: "trophy.fill",
+                    iconColor: Self.warmBrass,
+                    title: "Рекорды",
+                    badgeText: nil
+                ) {
+                    coordinator.selectedProgressSection = .records
+                    coordinator.selectedTab = .progress
+                }
+            }
+
+            HStack(spacing: 10) {
+                RemasterBentoCardButton(
+                    icon: "flag.2.crossed.fill",
+                    iconColor: Self.sageGreen,
+                    title: "Онлайн и Турниры",
+                    badgeText: nil
+                ) {
+                    coordinator.selectedTab = .online
+                }
+
+                RemasterBentoCardButton(
+                    icon: "gearshape.fill",
+                    iconColor: Self.warmBrass,
+                    title: "Настройки",
+                    badgeText: nil
+                ) {
+                    subScreen = .settings
+                }
+            }
+
+            HStack(spacing: 8) {
+                remasterCompactFooterButton(icon: "info.circle", title: "Энциклопедия рыб") {
+                    coordinator.ensureEncyclopediaGuideLoaded()
+                    subScreen = .aboutGame
+                }
+                remasterCompactFooterButton(icon: "person.text.rectangle", title: "Статистика") {
+                    subScreen = .aboutMe
+                }
+                remasterCompactFooterButton(icon: "sparkles", title: "Онлайн-лавка") {
+                    subScreen = .onlineShop
+                }
+            }
+            .padding(.top, 2)
+        }
+    }
+
+    private func remasterCompactFooterButton(
+        icon: String,
+        title: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 5) {
+                Image(systemName: icon)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Self.warmBrass)
+                Text(title)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.85))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 9)
+            .background(Self.cardFill.opacity(0.85), in: RoundedRectangle(cornerRadius: 10))
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct RemasterBentoCardButton: View {
+    let icon: String
+    let iconColor: Color
+    let title: String
+    let badgeText: String?
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: icon)
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundStyle(iconColor)
+                    .frame(width: 36, height: 36)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.95))
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+                    if let badgeText {
+                        Text(badgeText)
+                            .font(.system(size: 12, weight: .medium).monospacedDigit())
+                            .foregroundStyle(.white.opacity(0.55))
+                    }
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 14)
+            .frame(maxWidth: .infinity, minHeight: 74, alignment: .leading)
+            .background(
+                Color(red: 28.0 / 255.0, green: 37.0 / 255.0, blue: 44.0 / 255.0),
+                in: RoundedRectangle(cornerRadius: 14)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(Color.white.opacity(0.10), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
     }
 }
 
