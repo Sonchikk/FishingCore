@@ -461,22 +461,34 @@ public enum WaterMetalShaderSource: Sendable {
         vTexCoords1.x = vTexCoords1.x + uniforms.vOffset;
         float4 vNoise2 = vNoise2Texture.sample(noiseSampler, vTexCoords1 * 3.0);
 
-        float4 vNoise = ((vNoise1 - 0.5) * 2.0) + ((vNoise2 - 0.5) * 2.0);
+        // Fine capillary secondary octave for realistic water micro-ripples
+        float2 fineUV1 = float2(in.vTexCoords.x + uniforms.vOffset * 1.6, in.vTexCoords.y - uniforms.vOffset * 0.8) * 7.2;
+        float4 vNoiseFine = vNoise1Texture.sample(noiseSampler, fineUV1);
+
+        float4 vNoise = ((vNoise1 - 0.5) * 2.0) + ((vNoise2 - 0.5) * 2.0) + ((vNoiseFine - 0.5) * 0.75);
         vNoise = normalize(vNoise);
 
         float fLength = length(in.vPosition - float3(0.0, -1.5, 0.5));
-        float2 vUV = in.vTexCoords - (vNoise.xy / (50.0 * fLength));
+        // Perspective-scaled refraction: gentler near the far shore (y ~ 0.25), richer in the foreground (y -> 1.0)
+        float depthFactor = clamp((in.vTexCoords.y - 0.22) / 0.78, 0.0, 1.0);
+        float refractScale = mix(75.0, 42.0, depthFactor);
+        float2 vUV = in.vTexCoords - (vNoise.xy / (refractScale * fLength));
         vUV = clamp(vUV, float2(0.01, 0.01), float2(0.99, 0.99));
 
         float4 vColor = vDiffuseTexture.sample(diffuseSampler, vUV);
+
+        // Subtle optical Fresnel water depth toning in the foreground while keeping original photo colors
+        float3 deepTint = vColor.rgb * float3(0.84, 0.93, 0.98);
+        vColor.rgb = mix(vColor.rgb, deepTint, depthFactor * 0.28);
 
         float3 vLight = normalize(in.vPosition - uniforms.vLightPos);
         float3 vCamera = normalize(float3(0.0, -0.8, -0.35) - in.vPosition);
         float3 vReflected = normalize(vLight - (2.0 * dot(vLight, vNoise.xyz) * vNoise.xyz));
         float fCos = max(0.0, dot(vReflected, vCamera));
 
-        vColor = mix(vColor, float4(1.0, 0.8, 0.0, 1.0), pow(fCos, 192.0));
-        vColor.a = 0.8;
+        float spec = pow(fCos, 140.0) * 0.85 + pow(fCos, 32.0) * 0.08 * depthFactor;
+        vColor = mix(vColor, float4(1.0, 0.90, 0.68, 1.0), clamp(spec, 0.0, 1.0));
+        vColor.a = 0.84;
         return vColor;
     }
 

@@ -150,6 +150,52 @@ public enum FishingModalAlert: Equatable, Sendable, Identifiable {
 /// Main integration coordinator connecting SwiftUI screens with `FishingCore` (`FishingStateMachine`,
 /// `GameClockTimer`), `FishingDatabase` (`SQLiteConnection`, `ReferenceCatalogStore`, `PlayerStateRepository`,
 /// `QuestAndAchievementEngine`), and the 3-pass Metal water renderer (`WaterMetalRenderer`).
+/// Animated non-blocking toast notification for shop purchases, gear equipping, and rewards in Remaster mode.
+public struct RemasterToastNotification: Identifiable, Equatable, Sendable {
+    public enum ToastKind: String, Sendable, Equatable {
+        case purchase
+        case equip
+        case sale
+    }
+
+    public enum QuickEquipSlot: String, Sendable, Equatable {
+        case rod
+        case coil
+        case line
+        case hook
+        case bait
+    }
+
+    public let id: String
+    public let kind: ToastKind
+    public let drawableName: String
+    public let fallbackSymbol: String
+    public let title: String
+    public let subtitle: String
+    public let quickEquipSlot: QuickEquipSlot?
+    public let quickEquipRowId: Int?
+
+    public init(
+        id: String = UUID().uuidString,
+        kind: ToastKind,
+        drawableName: String,
+        fallbackSymbol: String,
+        title: String,
+        subtitle: String,
+        quickEquipSlot: QuickEquipSlot? = nil,
+        quickEquipRowId: Int? = nil
+    ) {
+        self.id = id
+        self.kind = kind
+        self.drawableName = drawableName
+        self.fallbackSymbol = fallbackSymbol
+        self.title = title
+        self.subtitle = subtitle
+        self.quickEquipSlot = quickEquipSlot
+        self.quickEquipRowId = quickEquipRowId
+    }
+}
+
 /// Weather & atmospheric effects mode in Remaster (`Режим Ремастера`).
 public enum RemasterWeatherKind: Int, CaseIterable, Sendable, Identifiable {
     case auto = 0
@@ -310,6 +356,35 @@ public final class FishingAppCoordinator: ObservableObject {
             if !isLoadingPersistedSettings {
                 savePersistedSettingsToDatabase()
             }
+        }
+    }
+
+    /// Non-blocking animated toast notification banner for purchases and gear changes.
+    @Published public var activeToast: RemasterToastNotification? = nil
+    private var toastDismissGeneration: Int = 0
+
+    public func presentRemasterToast(_ toast: RemasterToastNotification) {
+        toastDismissGeneration &+= 1
+        let gen = toastDismissGeneration
+        activeToast = toast
+        audioHaptics.playTouchClickHaptic()
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 3_200_000_000)
+            guard let self, self.toastDismissGeneration == gen else { return }
+            if self.activeToast?.id == toast.id {
+                self.activeToast = nil
+            }
+        }
+    }
+
+    public func performQuickEquipFromToast(_ toast: RemasterToastNotification) {
+        guard let slot = toast.quickEquipSlot, let rowId = toast.quickEquipRowId else { return }
+        switch slot {
+        case .rod: equipRod(rowId: rowId)
+        case .coil: equipCoil(rowId: rowId)
+        case .line: equipLine(rowId: rowId)
+        case .hook: equipHook(rowId: rowId)
+        case .bait: equipBait(rowId: rowId)
         }
     }
 
@@ -875,6 +950,17 @@ public final class FishingAppCoordinator: ObservableObject {
             }
             try repository.saveTackleSlots(slots)
             try reloadAllStateFromDatabase()
+            if isRemasterModeEnabled {
+                presentRemasterToast(
+                    RemasterToastNotification(
+                        kind: .equip,
+                        drawableName: "fishing_rods",
+                        fallbackSymbol: "wand.and.stars",
+                        title: "Лучшая снасть собрана",
+                        subtitle: "Экипированы оптимальные удилище, катушка, леска, крючок и наживка"
+                    )
+                )
+            }
         } catch {
             activeAlert = .operationError(message: "Не удалось автоматически собрать снасть: \(error)")
         }
@@ -973,11 +1059,23 @@ public final class FishingAppCoordinator: ObservableObject {
         do {
             let item = try repository.buyFishingRod(baseRodId: baseRodId, nowMs: nowMs)
             var slots = try repository.loadTackleSlots()
-            if slots.fishingRodId <= 0 {
+            let autoEquipped = (slots.fishingRodId <= 0)
+            if autoEquipped {
                 slots.fishingRodId = item.id
                 try repository.saveTackleSlots(slots)
             }
             try reloadAllStateFromDatabase()
+            presentRemasterToast(
+                RemasterToastNotification(
+                    kind: .purchase,
+                    drawableName: "fishing_rods",
+                    fallbackSymbol: "checkmark.seal.fill",
+                    title: "Куплено: \(item.rod.name)",
+                    subtitle: "−\(item.rod.price) ₽ • До \(item.rod.weight) кг • Баланс: \(profile.balance) ₽",
+                    quickEquipSlot: autoEquipped ? nil : .rod,
+                    quickEquipRowId: autoEquipped ? nil : item.id
+                )
+            )
         } catch let err as PlayerPersistenceError {
             activeAlert = .operationError(message: describePersistenceError(err))
         } catch {
@@ -989,11 +1087,23 @@ public final class FishingAppCoordinator: ObservableObject {
         do {
             let item = try repository.buyCoil(baseCoilId: baseCoilId, nowMs: nowMs)
             var slots = try repository.loadTackleSlots()
-            if slots.coilId <= 0 {
+            let autoEquipped = (slots.coilId <= 0)
+            if autoEquipped {
                 slots.coilId = item.id
                 try repository.saveTackleSlots(slots)
             }
             try reloadAllStateFromDatabase()
+            presentRemasterToast(
+                RemasterToastNotification(
+                    kind: .purchase,
+                    drawableName: "coil",
+                    fallbackSymbol: "checkmark.seal.fill",
+                    title: "Куплено: \(item.coil.name)",
+                    subtitle: "−\(item.coil.price) ₽ • \(item.coil.bearingCount) подш. • Баланс: \(profile.balance) ₽",
+                    quickEquipSlot: autoEquipped ? nil : .coil,
+                    quickEquipRowId: autoEquipped ? nil : item.id
+                )
+            )
         } catch let err as PlayerPersistenceError {
             activeAlert = .operationError(message: describePersistenceError(err))
         } catch {
@@ -1005,11 +1115,23 @@ public final class FishingAppCoordinator: ObservableObject {
         do {
             let item = try repository.buyFishingLine(baseLineId: baseLineId, nowMs: nowMs)
             var slots = try repository.loadTackleSlots()
-            if slots.fishingLineId <= 0 {
+            let autoEquipped = (slots.fishingLineId <= 0)
+            if autoEquipped {
                 slots.fishingLineId = item.id
                 try repository.saveTackleSlots(slots)
             }
             try reloadAllStateFromDatabase()
+            presentRemasterToast(
+                RemasterToastNotification(
+                    kind: .purchase,
+                    drawableName: "fishing_line",
+                    fallbackSymbol: "checkmark.seal.fill",
+                    title: "Куплено: \(item.line.name)",
+                    subtitle: "−\(item.line.price) ₽ • \(item.line.weight) кг (\(item.length) м) • Баланс: \(profile.balance) ₽",
+                    quickEquipSlot: autoEquipped ? nil : .line,
+                    quickEquipRowId: autoEquipped ? nil : item.id
+                )
+            )
         } catch let err as PlayerPersistenceError {
             activeAlert = .operationError(message: describePersistenceError(err))
         } catch {
@@ -1021,11 +1143,23 @@ public final class FishingAppCoordinator: ObservableObject {
         do {
             let item = try repository.buyHook(baseHookId: baseHookId)
             var slots = try repository.loadTackleSlots()
-            if slots.hookId <= 0 {
+            let autoEquipped = (slots.hookId <= 0)
+            if autoEquipped {
                 slots.hookId = item.id
                 try repository.saveTackleSlots(slots)
             }
             try reloadAllStateFromDatabase()
+            presentRemasterToast(
+                RemasterToastNotification(
+                    kind: .purchase,
+                    drawableName: "hooks",
+                    fallbackSymbol: "checkmark.seal.fill",
+                    title: "Куплено: \(item.hook.name)",
+                    subtitle: "−\(item.hook.price) ₽ • В рюкзаке: \(item.amount) шт. • Баланс: \(profile.balance) ₽",
+                    quickEquipSlot: autoEquipped ? nil : .hook,
+                    quickEquipRowId: autoEquipped ? nil : item.id
+                )
+            )
         } catch let err as PlayerPersistenceError {
             activeAlert = .operationError(message: describePersistenceError(err))
         } catch {
@@ -1037,11 +1171,23 @@ public final class FishingAppCoordinator: ObservableObject {
         do {
             let item = try repository.buyBait(baseBaitId: baseBaitId)
             var slots = try repository.loadTackleSlots()
-            if slots.baitId <= 0 {
+            let autoEquipped = (slots.baitId <= 0)
+            if autoEquipped {
                 slots.baitId = item.id
                 try repository.saveTackleSlots(slots)
             }
             try reloadAllStateFromDatabase()
+            presentRemasterToast(
+                RemasterToastNotification(
+                    kind: .purchase,
+                    drawableName: "bait_\(item.bait.id)",
+                    fallbackSymbol: "checkmark.seal.fill",
+                    title: "Куплено: \(item.bait.name.capitalized)",
+                    subtitle: "−\(item.bait.price) ₽ • В запасе: \(item.amount) шт. • Баланс: \(profile.balance) ₽",
+                    quickEquipSlot: autoEquipped ? nil : .bait,
+                    quickEquipRowId: autoEquipped ? nil : item.id
+                )
+            )
         } catch let err as PlayerPersistenceError {
             activeAlert = .operationError(message: describePersistenceError(err))
         } catch {
@@ -1276,6 +1422,9 @@ public final class FishingAppCoordinator: ObservableObject {
                 displayBobberPosition: nil,
                 rng: &visualRng
             )
+            if isRemasterModeEnabled && (stateMachine.isPreHookBobbing || (stateMachine.state == .fishFight && !stateMachine.isPulled)) {
+                audioHaptics.playTouchClickHaptic()
+            }
             if let bobber = stateMachine.bobber {
                 let newTarget = Point2D(x: bobber.x, y: bobber.y)
                 previousPhysicsBobberPos = startBobberPos ?? newTarget

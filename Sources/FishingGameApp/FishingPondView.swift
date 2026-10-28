@@ -158,18 +158,29 @@ public struct FishingPondView: View {
 
     @ViewBuilder
     private var pondWaterLayer: some View {
-        if coordinator.isWaterShaderActive {
-            MetalWaterSurfaceView(
-                isDayLight: coordinator.dayNightLighting.isDayLight,
-                pondIndex: coordinator.selectedPondIndex
-            )
-            .allowsHitTesting(false)
-        } else {
-            Static2DPondBackgroundView(
-                pondIndex: coordinator.selectedPondIndex,
-                isDayLight: coordinator.dayNightLighting.isDayLight,
-                isRemasterMode: coordinator.isRemasterModeEnabled
-            )
+        ZStack {
+            if coordinator.isWaterShaderActive {
+                MetalWaterSurfaceView(
+                    isDayLight: coordinator.dayNightLighting.isDayLight,
+                    pondIndex: coordinator.selectedPondIndex
+                )
+                .allowsHitTesting(false)
+            } else {
+                Static2DPondBackgroundView(
+                    pondIndex: coordinator.selectedPondIndex,
+                    isDayLight: coordinator.dayNightLighting.isDayLight,
+                    isRemasterMode: coordinator.isRemasterModeEnabled
+                )
+            }
+
+            if coordinator.isRemasterModeEnabled && coordinator.selectedPondIndex == 0 {
+                Photorealistic25DOriginalPondParallaxView(
+                    pondIndex: coordinator.selectedPondIndex,
+                    isDayLight: coordinator.dayNightLighting.isDayLight,
+                    hour: coordinator.gameClock.hour
+                )
+                .allowsHitTesting(false)
+            }
         }
     }
 
@@ -180,11 +191,7 @@ public struct FishingPondView: View {
             Canvas { context, size in
                 let activeRod = resolvedRodSprite(for: size)
                 if coordinator.isRemasterModeEnabled {
-                    if coordinator.selectedPondIndex == 0 {
-                        drawRemasterExperimental25DPondOneScene(in: &context, size: size, phaseSec: phaseSec)
-                    } else {
-                        drawRemasterWaterDepthAndHorizonSoftener(in: &context, size: size, phaseSec: phaseSec)
-                    }
+                    drawRemasterWaterDepthAndHorizonSoftener(in: &context, size: size, phaseSec: phaseSec)
                     drawRemasterSkyStarsAndFireflies(in: &context, size: size, phaseSec: phaseSec)
                     drawRemasterUnderwaterFishSilhouette(in: &context, size: size, phaseSec: phaseSec)
 
@@ -207,7 +214,6 @@ public struct FishingPondView: View {
                     )
                     drawRemasterWaterSplashes(in: &context, phaseSec: phaseSec)
                     drawRemasterWeatherParticles(in: &context, size: size, phaseSec: phaseSec)
-                    drawRemasterForegroundShorelineReedsAndLilies(in: &context, size: size, phaseSec: phaseSec)
                     drawRemasterProceduralRodAndReel(
                         in: &context,
                         geometry: rodGeometry,
@@ -1095,8 +1101,26 @@ public struct FishingPondView: View {
         context.stroke(
             linePath,
             with: .color(lineColor),
-            lineWidth: state == .fishFight ? (1.4 + tensionNorm * 0.8) : 1.25
+            lineWidth: state == .fishFight ? (1.35 + tensionNorm * 0.7) : 1.15
         )
+
+        // Realistic physical detail: when a fish tugs the bait (`isBiting`), the slack line snaps taut and lifts tiny water beads off the surface
+        if isBiting {
+            let tug = CGFloat(pow(max(0.0, sin(phaseSec * 5.4)), 3.0))
+            if tug > 0.25 {
+                for d in 1...4 {
+                    let u = 0.55 + CGFloat(d) * 0.09
+                    let lx = (1 - u) * (1 - u) * rodTip.x + 2 * (1 - u) * u * ctrlPoint.x + u * u * targetPt.x
+                    let ly = (1 - u) * (1 - u) * rodTip.y + 2 * (1 - u) * u * ctrlPoint.y + u * u * targetPt.y
+                    let dropY = ly + (1.0 - tug) * 6.0
+                    let r: CGFloat = 1.4
+                    context.fill(
+                        Path(ellipseIn: CGRect(x: lx - r * 0.5, y: dropY - r * 0.5, width: r, height: r * 1.3)),
+                        with: .color(Color.white.opacity(Double(tug) * 0.65))
+                    )
+                }
+            }
+        }
     }
 
     // MARK: - High-Detail Procedural Waggler Float + Water Plunge Splash (`Remaster Mode`)
@@ -1184,20 +1208,30 @@ public struct FishingPondView: View {
         let tiltRadians: Double
 
         if isFighting && !isPreHook {
-            // Active Strike / Fight: deep plunge or angled drag across the water
-            let surge = CGFloat(pow(max(0.0, sin(phaseSec * 6.2)), 2.0))
-            waveBobY = (isPulled ? 4.5 : 8.5) + surge * 4.5
-            waveShiftX = isPulled ? 0.0 : CGFloat(sin(phaseSec * 4.2)) * 5.0
-            tiltRadians = (isPulled ? -0.36 : 0.42) + Double(surge) * 0.14
+            // Active Strike / Fight: realistic deep dive under the water & lateral run
+            let surge = CGFloat(pow(max(0.0, sin(phaseSec * 5.8)), 2.0))
+            waveBobY = (isPulled ? 5.0 : 10.5) + surge * 5.0
+            waveShiftX = isPulled ? 0.0 : CGFloat(sin(phaseSec * 3.6)) * 6.5
+            tiltRadians = (isPulled ? -0.38 : 0.46) + Double(surge) * 0.14
         } else if isPreHook {
-            // Pre-hook nibble (`проба наживки`): sharp rhythmic 2-beat dips + sideways lay/tilt, with brief calm pauses
-            let primaryDip = CGFloat(pow(max(0.0, sin(phaseSec * 5.4)), 3.0))
-            let quickTwitch = CGFloat(pow(max(0.0, sin(phaseSec * 10.8 + 0.6)), 4.0))
-            waveBobY = primaryDip * 8.0 + quickTwitch * 3.5 + landingDipY
-            waveShiftX = CGFloat(sin(phaseSec * 2.7)) * (primaryDip * 4.5)
-            tiltRadians = Double(primaryDip) * 0.34 * (sin(phaseSec * 1.35) >= 0 ? 1.0 : -1.0)
+            // Realistic float bite physics (NO text prompts):
+            // Alternates between sharp vertical dips (`притапливание`) and classic lift-and-lay (`выкладывание поплавка на бок`)
+            let cycleSelector = sin(phaseSec * 1.1)
+            let primaryTug = CGFloat(pow(max(0.0, sin(phaseSec * 5.4)), 3.0))
+            let fineTremor = CGFloat(sin(phaseSec * 22.0)) * 0.8 * primaryTug
+            if cycleSelector >= 0 {
+                // Sharp downward dip to the red antenna tip
+                waveBobY = primaryTug * 9.5 + fineTremor + landingDipY
+                waveShiftX = CGFloat(sin(phaseSec * 2.4)) * (primaryTug * 3.5)
+                tiltRadians = Double(primaryTug) * 0.22
+            } else {
+                // Classic "Выкладывание": fish lifts the sinker off the bottom, raising the float slightly and laying it flat
+                waveBobY = -primaryTug * 4.5 + fineTremor + landingDipY
+                waveShiftX = primaryTug * 5.0
+                tiltRadians = Double(primaryTug) * 0.56
+            }
         } else {
-            // Calm waiting state: completely still and natural (only post-cast landing dip during first 600ms)
+            // Calm waiting state: completely still and natural
             waveBobY = landingDipY
             waveShiftX = 0.0
             tiltRadians = 0.0
@@ -1205,77 +1239,54 @@ public struct FishingPondView: View {
 
         let waterlineCenter = CGPoint(x: baseCenter.x + waveShiftX, y: baseCenter.y + waveBobY)
 
-        // 3A. Expressive Bite Effects on Water (Rising Bottom Bubbles, Strike Pulse Rings, Hydrodynamic V-Wake & Callout)
+        // 3A. Purely Optical & Physical Bite Effects on Water (Zero Text Callouts!)
         if isAnyBite {
-            // (1) Concentric pulsing bite rings around the float stem
-            for rIdx in 0..<2 {
-                let ringPhase = (phaseSec * 1.85 + Double(rIdx) * 0.5).truncatingRemainder(dividingBy: 1.0)
-                let rw = CGFloat(12.0 + ringPhase * 52.0)
-                let rh = rw * 0.42
+            // (1) Fine capillary surface-tension rings expanding from the antenna stem
+            for rIdx in 0..<3 {
+                let ringPhase = (phaseSec * 1.65 + Double(rIdx) * 0.33).truncatingRemainder(dividingBy: 1.0)
+                let rw = CGFloat(8.0 + ringPhase * 46.0)
+                let rh = rw * 0.38
                 let ringRect = CGRect(
                     x: waterlineCenter.x - rw * 0.5,
                     y: waterlineCenter.y - rh * 0.5,
                     width: rw,
                     height: rh
                 )
-                let ringColor = (isFighting && !isPreHook)
-                    ? Color(red: 1.0, green: 0.42, blue: 0.24)
-                    : Self.goldTextColor
                 context.stroke(
                     Path(ellipseIn: ringRect),
-                    with: .color(ringColor.opacity((1.0 - ringPhase) * 0.65)),
-                    lineWidth: CGFloat(2.2 * (1.0 - ringPhase * 0.5))
+                    with: .color(Color(red: 0.90, green: 0.96, blue: 1.0).opacity((1.0 - ringPhase) * 0.48)),
+                    lineWidth: CGFloat(1.3 * (1.0 - ringPhase * 0.55))
                 )
             }
 
-            // (2) Stream of 6 underwater air bubbles rising from the fish disturbing the bottom
-            for bIdx in 0..<6 {
-                let bProg = (phaseSec * 1.4 + Double(bIdx) * 0.17).truncatingRemainder(dividingBy: 1.0)
-                let angle = Double(bIdx) * 1.05 + phaseSec * 0.8
-                let spread = CGFloat(4.0 + bProg * 14.0)
+            // (2) Subtle pin-sized bottom gas/air bubbles rising near the line
+            for bIdx in 0..<4 {
+                let bProg = (phaseSec * 1.15 + Double(bIdx) * 0.25).truncatingRemainder(dividingBy: 1.0)
+                let angle = Double(bIdx) * 1.57 + phaseSec * 0.6
+                let spread = CGFloat(3.0 + bProg * 10.0)
                 let bx = waterlineCenter.x + CGFloat(cos(angle)) * spread
-                let by = waterlineCenter.y + CGFloat(10.0 - bProg * 14.0)
-                let br = CGFloat(1.6 + (1.0 - bProg) * 2.2)
-                let bRect = CGRect(x: bx - br, y: by - br, width: br * 2.0, height: br * 1.6)
-                context.fill(
+                let by = waterlineCenter.y + CGFloat(6.0 - bProg * 9.0)
+                let br = CGFloat(1.1 + (1.0 - bProg) * 1.3)
+                let bRect = CGRect(x: bx - br, y: by - br, width: br * 2.0, height: br * 1.4)
+                context.stroke(
                     Path(ellipseIn: bRect),
-                    with: .color(Color(red: 0.78, green: 0.96, blue: 1.0).opacity((1.0 - bProg) * 0.72))
+                    with: .color(Color.white.opacity((1.0 - bProg) * 0.55)),
+                    lineWidth: 0.8
                 )
             }
 
-            // (3) V-Wake hydrodynamic trail when the fish pulls the float during a strike/fight
+            // (3) Realistic thin capillary V-wake (`водяные усы`) when the float cuts sideways through the water
             if isFighting && !isPreHook {
                 var wakePath = Path()
-                wakePath.move(to: CGPoint(x: waterlineCenter.x - 16, y: waterlineCenter.y + 5))
+                wakePath.move(to: CGPoint(x: waterlineCenter.x - 18, y: waterlineCenter.y + 6))
                 wakePath.addQuadCurve(
-                    to: CGPoint(x: waterlineCenter.x + 16, y: waterlineCenter.y + 5),
-                    control: CGPoint(x: waterlineCenter.x, y: waterlineCenter.y - 4)
+                    to: CGPoint(x: waterlineCenter.x + 18, y: waterlineCenter.y + 6),
+                    control: CGPoint(x: waterlineCenter.x, y: waterlineCenter.y - 3)
                 )
                 context.stroke(
                     wakePath,
-                    with: .color(Color.white.opacity(0.55)),
-                    style: StrokeStyle(lineWidth: 2.0, lineCap: .round)
-                )
-            }
-
-            // (4) Floating Strike Callout Indicator above the antenna when a bite is active and player has not pulled yet
-            if !isPulled {
-                let badgePulse = 0.85 + 0.15 * CGFloat(sin(phaseSec * 10.0))
-                let badgeY = max(24.0, waterlineCenter.y - 54.0)
-                let pillRect = CGRect(x: waterlineCenter.x - 42.0, y: badgeY - 10.0, width: 84.0, height: 20.0)
-                let badgeColor = (isFighting && !isPreHook)
-                    ? Color(red: 0.96, green: 0.32, blue: 0.22)
-                    : Self.goldTextColor
-                context.fill(
-                    Path(roundedRect: pillRect, cornerRadius: 10),
-                    with: .color(Color(red: 0.09, green: 0.13, blue: 0.16).opacity(0.92))
-                )
-                let labelText = (isFighting && !isPreHook) ? "⚡ ПОДСЕКАЙ!" : "🐟 КЛЮЁТ..."
-                context.draw(
-                    Text(labelText)
-                        .font(.system(size: 10, weight: .heavy, design: .rounded))
-                        .foregroundStyle(badgeColor.opacity(Double(badgePulse))),
-                    at: CGPoint(x: waterlineCenter.x, y: badgeY)
+                    with: .color(Color.white.opacity(0.45)),
+                    style: StrokeStyle(lineWidth: 1.4, lineCap: .round)
                 )
             }
         }
@@ -1920,6 +1931,100 @@ private struct Static2DPondBackgroundView: View {
     }
 }
 
+/// Photorealistic 2.5D Multi-Plane Depth Parallax & Optical Lighting Layer built directly from the original `pond_<id>_big.png` artwork.
+/// Preserves 100% of the authentic location photo from the original game (trees, island, shoreline, sky) while separating the
+/// far sky and mid-ground shoreline into parallax depth planes with volumetric sun/moon light shafts and drifting water mist.
+private struct Photorealistic25DOriginalPondParallaxView: View {
+    let pondIndex: Int
+    let isDayLight: Bool
+    let hour: Int
+
+    var body: some View {
+        let pondNumber = max(1, min(15, pondIndex + 1))
+        GeometryReader { geo in
+            let w = geo.size.width
+            let h = geo.size.height
+            let horizonY = h * 0.252
+
+            TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { timeline in
+                let t = timeline.date.timeIntervalSinceReferenceDate
+                // Subtle realistic camera breathing parallax
+                let parallaxX = CGFloat(sin(t * 0.42)) * 5.5
+                let mistDriftX = CGFloat(sin(t * 0.28)) * 22.0
+
+                ZStack(alignment: .top) {
+                    if let pondImg = OriginalGameAssetsLoader.image(named: "pond_\(pondNumber)_big")
+                        ?? OriginalGameAssetsLoader.image(named: "pond_\(pondNumber)") {
+                        // Plane 1: Far Sky & Distant Horizon of the original photo (`0.35x` parallax)
+                        pondImg
+                            .resizable()
+                            .frame(width: w * 1.04, height: h)
+                            .offset(x: parallaxX * 0.35)
+                            .frame(width: w, height: horizonY * 0.68, alignment: .top)
+                            .clipped()
+
+                        // Plane 2: Mid-Ground Island & Shoreline Trees of the original photo (`-0.75x` counter-parallax for 2.5D depth separation)
+                        pondImg
+                            .resizable()
+                            .frame(width: w * 1.05, height: h)
+                            .offset(x: -parallaxX * 0.75)
+                            .frame(width: w, height: horizonY * 1.04, alignment: .top)
+                            .clipped()
+                            .mask(
+                                LinearGradient(
+                                    stops: [
+                                        .init(color: .clear, location: 0.0),
+                                        .init(color: .clear, location: 0.38),
+                                        .init(color: .black, location: 0.56),
+                                        .init(color: .black, location: 0.90),
+                                        .init(color: .clear, location: 1.0)
+                                    ],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
+                    }
+
+                    // Plane 3: Optical Volumetric Sun/Moon Light Rays (`screen` blend over original photo)
+                    let lightColor = isDayLight
+                        ? Color(red: 1.0, green: 0.92, blue: 0.72)
+                        : Color(red: 0.62, green: 0.78, blue: 0.98)
+
+                    RadialGradient(
+                        colors: [
+                            lightColor.opacity(isDayLight ? 0.22 : 0.14),
+                            lightColor.opacity(0.05),
+                            Color.clear
+                        ],
+                        center: UnitPoint(x: 0.62 + Double(parallaxX / max(1, w)), y: 0.08),
+                        startRadius: 8,
+                        endRadius: w * 0.65
+                    )
+                    .frame(width: w, height: h * 0.55)
+                    .blendMode(.screen)
+
+                    // Plane 4: Low-lying translucent shoreline mist drifting over the water edge (`y ≈ 21%..29%`)
+                    Ellipse()
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color.clear,
+                                    Color(red: 0.88, green: 0.93, blue: 0.96).opacity(isDayLight ? 0.16 : 0.08),
+                                    Color.clear
+                                ],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                        .frame(width: w * 1.3, height: 34)
+                        .position(x: w * 0.5 + mistDriftX, y: horizonY + 2)
+                        .blendMode(.screen)
+                }
+            }
+        }
+    }
+}
+
 // MARK: - 3. Single-Row Non-Clipping Top Bar (`PondTopOverlayBarView`)
 
 private struct PondTopOverlayBarView: View {
@@ -1963,7 +2068,7 @@ private struct PondTopOverlayBarView: View {
                 .background(FishingPondView.matteSlateSurface.opacity(0.88), in: Capsule())
                 .opacity(coordinator.stateMachine.state == .fishFight ? 0.45 : 1.0)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(RemasterSpringButtonStyle())
             .fixedSize(horizontal: true, vertical: true)
 
             Button {
@@ -1994,7 +2099,7 @@ private struct PondTopOverlayBarView: View {
                 .padding(.horizontal, 12)
                 .background(FishingPondView.matteSlateSurface.opacity(0.88), in: Capsule())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(RemasterSpringButtonStyle())
             .simultaneousGesture(
                 LongPressGesture(minimumDuration: 1.5).onEnded { _ in
                     coordinator.isDebugOverlayEnabled.toggle()
@@ -2011,7 +2116,7 @@ private struct PondTopOverlayBarView: View {
                         .frame(width: 36, height: 36)
                         .background(FishingPondView.matteSlateSurface.opacity(0.88), in: Circle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(RemasterSpringButtonStyle())
 
                 Button {
                     withAnimation(.easeInOut(duration: 0.2)) {
@@ -2029,7 +2134,7 @@ private struct PondTopOverlayBarView: View {
                             in: Circle()
                         )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(RemasterSpringButtonStyle())
 
                 Button {
                     guard coordinator.stateMachine.state == .idle else { return }
@@ -2042,7 +2147,7 @@ private struct PondTopOverlayBarView: View {
                         .background(FishingPondView.matteSlateSurface.opacity(0.88), in: Circle())
                         .opacity(coordinator.stateMachine.state == .idle ? 1.0 : 0.45)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(RemasterSpringButtonStyle())
             }
             .fixedSize(horizontal: true, vertical: true)
         }
@@ -2069,7 +2174,7 @@ private struct PondTopOverlayBarView: View {
                 )
                 .opacity(coordinator.stateMachine.state == .fishFight ? 0.45 : 1.0)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(RemasterSpringButtonStyle())
 
             Spacer()
 
@@ -2097,7 +2202,7 @@ private struct PondTopOverlayBarView: View {
                         height: 30
                     )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(RemasterSpringButtonStyle())
 
                 Button {
                     guard coordinator.stateMachine.state == .idle else { return }
@@ -2111,7 +2216,7 @@ private struct PondTopOverlayBarView: View {
                     )
                     .opacity(coordinator.stateMachine.state == .idle ? 1.0 : 0.45)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(RemasterSpringButtonStyle())
 
                 Button {
                     coordinator.selectedTab = .online
@@ -2123,7 +2228,7 @@ private struct PondTopOverlayBarView: View {
                         height: 38
                     )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(RemasterSpringButtonStyle())
             }
         }
         .padding(.horizontal, 8)
@@ -2251,7 +2356,7 @@ private struct RemasterCompactSonarWidgetView: View {
                     }
                     .frame(width: 148, alignment: .leading)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(RemasterSpringButtonStyle())
             } else {
                 VStack(alignment: .leading, spacing: 3) {
                     ForEach(forecast.prefix(4)) { item in
@@ -2305,7 +2410,7 @@ private struct PondDeveloperDebugToolbarView: View {
                         .background(Color.orange, in: Capsule())
                         .foregroundStyle(.black)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(RemasterSpringButtonStyle())
             }
 
             Button {
@@ -2320,7 +2425,7 @@ private struct PondDeveloperDebugToolbarView: View {
                     .background(Color.white.opacity(0.2), in: Capsule())
                     .foregroundStyle(.white)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(RemasterSpringButtonStyle())
 
             if !coordinator.assembledTackle.isComplete {
                 Button {
@@ -2333,7 +2438,7 @@ private struct PondDeveloperDebugToolbarView: View {
                         .background(FishingPondView.goldTextColor, in: Capsule())
                         .foregroundStyle(.black)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(RemasterSpringButtonStyle())
             }
 
             Spacer()
@@ -2344,7 +2449,7 @@ private struct PondDeveloperDebugToolbarView: View {
                 Image(systemName: "xmark.circle.fill")
                     .foregroundStyle(.white.opacity(0.75))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(RemasterSpringButtonStyle())
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 4)
@@ -2471,7 +2576,7 @@ private struct RemasterPondBottomDeckView: View {
                         .background(FishingPondView.matteCardSurface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                         .opacity(coordinator.stateMachine.state == .idle ? 1.0 : 0.55)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(RemasterSpringButtonStyle())
 
                     // Tile 2: Tackle & Quick Loadout
                     Button(action: onPresentQuickTackle) {
@@ -2489,7 +2594,7 @@ private struct RemasterPondBottomDeckView: View {
                         .background(FishingPondView.matteCardSurface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                         .opacity(coordinator.stateMachine.state == .idle ? 1.0 : 0.55)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(RemasterSpringButtonStyle())
 
                     // Tile 3: Fishnet (clean — never has a delete/close X on top of it!)
                     Button {
@@ -2510,7 +2615,7 @@ private struct RemasterPondBottomDeckView: View {
                         .background(FishingPondView.matteCardSurface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                         .opacity(coordinator.stateMachine.state == .idle ? 1.0 : 0.55)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(RemasterSpringButtonStyle())
 
                     // Tile 4: Dedicated "Вымотать" when cast, or "Продать"/"Оснастка" when idle
                     if coordinator.stateMachine.state != .idle {
@@ -2531,7 +2636,7 @@ private struct RemasterPondBottomDeckView: View {
                             .frame(height: 54)
                             .background(Color(red: 0.28, green: 0.16, blue: 0.17), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(RemasterSpringButtonStyle())
                     } else {
                         Button {
                             if coordinator.fishnetEntries.isEmpty {
@@ -2554,7 +2659,7 @@ private struct RemasterPondBottomDeckView: View {
                             .frame(height: 54)
                             .background(FishingPondView.matteCardSurface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(RemasterSpringButtonStyle())
                     }
                 }
             }
@@ -2869,7 +2974,7 @@ private struct ClassicPondBottomControlsPanelView: View {
             }
             .opacity(coordinator.stateMachine.state == .idle ? 1.0 : 0.45)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(RemasterSpringButtonStyle())
     }
 
     private var gameTimePlaque: some View {
@@ -2917,7 +3022,7 @@ private struct ClassicPondBottomControlsPanelView: View {
                 )
                 .opacity(coordinator.stateMachine.state == .idle ? 1.0 : 0.45)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(RemasterSpringButtonStyle())
 
             Text("\(coordinator.fishnetEntries.count)")
                 .font(.system(size: 16, weight: .bold).monospacedDigit())
@@ -2936,7 +3041,7 @@ private struct ClassicPondBottomControlsPanelView: View {
                 )
                 .opacity(coordinator.stateMachine.state == .idle ? 1.0 : 0.45)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(RemasterSpringButtonStyle())
 
             Button {
                 coordinator.resetCastToIdle()
@@ -2948,7 +3053,7 @@ private struct ClassicPondBottomControlsPanelView: View {
                     height: 40
                 )
             }
-            .buttonStyle(.plain)
+            .buttonStyle(RemasterSpringButtonStyle())
 
             Spacer()
         }
@@ -3068,7 +3173,7 @@ private struct RemasterQuickTackleAndPondSheet: View {
                             .padding(12)
                             .background(FishingPondView.goldTextColor, in: RoundedRectangle(cornerRadius: 12))
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(RemasterSpringButtonStyle())
 
                         VStack(alignment: .leading, spacing: 6) {
                             Text("Быстрый переход на другой водоём")
@@ -3100,7 +3205,7 @@ private struct RemasterQuickTackleAndPondSheet: View {
                                                 in: RoundedRectangle(cornerRadius: 8)
                                             )
                                         }
-                                        .buttonStyle(.plain)
+                                        .buttonStyle(RemasterSpringButtonStyle())
                                         .disabled(!unlocked)
                                     }
                                 }
@@ -3230,7 +3335,7 @@ private struct RemasterQuickTackleAndPondSheet: View {
             )
 
         }
-        .buttonStyle(.plain)
+        .buttonStyle(RemasterSpringButtonStyle())
     }
 }
 
@@ -3333,6 +3438,6 @@ private struct BaitQuickChooserRowView: View {
             .background(FishingPondView.matteCardSurface, in: RoundedRectangle(cornerRadius: 10))
 
         }
-        .buttonStyle(.plain)
+        .buttonStyle(RemasterSpringButtonStyle())
     }
 }

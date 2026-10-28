@@ -37,6 +37,190 @@ extension EnvironmentValues {
     }
 }
 
+/// Pleasant tactile spring animation on every button press across the Remaster UI.
+public struct RemasterSpringButtonStyle: ButtonStyle {
+    public init() {}
+    public func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
+            .brightness(configuration.isPressed ? 0.04 : 0.0)
+            .animation(.spring(response: 0.22, dampingFraction: 0.70), value: configuration.isPressed)
+    }
+}
+
+/// Animated top toast notification banner with shimmer & quick-equip action when buying or equipping gear.
+private struct RemasterPurchaseToastBannerView: View {
+    let toast: RemasterToastNotification
+    let onQuickEquip: () -> Void
+    let onDismiss: () -> Void
+    @State private var pulseScale: CGFloat = 0.85
+
+    var body: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(
+                        toast.kind == .purchase
+                            ? RemasterHubPalette.sage.opacity(0.24)
+                            : RemasterHubPalette.brass.opacity(0.24)
+                    )
+                    .frame(width: 44, height: 44)
+                    .scaleEffect(pulseScale)
+
+                OriginalSpriteOrFallbackIcon(
+                    drawableName: toast.drawableName,
+                    fallbackSystemName: toast.fallbackSymbol,
+                    width: 30,
+                    height: 30
+                )
+            }
+
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 5) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(RemasterHubPalette.sage)
+                    Text(toast.title)
+                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .foregroundStyle(RemasterHubPalette.textPrimary)
+                        .lineLimit(1)
+                }
+                Text(toast.subtitle)
+                    .font(.system(size: 11, weight: .medium, design: .rounded).monospacedDigit())
+                    .foregroundStyle(RemasterHubPalette.textSecondary)
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: 4)
+
+            if toast.quickEquipSlot != nil && toast.quickEquipRowId != nil {
+                Button(action: {
+                    onQuickEquip()
+                    onDismiss()
+                }) {
+                    Text("Надеть")
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .foregroundStyle(.black)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 7)
+                        .background(RemasterHubPalette.brass, in: Capsule())
+                }
+                .buttonStyle(RemasterSpringButtonStyle())
+            } else {
+                Button(action: onDismiss) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(RemasterHubPalette.textSecondary)
+                        .frame(width: 26, height: 26)
+                        .background(Color.white.opacity(0.06), in: Circle())
+                }
+                .buttonStyle(RemasterSpringButtonStyle())
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(
+            RemasterHubPalette.cardElevated,
+            in: RoundedRectangle(cornerRadius: 18, style: .continuous)
+        )
+        .shadow(color: .black.opacity(0.45), radius: 14, x: 0, y: 6)
+        .padding(.horizontal, 14)
+        .padding(.top, 8)
+        .onAppear {
+            withAnimation(.spring(response: 0.38, dampingFraction: 0.55)) {
+                pulseScale = 1.06
+            }
+        }
+    }
+}
+
+/// Persistent Modern Bottom Navigation Dock for Remaster Mode so the player can switch between
+/// Camp, Shop, Tackle, Fishnet, Journal, Online, and Pond in 1 tap with smooth spring animations.
+private struct RemasterBottomNavigationDock: View {
+    @ObservedObject var coordinator: FishingAppCoordinator
+
+    var body: some View {
+        HStack(spacing: 4) {
+            dockTabButton(tab: .baseHub, icon: "house.fill", label: "Лагерь", badge: nil)
+            dockTabButton(tab: .shop, icon: "storefront.fill", label: "Магазин", badge: nil)
+            dockTabButton(tab: .inventory, icon: "backpack.fill", label: "Снасти", badge: nil)
+            dockTabButton(
+                tab: .fishnet,
+                icon: "basket.fill",
+                label: "Садок",
+                badge: coordinator.fishnetEntries.isEmpty ? nil : "\(coordinator.fishnetEntries.count)"
+            )
+            dockTabButton(tab: .progress, icon: "trophy.fill", label: "Журнал", badge: nil)
+            dockTabButton(tab: .online, icon: "globe", label: "Онлайн", badge: nil)
+
+            Button {
+                withAnimation(.spring(response: 0.32, dampingFraction: 0.80)) {
+                    coordinator.selectedTab = .fishingPond
+                }
+            } label: {
+                VStack(spacing: 3) {
+                    Image(systemName: "figure.fishing")
+                        .font(.system(size: 15, weight: .bold))
+                    Text("Ловить")
+                        .font(.system(size: 9, weight: .heavy, design: .rounded))
+                }
+                .foregroundStyle(.black)
+                .frame(width: 54, height: 46)
+                .background(RemasterHubPalette.brass, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
+            }
+            .buttonStyle(RemasterSpringButtonStyle())
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .background(
+            RemasterHubPalette.bgTop.opacity(0.96),
+            in: RoundedRectangle(cornerRadius: 20, style: .continuous)
+        )
+        .shadow(color: .black.opacity(0.42), radius: 12, x: 0, y: 4)
+        .padding(.horizontal, 10)
+        .padding(.bottom, 4)
+    }
+
+    private func dockTabButton(tab: AppNavigationTab, icon: String, label: String, badge: String?) -> some View {
+        let isSelected = (coordinator.selectedTab == tab)
+        return Button {
+            withAnimation(.spring(response: 0.30, dampingFraction: 0.78)) {
+                coordinator.selectedTab = tab
+            }
+            coordinator.audioHaptics.playTouchClickHaptic()
+        } label: {
+            ZStack(alignment: .topTrailing) {
+                VStack(spacing: 3) {
+                    Image(systemName: icon)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(isSelected ? RemasterHubPalette.brass : RemasterHubPalette.textSecondary)
+                    Text(label)
+                        .font(.system(size: 9, weight: isSelected ? .bold : .medium, design: .rounded))
+                        .foregroundStyle(isSelected ? RemasterHubPalette.textPrimary : RemasterHubPalette.textSecondary)
+                        .lineLimit(1)
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: 46)
+                .background(
+                    isSelected ? RemasterHubPalette.cardElevated : Color.clear,
+                    in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+                )
+
+                if let badge {
+                    Text(badge)
+                        .font(.system(size: 8, weight: .heavy, design: .rounded).monospacedDigit())
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 1.5)
+                        .background(RemasterHubPalette.sage, in: Capsule())
+                        .offset(x: -4, y: 3)
+                }
+            }
+        }
+        .buttonStyle(RemasterSpringButtonStyle())
+    }
+}
+
 /// Root container view replacing the generic iOS `TabView` with the authentic full-screen
 /// screen switching of «Рыбалка для друзей» v1.81 (`SplashScreenActivity`, `MainActivity`, `PondListActivity`,
 /// `GameActivity`, `ShopActivity`, `BackpackActivity`, `FishpondActivity`, `MyRecordsActivity`, `OnlineGameActivity`)
@@ -69,7 +253,34 @@ public struct FishingRootView: View {
                 }
                 .transition(.opacity)
             } else {
-                activeScreenView
+                VStack(spacing: 0) {
+                    activeScreenView
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                    if coordinator.isRemasterModeEnabled && coordinator.selectedTab != .fishingPond {
+                        RemasterBottomNavigationDock(coordinator: coordinator)
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                    }
+                }
+            }
+
+            if coordinator.isRemasterModeEnabled, let toast = coordinator.activeToast {
+                VStack {
+                    RemasterPurchaseToastBannerView(
+                        toast: toast,
+                        onQuickEquip: {
+                            coordinator.performQuickEquipFromToast(toast)
+                        },
+                        onDismiss: {
+                            withAnimation(.spring(response: 0.28, dampingFraction: 0.80)) {
+                                coordinator.activeToast = nil
+                            }
+                        }
+                    )
+                    Spacer()
+                }
+                .transition(.move(edge: .top).combined(with: .opacity).combined(with: .scale(scale: 0.94)))
+                .zIndex(20)
             }
 
             if let alert = coordinator.activeAlert {
@@ -80,9 +291,13 @@ public struct FishingRootView: View {
                     coordinator.activeAlert = nil
                 }
                 .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                .zIndex(30)
             }
         }
         .environment(\.isRemasterMode, coordinator.isRemasterModeEnabled)
+        .animation(.spring(response: 0.32, dampingFraction: 0.82), value: subScreen)
+        .animation(.spring(response: 0.32, dampingFraction: 0.82), value: coordinator.selectedTab)
+        .animation(.spring(response: 0.32, dampingFraction: 0.78), value: coordinator.activeToast?.id)
         .animation(.easeInOut(duration: 0.2), value: isShowingSplash)
         .animation(.easeInOut(duration: 0.15), value: coordinator.activeAlert?.id)
         .onReceive(gameLoopTimer) { _ in
@@ -300,7 +515,7 @@ private struct CatchDialogModalCard: View {
             Button(action: onDismiss) {
                 OriginalStyledActionButtonLabel(title: "ОК", minWidth: 120)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(RemasterSpringButtonStyle())
             .padding(.top, 4)
         }
         .padding(18)
@@ -330,7 +545,7 @@ private struct StandardGameDialogModalCard: View {
             Button(action: onDismiss) {
                 OriginalStyledActionButtonLabel(title: "ОК", minWidth: 110)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(RemasterSpringButtonStyle())
             .padding(.top, 4)
         }
         .padding(18)
@@ -391,7 +606,7 @@ private struct OriginalScreenTopBar: View {
                     .frame(height: 38)
                     .background(RemasterHubPalette.cardElevated, in: Capsule())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(RemasterSpringButtonStyle())
 
                 Text(title)
                     .font(.system(size: 18, weight: .bold, design: .rounded))
@@ -423,7 +638,7 @@ private struct OriginalScreenTopBar: View {
                         height: 40
                     )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(RemasterSpringButtonStyle())
 
                 ZStack {
                     if let infoBg = OriginalGameAssetsLoader.image(named: "info_background") {
@@ -633,7 +848,7 @@ private struct BaseDashboardSubView: View {
                         height: 32
                     )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(RemasterSpringButtonStyle())
             }
         }
         .padding(.horizontal, 10)
@@ -741,7 +956,7 @@ private struct BaseDashboardSubView: View {
                 } label: {
                     OriginalStyledActionButtonLabel(title: "Ловить →", minWidth: 110)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(RemasterSpringButtonStyle())
             }
             .padding(.horizontal, 14)
         }
@@ -827,7 +1042,7 @@ private struct RemasterMainDashboardView: View {
                     }
                 }
             }
-            .buttonStyle(.plain)
+            .buttonStyle(RemasterSpringButtonStyle())
 
             Spacer()
 
@@ -937,7 +1152,7 @@ private struct RemasterMainDashboardView: View {
                                 .frame(width: 28, height: 26)
                                 .background(Color.black.opacity(0.52), in: Capsule())
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(RemasterSpringButtonStyle())
                     }
                     .padding(.horizontal, 10)
 
@@ -955,7 +1170,7 @@ private struct RemasterMainDashboardView: View {
                         .padding(.vertical, 12)
                         .background(Self.warmBrass, in: RoundedRectangle(cornerRadius: 12))
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(RemasterSpringButtonStyle())
                     .padding(.horizontal, 12)
                     .padding(.bottom, 12)
                 }
@@ -1111,7 +1326,7 @@ private struct RemasterMainDashboardView: View {
             .padding(.vertical, 9)
             .background(Self.cardFill, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(RemasterSpringButtonStyle())
     }
 }
 
@@ -1152,7 +1367,7 @@ private struct RemasterBentoCardButton: View {
                 in: RoundedRectangle(cornerRadius: 14, style: .continuous)
             )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(RemasterSpringButtonStyle())
     }
 }
 
@@ -1181,7 +1396,7 @@ private struct DashboardTileButton: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 4)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(RemasterSpringButtonStyle())
     }
 }
 
@@ -1333,7 +1548,7 @@ private struct PondListGridSubView: View {
                                     .padding(.vertical, 9)
                                     .background(RemasterHubPalette.brass, in: Capsule())
                                 }
-                                .buttonStyle(.plain)
+                                .buttonStyle(RemasterSpringButtonStyle())
                             }
                         }
                         .padding(14)
@@ -1359,7 +1574,7 @@ private struct PondListGridSubView: View {
                                     in: Capsule()
                                 )
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(RemasterSpringButtonStyle())
                     }
                 }
 
@@ -1450,7 +1665,7 @@ private struct PondGridCellView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 .opacity(isUnlocked ? 1.0 : 0.65)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(RemasterSpringButtonStyle())
         } else {
             let badgeBg = isUnlocked ? Color.black.opacity(0.7) : Color.red.opacity(0.85)
             let strokeColor = isSelected ? Color.green : OriginalGameTheme.goldText.opacity(0.8)
@@ -1480,7 +1695,7 @@ private struct PondGridCellView: View {
                         .lineLimit(1)
                 }
             }
-            .buttonStyle(.plain)
+            .buttonStyle(RemasterSpringButtonStyle())
         }
     }
 
@@ -1702,7 +1917,7 @@ private struct AboutMeSubView: View {
             .padding(12)
             .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(RemasterSpringButtonStyle())
     }
 
     private var profileStatsBlock: some View {
@@ -1726,7 +1941,7 @@ private struct AboutMeSubView: View {
             } label: {
                 OriginalStyledActionButtonLabel(title: "Аккаунт / Профиль", minWidth: 240)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(RemasterSpringButtonStyle())
 
             Button {
                 subScreen = .mainDashboard
@@ -1735,7 +1950,7 @@ private struct AboutMeSubView: View {
             } label: {
                 OriginalStyledActionButtonLabel(title: "Квесты (44 сюжетных квеста)", minWidth: 240)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(RemasterSpringButtonStyle())
 
             Button {
                 subScreen = .mainDashboard
@@ -1744,7 +1959,7 @@ private struct AboutMeSubView: View {
             } label: {
                 OriginalStyledActionButtonLabel(title: "Задание (Поручения рыбака)", minWidth: 240)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(RemasterSpringButtonStyle())
 
             Button {
                 subScreen = .mainDashboard
@@ -1753,7 +1968,7 @@ private struct AboutMeSubView: View {
             } label: {
                 OriginalStyledActionButtonLabel(title: "Достижения (14)", minWidth: 240)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(RemasterSpringButtonStyle())
 
             Button {
                 subScreen = .mainDashboard
@@ -1762,7 +1977,7 @@ private struct AboutMeSubView: View {
             } label: {
                 OriginalStyledActionButtonLabel(title: "Личные рекорды (141 вид)", minWidth: 240)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(RemasterSpringButtonStyle())
 
             Button {
                 coordinator.ensureEncyclopediaGuideLoaded()
@@ -1770,7 +1985,7 @@ private struct AboutMeSubView: View {
             } label: {
                 OriginalStyledActionButtonLabel(title: "Гайд по рыбам, водоёмам и FAQ", minWidth: 240)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(RemasterSpringButtonStyle())
         }
         .frame(maxWidth: .infinity)
         .padding(.top, 14)
@@ -1802,7 +2017,7 @@ private struct OnlineShopSubView: View {
                         } label: {
                             OriginalStyledActionButtonLabel(title: "Обновить каталог", minWidth: 260)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(RemasterSpringButtonStyle())
 
                         if !coordinator.lastOnlineStatusMessage.isEmpty {
                             Text(coordinator.lastOnlineStatusMessage)
@@ -1949,7 +2164,7 @@ private struct SettingsSubView: View {
                                                         in: Capsule()
                                                     )
                                                 }
-                                                .buttonStyle(.plain)
+                                                .buttonStyle(RemasterSpringButtonStyle())
                                             }
                                         }
                                     }
@@ -2107,7 +2322,7 @@ private struct AboutGameSubView: View {
                             .opacity(isSel ? 1.0 : 0.65)
                     }
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(RemasterSpringButtonStyle())
             }
         }
         .padding(.horizontal, 12)
@@ -2222,7 +2437,7 @@ private struct AboutGameSubView: View {
                                     .foregroundStyle(OriginalGameTheme.goldText)
                             }
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(RemasterSpringButtonStyle())
 
                         if isOpen {
                             Divider().background(Color.white.opacity(0.2))
@@ -2281,7 +2496,7 @@ private struct FishGuideCardView: View {
                     }
                 }
             }
-            .buttonStyle(.plain)
+            .buttonStyle(RemasterSpringButtonStyle())
 
             if isExpanded {
                 Divider().background(Color.white.opacity(0.2))
@@ -2370,7 +2585,7 @@ private struct PondGuideCardView: View {
                     }
                 }
             }
-            .buttonStyle(.plain)
+            .buttonStyle(RemasterSpringButtonStyle())
 
             if isExpanded {
                 Divider().background(Color.white.opacity(0.2))
@@ -2497,7 +2712,7 @@ public struct ShopView: View {
                             .padding(.vertical, 5)
                             .background(onlyAffordable ? RemasterHubPalette.brass : RemasterHubPalette.cardBg, in: Capsule())
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(RemasterSpringButtonStyle())
                     }
                     .padding(.horizontal, 14)
                 }
@@ -2544,26 +2759,51 @@ public struct ShopView: View {
             .padding(.horizontal, 4)
             .background(isActive ? RemasterHubPalette.cardElevated : RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(RemasterSpringButtonStyle())
     }
 
+    private let remasterShopGridColumns = [
+        GridItem(.flexible(), spacing: 10),
+        GridItem(.flexible(), spacing: 10)
+    ]
+
     private var shopItemsScrollView: some View {
-        ScrollView {
-            VStack(spacing: 8) {
-                switch selectedCategory {
-                case .rods:
-                    shopRodsList
-                case .coils:
-                    shopCoilsList
-                case .lines:
-                    shopLinesList
-                case .hooks:
-                    shopHooksList
-                case .baits:
-                    shopBaitsList
+        ScrollView(showsIndicators: false) {
+            if coordinator.isRemasterModeEnabled {
+                LazyVGrid(columns: remasterShopGridColumns, spacing: 10) {
+                    switch selectedCategory {
+                    case .rods:
+                        shopRodsList
+                    case .coils:
+                        shopCoilsList
+                    case .lines:
+                        shopLinesList
+                    case .hooks:
+                        shopHooksList
+                    case .baits:
+                        shopBaitsList
+                    }
                 }
+                .padding(.horizontal, 14)
+                .padding(.bottom, 14)
+                .animation(.spring(response: 0.28, dampingFraction: 0.80), value: selectedCategory)
+            } else {
+                VStack(spacing: 8) {
+                    switch selectedCategory {
+                    case .rods:
+                        shopRodsList
+                    case .coils:
+                        shopCoilsList
+                    case .lines:
+                        shopLinesList
+                    case .hooks:
+                        shopHooksList
+                    case .baits:
+                        shopBaitsList
+                    }
+                }
+                .padding(10)
             }
-            .padding(10)
         }
     }
 
@@ -2696,7 +2936,7 @@ private struct ShopCategoryStripView: View {
                             )
                         }
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(RemasterSpringButtonStyle())
                 }
             }
             .padding(.horizontal, 12)
@@ -2716,56 +2956,59 @@ private struct ShopItemRowView: View {
 
     var body: some View {
         if isRemasterMode {
-            HStack(spacing: 12) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(Color.black.opacity(0.28))
-                        .frame(width: 54, height: 54)
-                    OriginalSpriteOrFallbackIcon(
-                        drawableName: drawableName,
-                        fallbackSystemName: "shippingbox.fill",
-                        width: 42,
-                        height: 42
-                    )
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(Color.black.opacity(0.30))
+                            .frame(width: 48, height: 48)
+                        OriginalSpriteOrFallbackIcon(
+                            drawableName: drawableName,
+                            fallbackSystemName: "shippingbox.fill",
+                            width: 36,
+                            height: 36
+                        )
+                    }
+                    Spacer()
+                    Text("\(priceCoins) ₽")
+                        .font(.system(size: 13, weight: .heavy, design: .rounded).monospacedDigit())
+                        .foregroundStyle(canAfford ? RemasterHubPalette.brass : RemasterHubPalette.textSecondary)
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 5)
+                        .background(Color.black.opacity(0.28), in: Capsule())
                 }
 
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 3) {
                     Text(title)
-                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                        .font(.system(size: 14, weight: .bold, design: .rounded))
                         .foregroundStyle(RemasterHubPalette.textPrimary)
+                        .lineLimit(1)
                     Text(subtitle)
-                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .font(.system(size: 11, weight: .medium, design: .rounded))
                         .foregroundStyle(RemasterHubPalette.textSecondary)
+                        .lineLimit(2)
+                        .frame(minHeight: 28, alignment: .topLeading)
                 }
-
-                Spacer(minLength: 6)
 
                 Button(action: onBuy) {
-                    VStack(spacing: 2) {
-                        HStack(spacing: 4) {
-                            Image(systemName: canAfford ? "cart.fill.badge.plus" : "lock.fill")
-                                .font(.system(size: 11, weight: .bold))
-                            Text("\(priceCoins) ₽")
-                                .font(.system(size: 13, weight: .bold, design: .rounded).monospacedDigit())
-                        }
+                    HStack(spacing: 5) {
+                        Image(systemName: canAfford ? "plus.circle.fill" : "lock.fill")
+                            .font(.system(size: 12, weight: .bold))
                         Text(canAfford ? "Купить" : "Недоступно")
-                            .font(.system(size: 10, weight: .semibold, design: .rounded))
-                            .opacity(0.9)
+                            .font(.system(size: 12, weight: .bold, design: .rounded))
                     }
                     .foregroundStyle(canAfford ? .white : RemasterHubPalette.textSecondary)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 9)
                     .background(
-                        canAfford ? RemasterHubPalette.sage : Color.white.opacity(0.06),
+                        canAfford ? RemasterHubPalette.sage : RemasterHubPalette.cardElevated,
                         in: RoundedRectangle(cornerRadius: 11, style: .continuous)
                     )
-
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(RemasterSpringButtonStyle())
             }
             .padding(12)
-            .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-
+            .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         } else {
             HStack(spacing: 12) {
                 OriginalSpriteOrFallbackIcon(
@@ -2797,10 +3040,10 @@ private struct ShopItemRowView: View {
                         height: 44
                     )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(RemasterSpringButtonStyle())
             }
             .padding(10)
-            .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 8))
         }
     }
 }
@@ -2906,7 +3149,7 @@ public struct InventoryView: View {
                     .padding(.vertical, 6)
                     .background(RemasterHubPalette.brass, in: Capsule())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(RemasterSpringButtonStyle())
             }
 
             HStack(spacing: 6) {
@@ -3006,26 +3249,51 @@ public struct InventoryView: View {
                 in: RoundedRectangle(cornerRadius: 12, style: .continuous)
             )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(RemasterSpringButtonStyle())
     }
 
+    private let remasterBackpackGridColumns = [
+        GridItem(.flexible(), spacing: 10),
+        GridItem(.flexible(), spacing: 10)
+    ]
+
     private var backpackItemsScrollView: some View {
-        ScrollView {
-            VStack(spacing: 8) {
-                switch selectedCategory {
-                case .rods:
-                    backpackRodsList
-                case .coils:
-                    backpackCoilsList
-                case .lines:
-                    backpackLinesList
-                case .hooks:
-                    backpackHooksList
-                case .baits:
-                    backpackBaitsList
+        ScrollView(showsIndicators: false) {
+            if coordinator.isRemasterModeEnabled {
+                LazyVGrid(columns: remasterBackpackGridColumns, spacing: 10) {
+                    switch selectedCategory {
+                    case .rods:
+                        backpackRodsList
+                    case .coils:
+                        backpackCoilsList
+                    case .lines:
+                        backpackLinesList
+                    case .hooks:
+                        backpackHooksList
+                    case .baits:
+                        backpackBaitsList
+                    }
                 }
+                .padding(.horizontal, 12)
+                .padding(.bottom, 14)
+                .animation(.spring(response: 0.28, dampingFraction: 0.80), value: selectedCategory)
+            } else {
+                VStack(spacing: 8) {
+                    switch selectedCategory {
+                    case .rods:
+                        backpackRodsList
+                    case .coils:
+                        backpackCoilsList
+                    case .lines:
+                        backpackLinesList
+                    case .hooks:
+                        backpackHooksList
+                    case .baits:
+                        backpackBaitsList
+                    }
+                }
+                .padding(10)
             }
-            .padding(10)
         }
     }
 
@@ -3146,7 +3414,7 @@ private struct BackpackCategoryStripView: View {
                             )
                         }
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(RemasterSpringButtonStyle())
                 }
             }
             .padding(.horizontal, 12)
@@ -3166,53 +3434,60 @@ private struct BackpackItemRowView: View {
     var body: some View {
         Button(action: onEquip) {
             if isRemasterMode {
-                HStack(spacing: 12) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(Color.black.opacity(0.28))
-                            .frame(width: 52, height: 52)
-                        OriginalSpriteOrFallbackIcon(
-                            drawableName: drawableName,
-                            fallbackSystemName: "circle.fill",
-                            width: 40,
-                            height: 40
-                        )
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .fill(Color.black.opacity(0.30))
+                                .frame(width: 46, height: 46)
+                            OriginalSpriteOrFallbackIcon(
+                                drawableName: drawableName,
+                                fallbackSystemName: "circle.fill",
+                                width: 34,
+                                height: 34
+                            )
+                        }
+                        Spacer()
+                        if isEquipped {
+                            Text("АКТИВНО")
+                                .font(.system(size: 9, weight: .heavy, design: .rounded))
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(RemasterHubPalette.sage, in: Capsule())
+                        }
                     }
-                    VStack(alignment: .leading, spacing: 4) {
+
+                    VStack(alignment: .leading, spacing: 3) {
                         Text(title)
-                            .font(.system(size: 15, weight: .bold, design: .rounded))
+                            .font(.system(size: 14, weight: .bold, design: .rounded))
                             .foregroundStyle(RemasterHubPalette.textPrimary)
+                            .lineLimit(1)
                         Text(subtitle)
-                            .font(.system(size: 12, weight: .medium, design: .rounded))
+                            .font(.system(size: 11, weight: .medium, design: .rounded))
                             .foregroundStyle(RemasterHubPalette.textSecondary)
+                            .lineLimit(2)
+                            .frame(minHeight: 28, alignment: .topLeading)
                     }
-                    Spacer(minLength: 6)
+
                     HStack(spacing: 5) {
-                        Image(systemName: isEquipped ? "checkmark.circle.fill" : "circle")
-                            .font(.system(size: 13, weight: .bold))
-                        Text(isEquipped ? "Надето" : "Выбрать")
+                        Image(systemName: isEquipped ? "checkmark.circle.fill" : "hand.tap.fill")
+                            .font(.system(size: 12, weight: .bold))
+                        Text(isEquipped ? "Надето" : "Надеть")
                             .font(.system(size: 12, weight: .bold, design: .rounded))
                     }
                     .foregroundStyle(isEquipped ? .white : RemasterHubPalette.brass)
-                    .padding(.horizontal, 11)
-                    .padding(.vertical, 7)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
                     .background(
-                        isEquipped ? RemasterHubPalette.sage : RemasterHubPalette.cardElevated,
-                        in: Capsule()
-                    )
-                    .overlay(
-                        Capsule()
-                            .stroke(isEquipped ? Color.white.opacity(0.22) : RemasterHubPalette.brass.opacity(0.35), lineWidth: 1)
+                        isEquipped ? RemasterHubPalette.sage : Color.black.opacity(0.28),
+                        in: RoundedRectangle(cornerRadius: 10, style: .continuous)
                     )
                 }
                 .padding(12)
                 .background(
                     isEquipped ? RemasterHubPalette.cardElevated : RemasterHubPalette.cardBg,
-                    in: RoundedRectangle(cornerRadius: 14, style: .continuous)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .stroke(isEquipped ? RemasterHubPalette.sage.opacity(0.75) : RemasterHubPalette.stroke, lineWidth: isEquipped ? 1.5 : 1.0)
+                    in: RoundedRectangle(cornerRadius: 16, style: .continuous)
                 )
             } else {
                 HStack(spacing: 12) {
@@ -3239,10 +3514,10 @@ private struct BackpackItemRowView: View {
                     )
                 }
                 .padding(10)
-                .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 8))
             }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(RemasterSpringButtonStyle())
     }
 }
 
@@ -3325,7 +3600,7 @@ public struct FishnetView: View {
                                 minWidth: 240
                             )
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(RemasterSpringButtonStyle())
                     }
 
                     ScrollView {
@@ -3393,7 +3668,7 @@ public struct FishnetView: View {
                                 .padding(.vertical, 7)
                                 .background(RemasterHubPalette.brass, in: Capsule())
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(RemasterSpringButtonStyle())
                             .padding(.top, 2)
                         }
                     }
@@ -3448,7 +3723,7 @@ public struct FishnetView: View {
                                     .padding(.vertical, 7)
                                     .background(isSel ? RemasterHubPalette.brass : RemasterHubPalette.cardBg, in: Capsule())
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(RemasterSpringButtonStyle())
                         }
                     }
 
@@ -3703,7 +3978,7 @@ public struct ProgressAndRecordsView: View {
                             .opacity(isSel ? 1.0 : 0.65)
                     }
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(RemasterSpringButtonStyle())
             }
         }
         .padding(.horizontal, 12)
@@ -3773,7 +4048,7 @@ public struct ProgressAndRecordsView: View {
                     minWidth: 260
                 )
             }
-            .buttonStyle(.plain)
+            .buttonStyle(RemasterSpringButtonStyle())
 
             if showAllQuestsCatalog {
                 ForEach(coordinator.quests) { quest in
@@ -3928,21 +4203,21 @@ public struct ProgressAndRecordsView: View {
                             } label: {
                                 OriginalStyledActionButtonLabel(title: "Новое задание (Бесплатно)", minWidth: 220)
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(RemasterSpringButtonStyle())
                         } else {
                             Button {
                                 coordinator.selectedTab = .fishingPond
                             } label: {
                                 OriginalStyledActionButtonLabel(title: "Выполняю → На водоём", minWidth: 165)
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(RemasterSpringButtonStyle())
 
                             Button {
                                 _ = coordinator.rerollActiveUserTask()
                             } label: {
                                 OriginalStyledActionButtonLabel(title: "Сменить (\(rerollCost) руб)", minWidth: 155)
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(RemasterSpringButtonStyle())
                         }
                     }
                 }
@@ -3962,7 +4237,7 @@ public struct ProgressAndRecordsView: View {
                     } label: {
                         OriginalStyledActionButtonLabel(title: "Получить задание", minWidth: 220)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(RemasterSpringButtonStyle())
                 }
                 .frame(maxWidth: .infinity)
                 .padding(16)
@@ -4048,7 +4323,7 @@ public struct ProgressAndRecordsView: View {
                                 .padding(.vertical, 7)
                                 .background(isSel ? RemasterHubPalette.brass : RemasterHubPalette.cardBg, in: Capsule())
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(RemasterSpringButtonStyle())
                     }
                 }
 
@@ -4159,7 +4434,7 @@ private struct ActiveQuestDetailCardView: View {
                         minWidth: 260
                     )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(RemasterSpringButtonStyle())
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding(.top, 4)
             }
@@ -4325,7 +4600,7 @@ private struct QuestRowView: View {
                         minWidth: 230
                     )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(RemasterSpringButtonStyle())
             }
         }
         .padding(10)
@@ -4395,16 +4670,25 @@ private struct PersonalRecordRowView: View {
     }
 }
 
-// MARK: - 6. Authentic `OnlineGameActivity` (`res/layout/online_game.xml` `res/74.xml`) & TCP Chat (`res/QM.xml`)
+// MARK: - 6. Authentic `OnlineGameActivity` (`res/layout/online_game.xml` `res/74.xml`) & Modern Remaster Esports/Social Hub
 
 public struct OnlineAndChatView: View {
     public enum OnlineSection: String, CaseIterable, Identifiable {
-        case profile = "Профиль"
+        case profile = "Облако"
         case chat = "Чат"
         case ratings = "Рейтинг"
         case tours = "Турниры"
 
         public var id: String { rawValue }
+
+        var iconName: String {
+            switch self {
+            case .profile: return "icloud.and.arrow.up.fill"
+            case .chat: return "bubble.left.and.bubble.right.fill"
+            case .ratings: return "medal.fill"
+            case .tours: return "flag.2.crossed.fill"
+            }
+        }
     }
 
     @ObservedObject public var coordinator: FishingAppCoordinator
@@ -4421,8 +4705,8 @@ public struct OnlineAndChatView: View {
 
             VStack(spacing: 8) {
                 OriginalScreenTopBar(
-                    title: "Онлайн-игра и Чат",
-                    subtitle: "\(FishingIOSAppConfiguration.chatServerHost):\(FishingIOSAppConfiguration.chatServerPort) • \(coordinator.chatConnectionState.rawValue)"
+                    title: coordinator.isRemasterModeEnabled ? "Онлайн-центр и Турниры" : "Онлайн-игра и Чат",
+                    subtitle: coordinator.chatConnectionState == .connected ? "В сети" : "Офлайн / HTTP"
                 ) {
                     coordinator.selectedTab = .baseHub
                 }
@@ -4430,30 +4714,40 @@ public struct OnlineAndChatView: View {
                 onlineSectionPicker
 
                 if !coordinator.lastOnlineStatusMessage.isEmpty {
-                    Text(coordinator.lastOnlineStatusMessage)
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(.cyan)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color.black.opacity(0.6), in: RoundedRectangle(cornerRadius: 6))
-                        .padding(.horizontal, 10)
+                    HStack(spacing: 8) {
+                        Image(systemName: "antenna.radiowaves.left.and.right")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundStyle(RemasterHubPalette.sage)
+                        Text(coordinator.lastOnlineStatusMessage)
+                            .font(.system(size: 12, weight: .semibold, design: .rounded))
+                            .foregroundStyle(RemasterHubPalette.textPrimary)
+                            .lineLimit(2)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(RemasterHubPalette.cardElevated, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .padding(.horizontal, 14)
                 }
 
-                ScrollView {
-                    VStack(spacing: 12) {
-                        switch selectedSection {
-                        case .profile:
-                            onlineAuthSectionCard
-                        case .chat:
-                            onlineChatSectionCard
-                        case .ratings:
-                            onlineRatingsSectionCard
-                        case .tours:
-                            onlineToursSectionCard
+                if coordinator.isRemasterModeEnabled {
+                    remasterOnlineContentBody
+                } else {
+                    ScrollView {
+                        VStack(spacing: 12) {
+                            switch selectedSection {
+                            case .profile:
+                                classicOnlineAuthSectionCard
+                            case .chat:
+                                classicOnlineChatSectionCard
+                            case .ratings:
+                                classicOnlineRatingsSectionCard
+                            case .tours:
+                                classicOnlineToursSectionCard
+                            }
                         }
+                        .padding(10)
                     }
-                    .padding(10)
                 }
             }
         }
@@ -4463,8 +4757,11 @@ public struct OnlineAndChatView: View {
     private var onlineSectionPicker: some View {
         HStack(spacing: 6) {
             ForEach(OnlineSection.allCases) { sec in
+                let isSel = (selectedSection == sec)
                 Button {
-                    selectedSection = sec
+                    withAnimation(.spring(response: 0.28, dampingFraction: 0.80)) {
+                        selectedSection = sec
+                    }
                     switch sec {
                     case .ratings:
                         if coordinator.topPlayersRating.isEmpty && coordinator.worldSpeciesRecords.isEmpty {
@@ -4485,24 +4782,617 @@ public struct OnlineAndChatView: View {
                     }
                 } label: {
                     if coordinator.isRemasterModeEnabled {
-                        Text(sec.rawValue)
-                            .font(.system(size: 12, weight: .bold, design: .rounded))
-                            .foregroundStyle(selectedSection == sec ? .black : RemasterHubPalette.textSecondary)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 8)
-                            .background(selectedSection == sec ? RemasterHubPalette.brass : RemasterHubPalette.cardBg, in: Capsule())
+                        HStack(spacing: 5) {
+                            Image(systemName: sec.iconName)
+                                .font(.system(size: 11, weight: .bold))
+                            Text(sec.rawValue)
+                                .font(.system(size: 12, weight: .bold, design: .rounded))
+                        }
+                        .foregroundStyle(isSel ? .black : RemasterHubPalette.textSecondary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 9)
+                        .background(isSel ? RemasterHubPalette.brass : RemasterHubPalette.cardBg, in: Capsule())
                     } else {
                         OriginalStyledActionButtonLabel(title: sec.rawValue, minWidth: 78)
-                            .opacity(selectedSection == sec ? 1.0 : 0.65)
+                            .opacity(isSel ? 1.0 : 0.65)
                     }
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(RemasterSpringButtonStyle())
             }
         }
-        .padding(.horizontal, 8)
+        .padding(.horizontal, 14)
     }
 
-    private var onlineAuthSectionCard: some View {
+    // MARK: - Remaster 4.0 Modern Online Sections
+
+    @ViewBuilder
+    private var remasterOnlineContentBody: some View {
+        switch selectedSection {
+        case .profile:
+            remasterOnlineProfileView
+        case .chat:
+            remasterOnlineChatMessengerView
+        case .ratings:
+            remasterOnlineRatingsLeaderboardView
+        case .tours:
+            remasterOnlineTournamentsHubView
+        }
+    }
+
+    private var remasterOnlineProfileView: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 12) {
+                // 1. Cloud Account Card with Custom Dark Input Fields
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack(spacing: 12) {
+                        ZStack {
+                            Circle()
+                                .fill(RemasterHubPalette.brass.opacity(0.18))
+                                .frame(width: 48, height: 48)
+                            Image(systemName: "person.crop.circle.badge.checkmark")
+                                .font(.system(size: 22, weight: .bold))
+                                .foregroundStyle(RemasterHubPalette.brass)
+                        }
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Облачный аккаунт рыболова")
+                                .font(.system(size: 16, weight: .bold, design: .rounded))
+                                .foregroundStyle(RemasterHubPalette.textPrimary)
+                            Text("Сервер: \(FishingIOSAppConfiguration.chatServerHost):\(FishingIOSAppConfiguration.chatServerPort)")
+                                .font(.system(size: 11, weight: .medium, design: .rounded).monospacedDigit())
+                                .foregroundStyle(RemasterHubPalette.textSecondary)
+                        }
+                        Spacer()
+                    }
+
+                    // Custom dark-glass Login field (no ugly white roundedBorder!)
+                    HStack(spacing: 10) {
+                        Image(systemName: "person.fill")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(RemasterHubPalette.brass)
+                            .frame(width: 20)
+                        TextField("Логин или e-mail", text: $coordinator.savedOnlineLogin)
+                            .font(.system(size: 14, weight: .semibold, design: .rounded))
+                            .foregroundStyle(RemasterHubPalette.textPrimary)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 11)
+                    .background(Color.black.opacity(0.32), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+                    // Custom dark-glass Password field
+                    HStack(spacing: 10) {
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(RemasterHubPalette.brass)
+                            .frame(width: 20)
+                        SecureField("Пароль от аккаунта", text: $coordinator.savedOnlinePassword)
+                            .font(.system(size: 14, weight: .semibold, design: .rounded))
+                            .foregroundStyle(RemasterHubPalette.textPrimary)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 11)
+                    .background(Color.black.opacity(0.32), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+                    // Side-by-side Primary Login & Register Buttons
+                    HStack(spacing: 10) {
+                        Button {
+                            coordinator.authenticateOnlineProfileLive(
+                                login: coordinator.savedOnlineLogin,
+                                password: coordinator.savedOnlinePassword
+                            )
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "arrow.right.circle.fill")
+                                Text("Войти")
+                            }
+                            .font(.system(size: 14, weight: .bold, design: .rounded))
+                            .foregroundStyle(.black)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 11)
+                            .background(RemasterHubPalette.brass, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        }
+                        .buttonStyle(RemasterSpringButtonStyle())
+
+                        Button {
+                            coordinator.registerOnlineAccountLive(
+                                loginOrEmail: coordinator.savedOnlineLogin,
+                                password: coordinator.savedOnlinePassword
+                            )
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "person.badge.plus")
+                                Text("Регистрация")
+                            }
+                            .font(.system(size: 14, weight: .bold, design: .rounded))
+                            .foregroundStyle(RemasterHubPalette.textPrimary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 11)
+                            .background(RemasterHubPalette.cardElevated, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        }
+                        .buttonStyle(RemasterSpringButtonStyle())
+                    }
+                }
+                .padding(14)
+                .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+
+                // 2. 2-Column Cloud Sync & Server Rewards Cards
+                HStack(spacing: 10) {
+                    Button {
+                        coordinator.syncAchievementsAndQuestsLive(
+                            login: coordinator.savedOnlineLogin,
+                            password: coordinator.savedOnlinePassword,
+                            includeQuests: false,
+                            silent: false
+                        )
+                    } label: {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Image(systemName: "arrow.triangle.2.circlepath.icloud.fill")
+                                .font(.system(size: 22, weight: .bold))
+                                .foregroundStyle(RemasterHubPalette.sage)
+                            Text("Синхронизация")
+                                .font(.system(size: 14, weight: .bold, design: .rounded))
+                                .foregroundStyle(RemasterHubPalette.textPrimary)
+                            Text("Сохранить разряд, квесты и медали на сервер")
+                                .font(.system(size: 11, weight: .medium, design: .rounded))
+                                .foregroundStyle(RemasterHubPalette.textSecondary)
+                                .lineLimit(2)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(14)
+                        .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    }
+                    .buttonStyle(RemasterSpringButtonStyle())
+
+                    Button {
+                        coordinator.claimServerRewardsLive(
+                            login: coordinator.savedOnlineLogin,
+                            password: coordinator.savedOnlinePassword
+                        )
+                    } label: {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Image(systemName: "gift.fill")
+                                .font(.system(size: 22, weight: .bold))
+                                .foregroundStyle(RemasterHubPalette.brass)
+                            Text("Награды сервера")
+                                .font(.system(size: 14, weight: .bold, design: .rounded))
+                                .foregroundStyle(RemasterHubPalette.textPrimary)
+                            Text("Забрать призы за турниры и жемчуг")
+                                .font(.system(size: 11, weight: .medium, design: .rounded))
+                                .foregroundStyle(RemasterHubPalette.textSecondary)
+                                .lineLimit(2)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(14)
+                        .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    }
+                    .buttonStyle(RemasterSpringButtonStyle())
+                }
+
+                if coordinator.isDebugOverlayEnabled {
+                    Button(action: performSampleAuthRestore) {
+                        HStack {
+                            Image(systemName: "wrench.and.screwdriver.fill")
+                            Text("Демо-восстановление профиля (офлайн-тест)")
+                        }
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .foregroundStyle(RemasterHubPalette.brass)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    }
+                    .buttonStyle(RemasterSpringButtonStyle())
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.bottom, 16)
+        }
+    }
+
+    private var remasterOnlineChatMessengerView: some View {
+        VStack(spacing: 10) {
+            // Room Header Bar
+            HStack {
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(coordinator.chatConnectionState == .connected ? RemasterHubPalette.sage : Color.orange)
+                        .frame(width: 8, height: 8)
+                    Text("Канал водоёма #\(coordinator.selectedPondIndex + 1)")
+                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .foregroundStyle(RemasterHubPalette.textPrimary)
+                }
+                Spacer()
+                Button {
+                    coordinator.connectLiveTCPChat(login: coordinator.savedOnlineLogin)
+                } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: "bolt.horizontal.circle.fill")
+                        Text(coordinator.chatConnectionState == .connected ? "Переподключить" : "Подключиться")
+                    }
+                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .foregroundStyle(.black)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(RemasterHubPalette.brass, in: Capsule())
+                }
+                .buttonStyle(RemasterSpringButtonStyle())
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .padding(.horizontal, 14)
+
+            // Message Feed
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 8) {
+                    if coordinator.chatMessages.isEmpty {
+                        VStack(spacing: 8) {
+                            Image(systemName: "bubble.left.and.exclamationmark.bubble.right")
+                                .font(.system(size: 28, weight: .semibold))
+                                .foregroundStyle(RemasterHubPalette.textSecondary)
+                            Text("В чате водоёма пока тихо")
+                                .font(.system(size: 14, weight: .bold, design: .rounded))
+                                .foregroundStyle(RemasterHubPalette.textPrimary)
+                            Text("Напишите сообщение ниже, чтобы поприветствовать рыболовов на локации.")
+                                .font(.system(size: 11, weight: .medium, design: .rounded))
+                                .foregroundStyle(RemasterHubPalette.textSecondary)
+                                .multilineTextAlignment(.center)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(28)
+                        .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    } else {
+                        ForEach(coordinator.chatMessages) { msg in
+                            RemasterChatBubbleRow(
+                                message: msg,
+                                isSelf: (msg.from ?? "") == coordinator.savedOnlineLogin && !coordinator.savedOnlineLogin.isEmpty
+                            )
+                        }
+                    }
+                }
+                .padding(.horizontal, 14)
+            }
+
+            // Pinned Dark-Glass Composer Bar
+            HStack(spacing: 10) {
+                HStack(spacing: 8) {
+                    Image(systemName: "text.bubble.fill")
+                        .font(.system(size: 13))
+                        .foregroundStyle(RemasterHubPalette.textSecondary)
+                    TextField("Написать в чат водоёма...", text: $chatDraft)
+                        .font(.system(size: 14, weight: .medium, design: .rounded))
+                        .foregroundStyle(RemasterHubPalette.textPrimary)
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background(RemasterHubPalette.cardBg, in: Capsule())
+
+                Button(action: sendDraftChatMessage) {
+                    Image(systemName: "paperplane.fill")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(.black)
+                        .frame(width: 40, height: 40)
+                        .background(RemasterHubPalette.brass, in: Circle())
+                }
+                .buttonStyle(RemasterSpringButtonStyle())
+            }
+            .padding(.horizontal, 14)
+            .padding(.bottom, 10)
+        }
+    }
+
+    private var remasterOnlineRatingsLeaderboardView: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text("МИРОВОЙ ЗАЛ СЛАВЫ")
+                        .font(.system(size: 11, weight: .heavy, design: .rounded))
+                        .foregroundStyle(RemasterHubPalette.brass)
+                    Spacer()
+                    Button {
+                        coordinator.refreshOnlineRatingsAndRecordsLive(login: coordinator.savedOnlineLogin)
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "arrow.clockwise")
+                            Text("Обновить")
+                        }
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .foregroundStyle(.black)
+                        .padding(.horizontal, 11)
+                        .padding(.vertical, 6)
+                        .background(RemasterHubPalette.brass, in: Capsule())
+                    }
+                    .buttonStyle(RemasterSpringButtonStyle())
+                }
+
+                // Top-3 Podium Cards if available
+                if coordinator.topPlayersRating.count >= 3 {
+                    HStack(alignment: .bottom, spacing: 8) {
+                        podiumCard(entry: coordinator.topPlayersRating[1], medal: "🥈", height: 96)
+                        podiumCard(entry: coordinator.topPlayersRating[0], medal: "🥇", height: 112)
+                        podiumCard(entry: coordinator.topPlayersRating[2], medal: "🥉", height: 88)
+                    }
+                }
+
+                // Ranked Players List
+                if !coordinator.topPlayersRating.isEmpty {
+                    Text("Топ рыболовов по опыту")
+                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .foregroundStyle(RemasterHubPalette.textPrimary)
+
+                    ForEach(coordinator.topPlayersRating) { entry in
+                        HStack(spacing: 12) {
+                            Text("#\(entry.rankPosition)")
+                                .font(.system(size: 13, weight: .heavy, design: .rounded).monospacedDigit())
+                                .foregroundStyle(entry.rankPosition <= 3 ? RemasterHubPalette.brass : RemasterHubPalette.textSecondary)
+                                .frame(width: 34, alignment: .leading)
+
+                            Text(entry.login)
+                                .font(.system(size: 14, weight: .bold, design: .rounded))
+                                .foregroundStyle(RemasterHubPalette.textPrimary)
+
+                            Spacer()
+
+                            Text("Разр. \(entry.categoryRank)")
+                                .font(.system(size: 11, weight: .bold, design: .rounded))
+                                .foregroundStyle(RemasterHubPalette.sage)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Color.black.opacity(0.28), in: Capsule())
+
+                            Text("\(entry.experience) XP")
+                                .font(.system(size: 12, weight: .bold, design: .rounded).monospacedDigit())
+                                .foregroundStyle(RemasterHubPalette.brass)
+                        }
+                        .padding(11)
+                        .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
+                    }
+                }
+
+                // World Species Records
+                if !coordinator.worldSpeciesRecords.isEmpty {
+                    Text("Мировые рекорды по видам рыб")
+                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .foregroundStyle(RemasterHubPalette.textPrimary)
+                        .padding(.top, 4)
+
+                    ForEach(coordinator.worldSpeciesRecords) { rec in
+                        HStack(spacing: 10) {
+                            Image(systemName: "trophy.fill")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundStyle(RemasterHubPalette.brass)
+                            Text(rec.fishName)
+                                .font(.system(size: 14, weight: .bold, design: .rounded))
+                                .foregroundStyle(RemasterHubPalette.textPrimary)
+                            Spacer()
+                            VStack(alignment: .trailing, spacing: 1) {
+                                Text(PlayerStateRepository.formatGramsAsKgOrGrams(rec.weightGrams))
+                                    .font(.system(size: 13, weight: .heavy, design: .rounded).monospacedDigit())
+                                    .foregroundStyle(RemasterHubPalette.sage)
+                                Text(rec.holderLogin)
+                                    .font(.system(size: 10, weight: .medium, design: .rounded))
+                                    .foregroundStyle(RemasterHubPalette.textSecondary)
+                            }
+                        }
+                        .padding(11)
+                        .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
+                    }
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.bottom, 16)
+        }
+    }
+
+    private func podiumCard(entry: OnlinePlayerRatingEntry, medal: String, height: CGFloat) -> some View {
+        VStack(spacing: 4) {
+            Text(medal)
+                .font(.system(size: 22))
+            Text(entry.login)
+                .font(.system(size: 12, weight: .bold, design: .rounded))
+                .foregroundStyle(RemasterHubPalette.textPrimary)
+                .lineLimit(1)
+            Text("Разр. \(entry.categoryRank)")
+                .font(.system(size: 10, weight: .bold, design: .rounded))
+                .foregroundStyle(RemasterHubPalette.brass)
+            Text("\(entry.experience) XP")
+                .font(.system(size: 9, weight: .medium, design: .rounded).monospacedDigit())
+                .foregroundStyle(RemasterHubPalette.textSecondary)
+                .lineLimit(1)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: height)
+        .padding(.horizontal, 6)
+        .background(RemasterHubPalette.cardElevated, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    private var remasterOnlineTournamentsHubView: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text("ОФИЦИАЛЬНЫЕ ТУРНИРЫ")
+                        .font(.system(size: 11, weight: .heavy, design: .rounded))
+                        .foregroundStyle(RemasterHubPalette.brass)
+                    Spacer()
+                    Button {
+                        coordinator.refreshOnlineTournamentsLive(login: coordinator.savedOnlineLogin)
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "arrow.clockwise")
+                            Text("Обновить")
+                        }
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .foregroundStyle(.black)
+                        .padding(.horizontal, 11)
+                        .padding(.vertical, 6)
+                        .background(RemasterHubPalette.brass, in: Capsule())
+                    }
+                    .buttonStyle(RemasterSpringButtonStyle())
+                }
+
+                if !coordinator.httpActiveTournaments.isEmpty {
+                    ForEach(coordinator.httpActiveTournaments) { entry in
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text("🟢 АКТИВНЫЙ ТУРНИР")
+                                    .font(.system(size: 9, weight: .heavy, design: .rounded))
+                                    .foregroundStyle(.white)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(RemasterHubPalette.sage, in: Capsule())
+                                Spacer()
+                                if !entry.dateInfo.isEmpty {
+                                    Text(entry.dateInfo)
+                                        .font(.system(size: 11, weight: .semibold, design: .rounded).monospacedDigit())
+                                        .foregroundStyle(RemasterHubPalette.brass)
+                                }
+                            }
+                            Text(entry.title)
+                                .font(.system(size: 16, weight: .bold, design: .rounded))
+                                .foregroundStyle(RemasterHubPalette.textPrimary)
+                            if !entry.details.isEmpty {
+                                Text(entry.details)
+                                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                                    .foregroundStyle(RemasterHubPalette.textSecondary)
+                            }
+                            HStack(spacing: 8) {
+                                Button {
+                                    coordinator.registerInOnlineTournamentLive(tournamentId: entry.id, actionType: "1")
+                                } label: {
+                                    HStack(spacing: 5) {
+                                        Image(systemName: "flag.checkered")
+                                        Text("Участвовать")
+                                    }
+                                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                                    .foregroundStyle(.white)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 9)
+                                    .background(RemasterHubPalette.sage, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+                                }
+                                .buttonStyle(RemasterSpringButtonStyle())
+
+                                Button {
+                                    coordinator.fetchTournamentResultsLive(tournamentId: entry.id, isCompleted: false)
+                                } label: {
+                                    HStack(spacing: 5) {
+                                        Image(systemName: "list.number")
+                                        Text("Таблица")
+                                    }
+                                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                                    .foregroundStyle(.black)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 9)
+                                    .background(RemasterHubPalette.brass, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+                                }
+                                .buttonStyle(RemasterSpringButtonStyle())
+                            }
+                        }
+                        .padding(14)
+                        .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    }
+                }
+
+                if let results = coordinator.activeTournamentResults {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("ТАБЛИЦА ТУРНИРА #\(results.tournamentId) • УЧАСТНИКОВ: \(results.participantsCount)")
+                            .font(.system(size: 10, weight: .heavy, design: .rounded))
+                            .foregroundStyle(RemasterHubPalette.brass)
+                        if results.leaderboardLines.isEmpty {
+                            Text("Пока нет пойманных рыб в зачёте этого турнира.")
+                                .font(.system(size: 12, weight: .medium, design: .rounded))
+                                .foregroundStyle(RemasterHubPalette.textSecondary)
+                        } else {
+                            ForEach(Array(results.leaderboardLines.prefix(20).enumerated()), id: \.offset) { _, row in
+                                Text(row)
+                                    .font(.system(size: 12, weight: .semibold, design: .rounded).monospacedDigit())
+                                    .foregroundStyle(RemasterHubPalette.textPrimary)
+                            }
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(14)
+                    .background(RemasterHubPalette.cardElevated, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                }
+
+                if !coordinator.httpCompletedTournaments.isEmpty {
+                    Text("Завершённые турниры")
+                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .foregroundStyle(RemasterHubPalette.textPrimary)
+
+                    ForEach(coordinator.httpCompletedTournaments.prefix(12)) { entry in
+                        HStack {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(entry.title)
+                                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                                    .foregroundStyle(RemasterHubPalette.textPrimary)
+                                if !entry.dateInfo.isEmpty {
+                                    Text(entry.dateInfo)
+                                        .font(.system(size: 11, weight: .medium, design: .rounded).monospacedDigit())
+                                        .foregroundStyle(RemasterHubPalette.textSecondary)
+                                }
+                            }
+                            Spacer()
+                            Button {
+                                coordinator.fetchTournamentResultsLive(tournamentId: entry.id, isCompleted: true)
+                            } label: {
+                                Text("Итоги")
+                                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                                    .foregroundStyle(RemasterHubPalette.brass)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 6)
+                                    .background(Color.black.opacity(0.28), in: Capsule())
+                            }
+                            .buttonStyle(RemasterSpringButtonStyle())
+                        }
+                        .padding(12)
+                        .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    }
+                }
+
+                if !coordinator.tournamentTimetableLines.isEmpty {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("📅 РАСПИСАНИЕ ТУРНИРОВ")
+                            .font(.system(size: 10, weight: .heavy, design: .rounded))
+                            .foregroundStyle(RemasterHubPalette.brass)
+                        ForEach(Array(coordinator.tournamentTimetableLines.enumerated()), id: \.offset) { _, line in
+                            Text(line)
+                                .font(.system(size: 12, weight: .medium, design: .rounded))
+                                .foregroundStyle(RemasterHubPalette.textPrimary)
+                                .padding(.vertical, 2)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(14)
+                    .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                }
+
+                if coordinator.httpActiveTournaments.isEmpty
+                    && coordinator.httpCompletedTournaments.isEmpty
+                    && coordinator.onlineTours.isEmpty
+                    && coordinator.tournamentTimetableLines.isEmpty {
+                    VStack(spacing: 8) {
+                        Image(systemName: "trophy.circle")
+                            .font(.system(size: 30, weight: .semibold))
+                            .foregroundStyle(RemasterHubPalette.brass)
+                        Text("Список турниров не загружен")
+                            .font(.system(size: 15, weight: .bold, design: .rounded))
+                            .foregroundStyle(RemasterHubPalette.textPrimary)
+                        Text("Нажмите «Обновить» справа вверху, чтобы получить актуальные турниры и расписание с сервера.")
+                            .font(.system(size: 12, weight: .medium, design: .rounded))
+                            .foregroundStyle(RemasterHubPalette.textSecondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(24)
+                    .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.bottom, 16)
+        }
+    }
+
+    // MARK: - Classic v1.81 Online Sections (Preserved when Remaster is OFF)
+
+    private var classicOnlineAuthSectionCard: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Профиль и синхронизация")
                 .font(.system(size: 15, weight: .bold))
@@ -4520,7 +5410,7 @@ public struct OnlineAndChatView: View {
             } label: {
                 OriginalStyledActionButtonLabel(title: "Войти в аккаунт", minWidth: 240)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(RemasterSpringButtonStyle())
 
             Button {
                 coordinator.registerOnlineAccountLive(
@@ -4530,7 +5420,7 @@ public struct OnlineAndChatView: View {
             } label: {
                 OriginalStyledActionButtonLabel(title: "Регистрация / Восстановление пароля", minWidth: 240)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(RemasterSpringButtonStyle())
 
             Button {
                 coordinator.syncAchievementsAndQuestsLive(
@@ -4542,7 +5432,7 @@ public struct OnlineAndChatView: View {
             } label: {
                 OriginalStyledActionButtonLabel(title: "Синхронизировать прогресс", minWidth: 240)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(RemasterSpringButtonStyle())
 
             Button {
                 coordinator.claimServerRewardsLive(
@@ -4552,20 +5442,13 @@ public struct OnlineAndChatView: View {
             } label: {
                 OriginalStyledActionButtonLabel(title: "Получить награды", minWidth: 240)
             }
-            .buttonStyle(.plain)
-
-            if coordinator.isDebugOverlayEnabled {
-                Button(action: performSampleAuthRestore) {
-                    OriginalStyledActionButtonLabel(title: "Демо-восстановление (офлайн-тест)", minWidth: 240)
-                }
-                .buttonStyle(.plain)
-            }
+            .buttonStyle(RemasterSpringButtonStyle())
         }
         .padding(12)
-        .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 8))
     }
 
-    private var onlineChatSectionCard: some View {
+    private var classicOnlineChatSectionCard: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text("Чат водоёма #\(coordinator.selectedPondIndex + 1)")
@@ -4582,7 +5465,7 @@ public struct OnlineAndChatView: View {
                         .background(OriginalGameTheme.goldText, in: Capsule())
                         .foregroundStyle(.black)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(RemasterSpringButtonStyle())
             }
 
             ForEach(coordinator.chatMessages) { msg in
@@ -4600,14 +5483,14 @@ public struct OnlineAndChatView: View {
                         height: 38
                     )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(RemasterSpringButtonStyle())
             }
         }
         .padding(12)
-        .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 8))
     }
 
-    private var onlineRatingsSectionCard: some View {
+    private var classicOnlineRatingsSectionCard: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text("Лучшие игроки и рекорды рыб")
@@ -4624,7 +5507,7 @@ public struct OnlineAndChatView: View {
                         .background(OriginalGameTheme.goldText, in: Capsule())
                         .foregroundStyle(.black)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(RemasterSpringButtonStyle())
             }
 
             ForEach(coordinator.topPlayersRating) { entry in
@@ -4654,10 +5537,10 @@ public struct OnlineAndChatView: View {
             }
         }
         .padding(12)
-        .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 8))
     }
 
-    private var onlineToursSectionCard: some View {
+    private var classicOnlineToursSectionCard: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text("Онлайн-турниры")
@@ -4674,143 +5557,17 @@ public struct OnlineAndChatView: View {
                         .background(OriginalGameTheme.goldText, in: Capsule())
                         .foregroundStyle(.black)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(RemasterSpringButtonStyle())
             }
 
-            if !coordinator.httpActiveTournaments.isEmpty {
-                Text("Текущие турниры:")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(.green)
-                ForEach(coordinator.httpActiveTournaments) { entry in
-                    VStack(alignment: .leading, spacing: 5) {
-                        Text(entry.title)
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundStyle(OriginalGameTheme.goldText)
-                        if !entry.details.isEmpty {
-                            Text(entry.details)
-                                .font(.system(size: 12))
-                                .foregroundStyle(.white)
-                        }
-                        if !entry.dateInfo.isEmpty {
-                            Text(entry.dateInfo)
-                                .font(.system(size: 11).monospacedDigit())
-                                .foregroundStyle(.cyan)
-                        }
-                        HStack(spacing: 8) {
-                            Button {
-                                coordinator.registerInOnlineTournamentLive(tournamentId: entry.id, actionType: "1")
-                            } label: {
-                                Text("Участвовать")
-                                    .font(.system(size: 11, weight: .bold))
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 4)
-                                    .background(Color.green.opacity(0.85), in: Capsule())
-                                    .foregroundStyle(.black)
-                            }
-                            .buttonStyle(.plain)
-
-                            Button {
-                                coordinator.fetchTournamentResultsLive(tournamentId: entry.id, isCompleted: false)
-                            } label: {
-                                Text("Таблица и итоги")
-                                    .font(.system(size: 11, weight: .bold))
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 4)
-                                    .background(OriginalGameTheme.goldText, in: Capsule())
-                                    .foregroundStyle(.black)
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(8)
-                    .background(Color.black.opacity(0.45), in: RoundedRectangle(cornerRadius: 6))
-                }
-            }
-
-            if let results = coordinator.activeTournamentResults {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Таблица турнира #\(results.tournamentId) (участников: \(results.participantsCount)):")
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundStyle(OriginalGameTheme.goldText)
-                    if results.leaderboardLines.isEmpty {
-                        Text("Пока нет пойманных рыб в зачёте этого турнира.")
-                            .font(.system(size: 12))
-                            .foregroundStyle(.white.opacity(0.8))
-                    } else {
-                        ForEach(Array(results.leaderboardLines.prefix(20).enumerated()), id: \.offset) { _, row in
-                            Text(row)
-                                .font(.system(size: 12).monospacedDigit())
-                                .foregroundStyle(.white)
-                        }
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(8)
-                .background(Color.black.opacity(0.60), in: RoundedRectangle(cornerRadius: 6))
-            }
-
-            if !coordinator.onlineTours.isEmpty {
-                ForEach(coordinator.onlineTours, id: \.id) { tour in
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(tour.title.isEmpty ? "Турнир #\(tour.id)" : tour.title)
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundStyle(OriginalGameTheme.goldText)
-                        Text(tour.desc)
-                            .font(.system(size: 12))
-                            .foregroundStyle(.white)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(8)
-                    .background(Color.black.opacity(0.45), in: RoundedRectangle(cornerRadius: 6))
-                }
-            }
-
-            if !coordinator.httpCompletedTournaments.isEmpty {
-                Text("Завершённые турниры:")
-                    .font(.system(size: 13, weight: .bold))
+            ForEach(coordinator.httpActiveTournaments) { entry in
+                Text(entry.title)
+                    .font(.system(size: 14, weight: .bold))
                     .foregroundStyle(OriginalGameTheme.goldText)
-                ForEach(coordinator.httpCompletedTournaments.prefix(12)) { entry in
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(entry.title)
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(.white)
-                        if !entry.dateInfo.isEmpty {
-                            Text(entry.dateInfo)
-                                .font(.system(size: 11).monospacedDigit())
-                                .foregroundStyle(.white.opacity(0.75))
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(8)
-                    .background(Color.black.opacity(0.40), in: RoundedRectangle(cornerRadius: 6))
-                }
-            }
-
-            if !coordinator.tournamentTimetableLines.isEmpty {
-                Text("Расписание турниров:")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(.cyan)
-                ForEach(Array(coordinator.tournamentTimetableLines.enumerated()), id: \.offset) { _, line in
-                    Text(line)
-                        .font(.system(size: 12))
-                        .foregroundStyle(.white.opacity(0.9))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.vertical, 2)
-                }
-            }
-
-            if coordinator.httpActiveTournaments.isEmpty
-                && coordinator.httpCompletedTournaments.isEmpty
-                && coordinator.onlineTours.isEmpty
-                && coordinator.tournamentTimetableLines.isEmpty {
-                Text("Нажмите «Обновить», чтобы загрузить текущие и завершённые турниры и расписание.")
-                    .font(.system(size: 13))
-                    .foregroundStyle(.white.opacity(0.8))
             }
         }
         .padding(12)
-        .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 8))
     }
 
     private func performSampleAuthRestore() {
@@ -4841,6 +5598,51 @@ public struct OnlineAndChatView: View {
         let packet = JavaObjectStreamCodec.encodeMess(mess)
         _ = try? coordinator.receiveChatStreamPacket(packet, currentUserId: coordinator.authenticatedChatUserId)
         chatDraft = ""
+    }
+}
+
+private struct RemasterChatBubbleRow: View {
+    let message: ChatMess
+    let isSelf: Bool
+
+    var body: some View {
+        let author = (message.from ?? "").isEmpty ? "Рыболов" : (message.from ?? "Рыболов")
+        let initial = String(author.prefix(1)).uppercased()
+
+        HStack(alignment: .bottom, spacing: 8) {
+            if !isSelf {
+                ZStack {
+                    Circle()
+                        .fill(RemasterHubPalette.cardElevated)
+                        .frame(width: 30, height: 30)
+                    Text(initial)
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .foregroundStyle(RemasterHubPalette.brass)
+                }
+            } else {
+                Spacer(minLength: 36)
+            }
+
+            VStack(alignment: isSelf ? .trailing : .leading, spacing: 3) {
+                Text(author)
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .foregroundStyle(isSelf ? RemasterHubPalette.sage : RemasterHubPalette.brass)
+
+                Text(message.text ?? "")
+                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                    .foregroundStyle(RemasterHubPalette.textPrimary)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(
+                        isSelf ? RemasterHubPalette.sage.opacity(0.28) : RemasterHubPalette.cardBg,
+                        in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    )
+            }
+
+            if !isSelf {
+                Spacer(minLength: 36)
+            }
+        }
     }
 }
 
