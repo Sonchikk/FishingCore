@@ -345,21 +345,8 @@ private struct OriginalModalCardBackground: View {
 
     var body: some View {
         if isRemasterMode {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            RemasterHubPalette.cardElevated,
-                            RemasterHubPalette.cardBg
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .stroke(RemasterHubPalette.brass.opacity(0.45), lineWidth: 1.2)
-                )
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(RemasterHubPalette.cardElevated)
         } else {
             ZStack {
                 if let bg = OriginalGameAssetsLoader.image(named: "second_background") {
@@ -395,52 +382,35 @@ private struct OriginalScreenTopBar: View {
                 Button(action: onBack) {
                     HStack(spacing: 5) {
                         Image(systemName: "chevron.left")
-                            .font(.system(size: 14, weight: .bold))
+                            .font(.system(size: 13, weight: .bold))
                         Text("Назад")
-                            .font(.system(size: 13, weight: .semibold, design: .rounded))
+                            .font(.system(size: 13, weight: .bold, design: .rounded))
                     }
                     .foregroundStyle(RemasterHubPalette.brass)
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, 14)
                     .frame(height: 38)
                     .background(RemasterHubPalette.cardElevated, in: Capsule())
-                    .overlay(
-                        Capsule()
-                            .stroke(RemasterHubPalette.brass.opacity(0.30), lineWidth: 1)
-                    )
                 }
                 .buttonStyle(.plain)
 
-                HStack(spacing: 8) {
-                    Text(title)
-                        .font(.system(size: 16, weight: .bold, design: .rounded))
-                        .foregroundStyle(RemasterHubPalette.textPrimary)
+                Text(title)
+                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                    .foregroundStyle(RemasterHubPalette.textPrimary)
+                    .lineLimit(1)
+
+                Spacer(minLength: 4)
+
+                if let subtitle {
+                    Text(subtitle)
+                        .font(.system(size: 12, weight: .bold, design: .rounded).monospacedDigit())
+                        .foregroundStyle(RemasterHubPalette.brass)
+                        .padding(.horizontal, 12)
+                        .frame(height: 34)
+                        .background(RemasterHubPalette.cardBg, in: Capsule())
                         .lineLimit(1)
-
-                    Spacer(minLength: 4)
-
-                    if let subtitle {
-                        Text(subtitle)
-                            .font(.system(size: 12, weight: .bold, design: .rounded).monospacedDigit())
-                            .foregroundStyle(RemasterHubPalette.brass)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 5)
-                            .background(Color.black.opacity(0.28), in: Capsule())
-                            .overlay(
-                                Capsule()
-                                    .stroke(RemasterHubPalette.brass.opacity(0.25), lineWidth: 0.8)
-                            )
-                            .lineLimit(1)
-                    }
                 }
-                .padding(.horizontal, 14)
-                .frame(height: 42)
-                .background(RemasterHubPalette.cardBg.opacity(0.94), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .stroke(RemasterHubPalette.stroke, lineWidth: 1)
-                )
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, 14)
             .padding(.top, 8)
             .padding(.bottom, 6)
         } else {
@@ -497,19 +467,8 @@ private struct OriginalStyledActionButtonLabel: View {
                 .padding(.horizontal, 14)
                 .frame(minWidth: minWidth, minHeight: 38, maxHeight: 38)
                 .background(
-                    LinearGradient(
-                        colors: [
-                            RemasterHubPalette.cardElevated,
-                            RemasterHubPalette.cardBg
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    ),
-                    in: RoundedRectangle(cornerRadius: 11, style: .continuous)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 11, style: .continuous)
-                        .stroke(RemasterHubPalette.brass.opacity(0.38), lineWidth: 1)
+                    RemasterHubPalette.cardElevated,
+                    in: RoundedRectangle(cornerRadius: 12, style: .continuous)
                 )
         } else {
             ZStack {
@@ -888,7 +847,6 @@ private struct RemasterMainDashboardView: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
             .background(Self.cardFill, in: Capsule())
-            .overlay(Capsule().stroke(Color.white.opacity(0.10), lineWidth: 1))
 
             HStack(spacing: 5) {
                 Image(systemName: coordinator.dayNightLighting.isDayLight ? "sun.max.fill" : "moon.stars.fill")
@@ -901,7 +859,6 @@ private struct RemasterMainDashboardView: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
             .background(Self.cardFill, in: Capsule())
-            .overlay(Capsule().stroke(Color.white.opacity(0.10), lineWidth: 1))
         }
         .padding(.horizontal, 14)
         .padding(.top, 8)
@@ -978,8 +935,7 @@ private struct RemasterMainDashboardView: View {
                                 .font(.system(size: 12, weight: .bold))
                                 .foregroundStyle(Self.warmBrass)
                                 .frame(width: 28, height: 26)
-                                .background(Color.black.opacity(0.45), in: Capsule())
-                                .overlay(Capsule().stroke(Self.warmBrass.opacity(0.45), lineWidth: 1))
+                                .background(Color.black.opacity(0.52), in: Capsule())
                         }
                         .buttonStyle(.plain)
                     }
@@ -1006,11 +962,7 @@ private struct RemasterMainDashboardView: View {
                 .frame(height: 176)
             }
         }
-        .clipShape(RoundedRectangle(cornerRadius: 18))
-        .overlay(
-            RoundedRectangle(cornerRadius: 18)
-                .stroke(Color.white.opacity(0.12), lineWidth: 1)
-        )
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 
     private func tackleStatPill(
@@ -1033,12 +985,9 @@ private struct RemasterMainDashboardView: View {
         .padding(.vertical, 5)
         .background(
             isReady && highlightSage
-                ? Self.sageGreen.opacity(0.85)
-                : Color.black.opacity(0.48),
+                ? Self.sageGreen.opacity(0.88)
+                : Color.black.opacity(0.52),
             in: Capsule()
-        )
-        .overlay(
-            Capsule().stroke(Color.white.opacity(0.12), lineWidth: 1)
         )
     }
 
@@ -1160,11 +1109,7 @@ private struct RemasterMainDashboardView: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 9)
-            .background(Self.cardFill.opacity(0.85), in: RoundedRectangle(cornerRadius: 10))
-            .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
-            )
+            .background(Self.cardFill, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
         }
         .buttonStyle(.plain)
     }
@@ -1204,11 +1149,7 @@ private struct RemasterBentoCardButton: View {
             .frame(maxWidth: .infinity, minHeight: 74, alignment: .leading)
             .background(
                 Color(red: 28.0 / 255.0, green: 37.0 / 255.0, blue: 44.0 / 255.0),
-                in: RoundedRectangle(cornerRadius: 14)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .stroke(Color.white.opacity(0.10), lineWidth: 1)
+                in: RoundedRectangle(cornerRadius: 14, style: .continuous)
             )
         }
         .buttonStyle(.plain)
@@ -1247,47 +1188,201 @@ private struct DashboardTileButton: View {
 // MARK: - 1.2 `PondListActivity` (`res/layout/gridview.xml` `res/Pa.xml` + `cellgrid.xml` `res/iy.xml`)
 
 private struct PondListGridSubView: View {
+    public enum PondFilter: String, CaseIterable, Identifiable {
+        case all = "Все (15)"
+        case unlocked = "Доступные"
+        case coupon = "По купону"
+
+        public var id: String { rawValue }
+    }
+
     @ObservedObject var coordinator: FishingAppCoordinator
     @Binding var subScreen: BaseSubScreen
+    @State private var selectedFilter: PondFilter = .all
 
     private let columns = [
-        GridItem(.flexible(), spacing: 14),
-        GridItem(.flexible(), spacing: 14)
+        GridItem(.flexible(), spacing: 12),
+        GridItem(.flexible(), spacing: 12)
     ]
+
+    private func isPondUnlocked(_ pond: PondCatalogItem) -> Bool {
+        coordinator.profile.category >= pond.requiredRank
+            && (!pond.requiresCoupon || coordinator.activeCoupon != nil)
+    }
+
+    private var filteredPonds: [PondCatalogItem] {
+        coordinator.availablePonds.filter { pond in
+            switch selectedFilter {
+            case .all:
+                return true
+            case .unlocked:
+                return isPondUnlocked(pond)
+            case .coupon:
+                return pond.requiresCoupon
+            }
+        }
+    }
 
     var body: some View {
         ZStack {
             OriginalSecondBackgroundView()
 
-            VStack(spacing: 0) {
+            VStack(spacing: 8) {
                 OriginalScreenTopBar(
-                    title: "Выбор водоёма (Локации)",
-                    subtitle: "Ваш разряд: \(coordinator.profile.category)"
+                    title: coordinator.isRemasterModeEnabled ? "Атлас локаций" : "Выбор водоёма (Локации)",
+                    subtitle: "Разряд \(coordinator.profile.category)"
                 ) {
                     subScreen = .mainDashboard
                 }
 
-                ScrollView {
-                    LazyVGrid(columns: columns, spacing: 14) {
-                        ForEach(coordinator.availablePonds, id: \.id) { pond in
-                            PondGridCellView(
-                                pond: pond,
-                                localizedName: coordinator.localeManager.pondName(for: pond).capitalized,
-                                isSelected: coordinator.selectedPondIndex == pond.id,
-                                isUnlocked: coordinator.profile.category >= pond.requiredRank
-                                    && (!pond.requiresCoupon || coordinator.activeCoupon != nil)
-                            ) {
-                                coordinator.selectPond(pondIndex: pond.id)
-                                if coordinator.selectedPondIndex == pond.id {
-                                    subScreen = .mainDashboard
-                                    coordinator.selectedTab = .fishingPond
+                if coordinator.isRemasterModeEnabled {
+                    remasterLocationsExplorerBody
+                } else {
+                    ScrollView {
+                        LazyVGrid(columns: columns, spacing: 14) {
+                            ForEach(coordinator.availablePonds, id: \.id) { pond in
+                                PondGridCellView(
+                                    pond: pond,
+                                    localizedName: coordinator.localeManager.pondName(for: pond).capitalized,
+                                    isSelected: coordinator.selectedPondIndex == pond.id,
+                                    isUnlocked: isPondUnlocked(pond)
+                                ) {
+                                    coordinator.selectPond(pondIndex: pond.id)
+                                    if coordinator.selectedPondIndex == pond.id {
+                                        subScreen = .mainDashboard
+                                        coordinator.selectedTab = .fishingPond
+                                    }
                                 }
                             }
                         }
+                        .padding(14)
                     }
-                    .padding(14)
                 }
             }
+        }
+    }
+
+    private var remasterLocationsExplorerBody: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 12) {
+                // 1. Featured Selected Location Expedition Card
+                if let currentPond = coordinator.currentPondItem {
+                    let pondNum = max(1, min(15, currentPond.id + 1))
+                    let pondTitle = coordinator.localeManager.pondName(for: currentPond).capitalized
+
+                    ZStack(alignment: .bottomLeading) {
+                        if let img = OriginalGameAssetsLoader.image(named: "pond_\(pondNum)_big")
+                            ?? OriginalGameAssetsLoader.image(named: "pond_\(pondNum)") {
+                            img.resizable()
+                                .scaledToFill()
+                                .frame(height: 148)
+                                .clipped()
+                        } else {
+                            RemasterHubPalette.cardElevated.frame(height: 148)
+                        }
+
+                        LinearGradient(
+                            colors: [Color.black.opacity(0.10), Color.black.opacity(0.82)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                        .frame(height: 148)
+
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack(spacing: 6) {
+                                Text("ТЕКУЩАЯ ЭКСПЕДИЦИЯ • #\(pondNum)")
+                                    .font(.system(size: 10, weight: .heavy, design: .rounded))
+                                    .foregroundStyle(RemasterHubPalette.brass)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(Color.black.opacity(0.55), in: Capsule())
+
+                                if currentPond.id == 0 {
+                                    Text("✨ 2.5D ВОДА И ПАРАЛЛАКС")
+                                        .font(.system(size: 10, weight: .heavy, design: .rounded))
+                                        .foregroundStyle(.black)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(RemasterHubPalette.sage, in: Capsule())
+                                }
+                            }
+
+                            Spacer()
+
+                            HStack(alignment: .bottom) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(pondTitle)
+                                        .font(.system(size: 20, weight: .bold, design: .rounded))
+                                        .foregroundStyle(.white)
+                                    Text("Мин. разряд: \(currentPond.requiredRank)  •  \(currentPond.requiresCoupon ? "Требуется купон" : "Свободный доступ")")
+                                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                                        .foregroundStyle(.white.opacity(0.82))
+                                }
+                                Spacer()
+                                Button {
+                                    subScreen = .mainDashboard
+                                    coordinator.selectedTab = .fishingPond
+                                } label: {
+                                    HStack(spacing: 5) {
+                                        Image(systemName: "figure.fishing")
+                                        Text("Ловить")
+                                    }
+                                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                                    .foregroundStyle(.black)
+                                    .padding(.horizontal, 14)
+                                    .padding(.vertical, 9)
+                                    .background(RemasterHubPalette.brass, in: Capsule())
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(14)
+                        .frame(height: 148)
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                }
+
+                // 2. Filter Segmented Bar
+                HStack(spacing: 8) {
+                    ForEach(PondFilter.allCases) { filter in
+                        let isSel = (selectedFilter == filter)
+                        Button {
+                            selectedFilter = filter
+                        } label: {
+                            Text(filter.rawValue)
+                                .font(.system(size: 12, weight: .bold, design: .rounded))
+                                .foregroundStyle(isSel ? .black : RemasterHubPalette.textSecondary)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 8)
+                                .background(
+                                    isSel ? RemasterHubPalette.brass : RemasterHubPalette.cardBg,
+                                    in: Capsule()
+                                )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+
+                // 3. 2-Column Expedition Atlas Grid
+                LazyVGrid(columns: columns, spacing: 12) {
+                    ForEach(filteredPonds, id: \.id) { pond in
+                        PondGridCellView(
+                            pond: pond,
+                            localizedName: coordinator.localeManager.pondName(for: pond).capitalized,
+                            isSelected: coordinator.selectedPondIndex == pond.id,
+                            isUnlocked: isPondUnlocked(pond)
+                        ) {
+                            coordinator.selectPond(pondIndex: pond.id)
+                            if coordinator.selectedPondIndex == pond.id {
+                                subScreen = .mainDashboard
+                                coordinator.selectedTab = .fishingPond
+                            }
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.bottom, 16)
         }
     }
 }
@@ -1349,18 +1444,11 @@ private struct PondGridCellView: View {
                         }
                     }
                     .padding(.horizontal, 10)
-                    .padding(.vertical, 9)
-                    .background(RemasterHubPalette.cardBg)
+                    .padding(.vertical, 10)
+                    .background(isSelected ? RemasterHubPalette.cardElevated : RemasterHubPalette.cardBg)
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .stroke(
-                            isSelected ? RemasterHubPalette.sage : (isUnlocked ? RemasterHubPalette.brass.opacity(0.28) : Color.white.opacity(0.08)),
-                            lineWidth: isSelected ? 2.0 : 1.0
-                        )
-                )
-                .opacity(isUnlocked ? 1.0 : 0.72)
+                .opacity(isUnlocked ? 1.0 : 0.65)
             }
             .buttonStyle(.plain)
         } else {
@@ -1434,26 +1522,187 @@ private struct AboutMeSubView: View {
         return "нет"
     }
 
+    private var rankProgressFraction: Double {
+        let rank = coordinator.profile.category
+        let thresholds = BalanceTables.playerRankExpThresholds
+        let prev = (rank > 0 && (rank - 1) < thresholds.count) ? thresholds[rank - 1] : 0
+        let next = (rank >= 0 && rank < thresholds.count) ? thresholds[rank] : max(coordinator.profile.experience, 70_000_000)
+        let span = max(1, next - prev)
+        return min(1.0, max(0.0, Double(coordinator.profile.experience - prev) / Double(span)))
+    }
+
     var body: some View {
         ZStack {
             OriginalSecondBackgroundView()
 
-            VStack(spacing: 12) {
-                OriginalScreenTopBar(title: "О себе") {
+            VStack(spacing: 10) {
+                OriginalScreenTopBar(
+                    title: coordinator.isRemasterModeEnabled ? "Карточка рыболова" : "О себе",
+                    subtitle: "Разряд \(coordinator.profile.category)"
+                ) {
                     subScreen = .mainDashboard
                 }
 
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 10) {
-                        profileStatsBlock
-                        navigationShortcutsBlock
+                if coordinator.isRemasterModeEnabled {
+                    remasterAnglerLicenseBody
+                } else {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 10) {
+                            profileStatsBlock
+                            navigationShortcutsBlock
+                        }
+                        .padding(18)
+                        .background(Color.black.opacity(0.45), in: RoundedRectangle(cornerRadius: 10))
+                        .padding(.horizontal, 14)
                     }
-                    .padding(18)
-                    .background(Color.black.opacity(0.45), in: RoundedRectangle(cornerRadius: 10))
-                    .padding(.horizontal, 14)
                 }
             }
         }
+    }
+
+    private var remasterAnglerLicenseBody: some View {
+        let caughtSpeciesCount = coordinator.personalRecords.filter { $0.weightGrams > 0 }.count
+        let completedQuestsCount = coordinator.quests.filter { $0.made >= 2 }.count
+        let unlockedAchCount = coordinator.achievements.filter { $0.level > 0 }.count
+
+        return ScrollView(showsIndicators: false) {
+            VStack(spacing: 12) {
+                // 1. Angler License ID & XP Bar Card
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack(spacing: 14) {
+                        ZStack {
+                            Circle()
+                                .fill(Color.black.opacity(0.28))
+                                .frame(width: 60, height: 60)
+                            Image(systemName: "figure.fishing")
+                                .font(.system(size: 26, weight: .bold))
+                                .foregroundStyle(RemasterHubPalette.brass)
+                        }
+
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(coordinator.profile.login.isEmpty ? "Рыболов-мастер" : coordinator.profile.login)
+                                .font(.system(size: 19, weight: .bold, design: .rounded))
+                                .foregroundStyle(RemasterHubPalette.textPrimary)
+                            Text("Разряд \(coordinator.profile.category)  •  Всего опыта: \(coordinator.profile.experience) XP")
+                                .font(.system(size: 12, weight: .semibold, design: .rounded).monospacedDigit())
+                                .foregroundStyle(RemasterHubPalette.brass)
+                            Text("До следующего разряда: \(expToNextRank) XP")
+                                .font(.system(size: 11, weight: .medium, design: .rounded).monospacedDigit())
+                                .foregroundStyle(RemasterHubPalette.textSecondary)
+                        }
+                        Spacer()
+                    }
+
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            Capsule().fill(Color.black.opacity(0.35))
+                            Capsule()
+                                .fill(
+                                    LinearGradient(
+                                        colors: [RemasterHubPalette.sage, RemasterHubPalette.brass],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .frame(width: max(8, geo.size.width * rankProgressFraction))
+                        }
+                    }
+                    .frame(height: 8)
+                }
+                .padding(14)
+                .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+
+                // 2. 2x2 Career Metrics Grid
+                HStack(spacing: 10) {
+                    careerMetricCard(icon: "rublesign.circle.fill", label: "Баланс", value: "\(coordinator.profile.balance) ₽", color: RemasterHubPalette.brass)
+                    careerMetricCard(icon: "ticket.fill", label: "Путевой купон", value: couponStatusText, color: RemasterHubPalette.sage)
+                }
+                HStack(spacing: 10) {
+                    careerMetricCard(icon: "fish.fill", label: "Открыто видов", value: "\(caughtSpeciesCount) / 141", color: RemasterHubPalette.sage)
+                    careerMetricCard(icon: "trophy.fill", label: "Квесты • Медали", value: "\(completedQuestsCount)/44 • \(unlockedAchCount)/14", color: RemasterHubPalette.brass)
+                }
+
+                // 3. Quick Journal & Encyclopedia Tiles
+                VStack(spacing: 8) {
+                    remasterNavRow(icon: "book.closed.fill", title: "Сюжетные квесты (44)", subtitle: "Цели, награды и прогресс кампании") {
+                        subScreen = .mainDashboard
+                        coordinator.selectedProgressSection = .quests
+                        coordinator.selectedTab = .progress
+                    }
+                    remasterNavRow(icon: "checklist", title: "Поручения рыбака", subtitle: "Динамические контракты на опыт") {
+                        subScreen = .mainDashboard
+                        coordinator.selectedProgressSection = .tasks
+                        coordinator.selectedTab = .progress
+                    }
+                    remasterNavRow(icon: "medal.fill", title: "Зал достижений (14)", subtitle: "Бронзовые, серебряные и золотые кубки") {
+                        subScreen = .mainDashboard
+                        coordinator.selectedProgressSection = .achievements
+                        coordinator.selectedTab = .progress
+                    }
+                    remasterNavRow(icon: "trophy.circle.fill", title: "Коллекция рекордов (141 вид)", subtitle: "Ваши максимальные трофеи по каждому виду") {
+                        subScreen = .mainDashboard
+                        coordinator.selectedProgressSection = .records
+                        coordinator.selectedTab = .progress
+                    }
+                    remasterNavRow(icon: "books.vertical.fill", title: "Энциклопедия рыб, водоёмов и FAQ", subtitle: "Где, на что и в какое время суток клюёт") {
+                        coordinator.ensureEncyclopediaGuideLoaded()
+                        subScreen = .aboutGame
+                    }
+                    remasterNavRow(icon: "person.badge.key.fill", title: "Онлайн-профиль и синхронизация", subtitle: "Облачное сохранение, чат и турниры") {
+                        subScreen = .mainDashboard
+                        coordinator.selectedTab = .online
+                    }
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.bottom, 16)
+        }
+    }
+
+    private func careerMetricCard(icon: String, label: String, value: String, color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(color)
+                Text(label)
+                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    .foregroundStyle(RemasterHubPalette.textSecondary)
+            }
+            Text(value)
+                .font(.system(size: 16, weight: .bold, design: .rounded).monospacedDigit())
+                .foregroundStyle(RemasterHubPalette.textPrimary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    private func remasterNavRow(icon: String, title: String, subtitle: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: icon)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(RemasterHubPalette.brass)
+                    .frame(width: 38, height: 38)
+                    .background(Color.black.opacity(0.26), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .foregroundStyle(RemasterHubPalette.textPrimary)
+                    Text(subtitle)
+                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                        .foregroundStyle(RemasterHubPalette.textSecondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(RemasterHubPalette.textSecondary)
+            }
+            .padding(12)
+            .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        }
+        .buttonStyle(.plain)
     }
 
     private var profileStatsBlock: some View {
@@ -1651,84 +1900,116 @@ private struct SettingsSubView: View {
                     subScreen = .mainDashboard
                 }
 
-                ScrollView {
+                ScrollView(showsIndicators: false) {
                     VStack(spacing: 12) {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Toggle("✨ Режим «Ремастер» (новый визуал и удобства)", isOn: $coordinator.isRemasterModeEnabled)
-                                .foregroundStyle(Color.cyan)
-                            Text("Включает плавные градиенты рассвета/заката/ночи, погодные эффекты, подводный силуэт рыбы, брызги, бесплатный эхолот клёва, быструю оснастку на берегу и продвинутую тактильную отдачу. Выключите для возврата к оригинальному виду v1.81.")
-                                .font(.system(size: 11, weight: .regular))
-                                .foregroundStyle(.white.opacity(0.8))
+                        // Group 1: Remaster Mode & Atmosphere
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("ВИЗУАЛ И РЕЖИМ ИГРЫ")
+                                .font(.system(size: 11, weight: .heavy, design: .rounded))
+                                .foregroundStyle(RemasterHubPalette.brass)
+
+                            Toggle("✨ Режим «Ремастер» (современный UI и 2.5D)", isOn: $coordinator.isRemasterModeEnabled)
+                                .font(.system(size: 15, weight: .bold, design: .rounded))
+                                .foregroundStyle(RemasterHubPalette.textPrimary)
+                                .tint(RemasterHubPalette.sage)
+
+                            Text("Переключает всю игру между переосмысленным современным интерфейсом (с 2.5D-сценой на первой локации, процедурным спиннингом, шкалами снасти и эхолотом) и классическим видом Android v1.81.")
+                                .font(.system(size: 12, weight: .regular, design: .rounded))
+                                .foregroundStyle(RemasterHubPalette.textSecondary)
 
                             if coordinator.isRemasterModeEnabled {
                                 Toggle("Встроенный эхолот и радар клёва", isOn: $coordinator.isSonarRadarVisible)
-                                    .foregroundStyle(OriginalGameTheme.goldText)
-                                HStack {
-                                    Text("Погода на водоёме:")
-                                        .foregroundStyle(OriginalGameTheme.goldText)
-                                    Spacer()
-                                    Picker("Погода", selection: $coordinator.remasterWeatherPreference) {
-                                        ForEach(RemasterWeatherKind.allCases) { kind in
-                                            Text(kind.titleRu).tag(kind)
+                                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                                    .foregroundStyle(RemasterHubPalette.textPrimary)
+                                    .tint(RemasterHubPalette.sage)
+
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text("Погода на водоёме")
+                                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                                        .foregroundStyle(RemasterHubPalette.textSecondary)
+
+                                    ScrollView(.horizontal, showsIndicators: false) {
+                                        HStack(spacing: 6) {
+                                            ForEach(RemasterWeatherKind.allCases) { kind in
+                                                let isSel = (coordinator.remasterWeatherPreference == kind)
+                                                Button {
+                                                    coordinator.remasterWeatherPreference = kind
+                                                } label: {
+                                                    HStack(spacing: 4) {
+                                                        Image(systemName: kind.symbolName)
+                                                            .font(.system(size: 11, weight: .bold))
+                                                        Text(kind.titleRu)
+                                                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                                                    }
+                                                    .foregroundStyle(isSel ? .black : RemasterHubPalette.textPrimary)
+                                                    .padding(.horizontal, 11)
+                                                    .padding(.vertical, 7)
+                                                    .background(
+                                                        isSel ? RemasterHubPalette.brass : RemasterHubPalette.cardElevated,
+                                                        in: Capsule()
+                                                    )
+                                                }
+                                                .buttonStyle(.plain)
+                                            }
                                         }
                                     }
-                                    .pickerStyle(.menu)
                                 }
                             }
                         }
-                        .padding(10)
-                        .background(Color.cyan.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.cyan.opacity(0.4), lineWidth: 1)
-                        )
+                        .padding(14)
+                        .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
 
-                        Toggle("Анимация воды", isOn: $coordinator.isWaterShaderEnabled)
-                            .foregroundStyle(OriginalGameTheme.goldText)
-                        Toggle("Квесты и задания", isOn: $coordinator.tasksEnabled)
-                            .foregroundStyle(OriginalGameTheme.goldText)
-                        Toggle("Звуки", isOn: $coordinator.audioHaptics.soundEnabled)
-                            .foregroundStyle(OriginalGameTheme.goldText)
-                        Toggle("Вибрация", isOn: $coordinator.audioHaptics.vibrationEnabled)
-                            .foregroundStyle(OriginalGameTheme.goldText)
-                        Toggle("Уведомление о поклёвке в фоне", isOn: $coordinator.checkModeEnabled)
-                            .foregroundStyle(OriginalGameTheme.goldText)
-                        Toggle("Онлайн-режим", isOn: $coordinator.onlineModeEnabled)
-                            .foregroundStyle(OriginalGameTheme.goldText)
-                        Toggle("Режим отладки", isOn: $coordinator.isDebugOverlayEnabled)
-                            .foregroundStyle(OriginalGameTheme.goldText)
+                        // Group 2: Audio, Haptics & Water Shader
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("ЗВУК, ОТДАЧА И ГЕЙМПЛЕЙ")
+                                .font(.system(size: 11, weight: .heavy, design: .rounded))
+                                .foregroundStyle(RemasterHubPalette.brass)
 
-                        HStack {
-                            Text("Язык игры:")
-                                .foregroundStyle(OriginalGameTheme.goldText)
-                            Spacer()
-                            Picker("Язык", selection: $coordinator.languageCode) {
-                                ForEach(FishingLanguage.allCases, id: \.rawValue) { lang in
-                                    Text(lang.displayName).tag(lang.rawValue)
+                            Toggle("Анимация воды (Metal шейдер)", isOn: $coordinator.isWaterShaderEnabled)
+                            Toggle("Звуковые эффекты и атмосфера", isOn: $coordinator.audioHaptics.soundEnabled)
+                            Toggle("Тактильная отдача (Haptics)", isOn: $coordinator.audioHaptics.vibrationEnabled)
+                            Toggle("Квесты и поручения рыбака", isOn: $coordinator.tasksEnabled)
+                            Toggle("Уведомление о поклёвке в фоне", isOn: $coordinator.checkModeEnabled)
+                            Toggle("Онлайн-синхронизация", isOn: $coordinator.onlineModeEnabled)
+                            Toggle("Панель разработчика (DEV)", isOn: $coordinator.isDebugOverlayEnabled)
+                        }
+                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                        .foregroundStyle(RemasterHubPalette.textPrimary)
+                        .tint(RemasterHubPalette.sage)
+                        .padding(14)
+                        .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+
+                        // Group 3: Language & About
+                        VStack(alignment: .leading, spacing: 10) {
+                            HStack {
+                                Text("Язык интерфейса")
+                                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                                    .foregroundStyle(RemasterHubPalette.textPrimary)
+                                Spacer()
+                                Picker("Язык", selection: $coordinator.languageCode) {
+                                    ForEach(FishingLanguage.allCases, id: \.rawValue) { lang in
+                                        Text(lang.displayName).tag(lang.rawValue)
+                                    }
                                 }
+                                .pickerStyle(.menu)
+                                .tint(RemasterHubPalette.brass)
                             }
-                            .pickerStyle(.menu)
-                        }
 
-                        Divider()
-                            .background(Color.white.opacity(0.2))
-                            .padding(.top, 4)
-
-                        VStack(spacing: 4) {
-                            Text("Рыбалка для Друзей (v1.81)")
-                                .font(.system(size: 13, weight: .bold))
-                                .foregroundStyle(OriginalGameTheme.goldText)
-                            Text("Порт Android-версии на iOS")
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundStyle(.white.opacity(0.75))
+                            HStack {
+                                Text("Рыбалка для Друзей • iOS Edition")
+                                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                                    .foregroundStyle(RemasterHubPalette.brass)
+                                Spacer()
+                                Text("База v1.81 • Remaster 3.0")
+                                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                                    .foregroundStyle(RemasterHubPalette.textSecondary)
+                            }
                         }
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, 2)
+                        .padding(14)
+                        .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                     }
-                    .font(.system(size: 15, weight: .bold))
-                    .padding(16)
-                    .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 10))
                     .padding(.horizontal, 14)
+                    .padding(.bottom, 16)
                 }
             }
         }
@@ -1810,16 +2091,26 @@ private struct AboutGameSubView: View {
     private var guideTabPicker: some View {
         HStack(spacing: 8) {
             ForEach(GuideTab.allCases) { tab in
+                let isSel = (selectedTab == tab)
                 Button {
                     selectedTab = tab
                 } label: {
-                    OriginalStyledActionButtonLabel(title: tab.rawValue, minWidth: 96)
-                        .opacity(selectedTab == tab ? 1.0 : 0.65)
+                    if coordinator.isRemasterModeEnabled {
+                        Text(tab.rawValue)
+                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                            .foregroundStyle(isSel ? .black : RemasterHubPalette.textSecondary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 8)
+                            .background(isSel ? RemasterHubPalette.brass : RemasterHubPalette.cardBg, in: Capsule())
+                    } else {
+                        OriginalStyledActionButtonLabel(title: tab.rawValue, minWidth: 96)
+                            .opacity(isSel ? 1.0 : 0.65)
+                    }
                 }
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 8)
+        .padding(.horizontal, 12)
     }
 
     private var fishesGuideSection: some View {
@@ -1844,7 +2135,7 @@ private struct AboutGameSubView: View {
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
-            .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 8))
+            .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             .padding(.horizontal, 10)
 
             ScrollView {
@@ -1909,7 +2200,7 @@ private struct AboutGameSubView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(12)
-                .background(Color.black.opacity(0.60), in: RoundedRectangle(cornerRadius: 8))
+                .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
 
                 ForEach(faqItems) { item in
                     let isOpen = expandedFaqIds.contains(item.id)
@@ -1942,7 +2233,7 @@ private struct AboutGameSubView: View {
                         }
                     }
                     .padding(12)
-                    .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 8))
+                    .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                 }
             }
             .padding(10)
@@ -2034,13 +2325,13 @@ private struct FishGuideCardView: View {
                             }
                         }
                         .padding(8)
-                        .background(Color.black.opacity(0.42), in: RoundedRectangle(cornerRadius: 6))
+                        .background(RemasterHubPalette.cardElevated, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
                     }
                 }
             }
         }
         .padding(10)
-        .background(Color.black.opacity(0.58), in: RoundedRectangle(cornerRadius: 8))
+        .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 }
 
@@ -2127,12 +2418,12 @@ private struct PondGuideCardView: View {
                         }
                     }
                     .padding(8)
-                    .background(Color.black.opacity(0.42), in: RoundedRectangle(cornerRadius: 6))
+                    .background(RemasterHubPalette.cardElevated, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
                 }
             }
         }
         .padding(10)
-        .background(Color.black.opacity(0.58), in: RoundedRectangle(cornerRadius: 8))
+        .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 }
 
@@ -2162,6 +2453,7 @@ public struct ShopView: View {
     }
 
     @State private var selectedCategory: ShopCategory = .rods
+    @State private var onlyAffordable: Bool = false
 
     public init(coordinator: FishingAppCoordinator) {
         self.coordinator = coordinator
@@ -2171,19 +2463,88 @@ public struct ShopView: View {
         ZStack {
             OriginalSecondBackgroundView()
 
-            VStack(spacing: 6) {
+            VStack(spacing: 8) {
                 OriginalScreenTopBar(
-                    title: "Магазин",
-                    subtitle: "Деньги: \(coordinator.profile.balance) руб"
+                    title: coordinator.isRemasterModeEnabled ? "Рыболовный магазин" : "Магазин",
+                    subtitle: "\(coordinator.profile.balance) ₽"
                 ) {
                     coordinator.selectedTab = .baseHub
                 }
 
+                if coordinator.isRemasterModeEnabled {
+                    remasterShopCurrentLoadoutStrip
+                }
+
                 ShopCategoryStripView(selectedCategory: $selectedCategory)
+
+                if coordinator.isRemasterModeEnabled {
+                    HStack {
+                        Text("Каталог: \(selectedCategory.rawValue.capitalized)")
+                            .font(.system(size: 13, weight: .bold, design: .rounded))
+                            .foregroundStyle(RemasterHubPalette.textSecondary)
+                        Spacer()
+                        Button {
+                            onlyAffordable.toggle()
+                        } label: {
+                            HStack(spacing: 5) {
+                                Image(systemName: onlyAffordable ? "checkmark.circle.fill" : "circle")
+                                    .font(.system(size: 12, weight: .bold))
+                                Text("По карману")
+                                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                            }
+                            .foregroundStyle(onlyAffordable ? .black : RemasterHubPalette.textPrimary)
+                            .padding(.horizontal, 11)
+                            .padding(.vertical, 5)
+                            .background(onlyAffordable ? RemasterHubPalette.brass : RemasterHubPalette.cardBg, in: Capsule())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(.horizontal, 14)
+                }
+
                 shopItemsScrollView
             }
         }
         .environment(\.isRemasterMode, coordinator.isRemasterModeEnabled)
+    }
+
+    /// Top comparison bar showing the player's currently equipped tackle right inside the shop.
+    private var remasterShopCurrentLoadoutStrip: some View {
+        let rodText = coordinator.assembledTackle.userRod.map { "\($0.rod.weight) кг" } ?? "Нет"
+        let coilText = coordinator.assembledTackle.userCoil.map { "\($0.coil.bearingCount) подш." } ?? "Нет"
+        let lineText = coordinator.assembledTackle.userLine.map { "\($0.line.weight) кг" } ?? "Нет"
+        let hookText = coordinator.assembledTackle.userHook.map { "\($0.amount) шт" } ?? "Нет"
+        let baitText = coordinator.assembledTackle.userBait.map { "\($0.bait.name.capitalized)" } ?? "Нет"
+
+        return HStack(spacing: 6) {
+            shopLoadoutMiniPill(label: "Удочка", value: rodText, isActive: selectedCategory == .rods) { selectedCategory = .rods }
+            shopLoadoutMiniPill(label: "Катушка", value: coilText, isActive: selectedCategory == .coils) { selectedCategory = .coils }
+            shopLoadoutMiniPill(label: "Леска", value: lineText, isActive: selectedCategory == .lines) { selectedCategory = .lines }
+            shopLoadoutMiniPill(label: "Крючок", value: hookText, isActive: selectedCategory == .hooks) { selectedCategory = .hooks }
+            shopLoadoutMiniPill(label: "Наживка", value: baitText, isActive: selectedCategory == .baits) { selectedCategory = .baits }
+        }
+        .padding(.horizontal, 14)
+    }
+
+    private func shopLoadoutMiniPill(label: String, value: String, isActive: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(spacing: 2) {
+                Text(label)
+                    .font(.system(size: 9, weight: .semibold, design: .rounded))
+                    .foregroundStyle(isActive ? RemasterHubPalette.brass : RemasterHubPalette.textSecondary)
+                    .lineLimit(1)
+                Text(value)
+                    .font(.system(size: 11, weight: .bold, design: .rounded).monospacedDigit())
+                    .foregroundStyle(RemasterHubPalette.textPrimary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 6)
+            .padding(.horizontal, 4)
+            .background(isActive ? RemasterHubPalette.cardElevated : RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        }
+        .buttonStyle(.plain)
     }
 
     private var shopItemsScrollView: some View {
@@ -2208,7 +2569,7 @@ public struct ShopView: View {
 
     private var shopRodsList: some View {
         let currentRodKg = coordinator.assembledTackle.userRod?.rod.weight ?? 0
-        return ForEach(coordinator.catalogRods, id: \.id) { rod in
+        return ForEach(coordinator.catalogRods.filter { !onlyAffordable || coordinator.profile.balance >= $0.price }, id: \.id) { rod in
             let diffKg = rod.weight - currentRodKg
             let diffSuffix = (coordinator.isRemasterModeEnabled && currentRodKg > 0 && diffKg > 0)
                 ? "  •  🔼 +\(diffKg) кг к текущей"
@@ -2226,7 +2587,7 @@ public struct ShopView: View {
     }
 
     private var shopCoilsList: some View {
-        ForEach(coordinator.catalogCoils, id: \.id) { coil in
+        ForEach(coordinator.catalogCoils.filter { !onlyAffordable || coordinator.profile.balance >= $0.price }, id: \.id) { coil in
             let durabilityUnits = coordinator.balanceTables.coilInitialStrengthOrHookBonus(at: max(0, coil.id - 1))
             ShopItemRowView(
                 drawableName: "coil",
@@ -2241,7 +2602,7 @@ public struct ShopView: View {
     }
 
     private var shopLinesList: some View {
-        ForEach(coordinator.catalogLines, id: \.id) { line in
+        ForEach(coordinator.catalogLines.filter { !onlyAffordable || coordinator.profile.balance >= $0.price }, id: \.id) { line in
             ShopItemRowView(
                 drawableName: "fishing_line",
                 title: line.name,
@@ -2255,7 +2616,7 @@ public struct ShopView: View {
     }
 
     private var shopHooksList: some View {
-        ForEach(coordinator.catalogHooks) { hookItem in
+        ForEach(coordinator.catalogHooks.filter { !onlyAffordable || coordinator.profile.balance >= $0.spec.price }) { hookItem in
             ShopItemRowView(
                 drawableName: "hooks",
                 title: hookItem.spec.name,
@@ -2269,7 +2630,7 @@ public struct ShopView: View {
     }
 
     private var shopBaitsList: some View {
-        ForEach(coordinator.catalogBaits) { baitItem in
+        ForEach(coordinator.catalogBaits.filter { !onlyAffordable || (coordinator.profile.category >= $0.spec.rank && coordinator.profile.balance >= $0.spec.price) }) { baitItem in
             let unlocked = coordinator.profile.category >= baitItem.spec.rank
             ShopItemRowView(
                 drawableName: "bait_\(baitItem.id)",
@@ -2314,10 +2675,7 @@ private struct ShopCategoryStripView: View {
                                 isSelected ? RemasterHubPalette.cardElevated : RemasterHubPalette.cardBg.opacity(0.85),
                                 in: Capsule()
                             )
-                            .overlay(
-                                Capsule()
-                                    .stroke(isSelected ? RemasterHubPalette.brass : RemasterHubPalette.stroke, lineWidth: isSelected ? 1.4 : 1.0)
-                            )
+
                         } else {
                             VStack(spacing: 3) {
                                 OriginalSpriteOrFallbackIcon(
@@ -2401,19 +2759,13 @@ private struct ShopItemRowView: View {
                         canAfford ? RemasterHubPalette.sage : Color.white.opacity(0.06),
                         in: RoundedRectangle(cornerRadius: 11, style: .continuous)
                     )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 11, style: .continuous)
-                            .stroke(canAfford ? Color.white.opacity(0.18) : RemasterHubPalette.stroke, lineWidth: 1)
-                    )
+
                 }
                 .buttonStyle(.plain)
             }
             .padding(12)
             .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(RemasterHubPalette.stroke, lineWidth: 1)
-            )
+
         } else {
             HStack(spacing: 12) {
                 OriginalSpriteOrFallbackIcon(
@@ -2448,7 +2800,7 @@ private struct ShopItemRowView: View {
                 .buttonStyle(.plain)
             }
             .padding(10)
-            .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 8))
+            .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
     }
 }
@@ -2484,39 +2836,177 @@ public struct InventoryView: View {
         self.coordinator = coordinator
     }
 
+    private var tackleBalanceAdvisory: (text: String, color: Color) {
+        guard let rod = coordinator.assembledTackle.userRod,
+              let line = coordinator.assembledTackle.userLine else {
+            return ("Выберите все 5 элементов снасти для выхода на водоём", RemasterHubPalette.brass)
+        }
+        if line.line.weight > rod.rod.weight {
+            return ("⚠️ Леска (\(line.line.weight) кг) крепче удилища (\(rod.rod.weight) кг) — риск поломки удочки!", Color(red: 0.95, green: 0.45, blue: 0.38))
+        } else {
+            return ("✓ Безопасный баланс: леска (\(line.line.weight) кг) защищает удилище (\(rod.rod.weight) кг)", RemasterHubPalette.sage)
+        }
+    }
+
     public var body: some View {
         ZStack {
             OriginalSecondBackgroundView()
 
-            VStack(spacing: 6) {
+            VStack(spacing: 8) {
                 OriginalScreenTopBar(
-                    title: "Рюкзак",
-                    subtitle: coordinator.assembledTackle.isComplete ? "Снасть собрана" : "Не собрана"
+                    title: coordinator.isRemasterModeEnabled ? "Мастерская снасти" : "Рюкзак",
+                    subtitle: coordinator.assembledTackle.isComplete ? "Готова к лову" : "Не собрана"
                 ) {
                     coordinator.selectedTab = .baseHub
                 }
 
                 if coordinator.isRemasterModeEnabled {
-                    Button {
-                        coordinator.equipBestOwnedTackle()
-                    } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: "wand.and.stars")
-                            Text("Авто-сборка лучшей снасти в 1 тап")
-                                .font(.system(size: 13, weight: .bold))
-                        }
-                        .foregroundStyle(.black)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
-                        .background(OriginalGameTheme.goldText, in: Capsule())
-                    }
-                    .buttonStyle(.plain)
+                    remasterInteractiveRigBlueprintCard
+                } else {
+                    BackpackCategoryStripView(selectedCategory: $selectedCategory)
                 }
-                BackpackCategoryStripView(selectedCategory: $selectedCategory)
                 backpackItemsScrollView
             }
         }
         .environment(\.isRemasterMode, coordinator.isRemasterModeEnabled)
+    }
+
+    private var remasterInteractiveRigBlueprintCard: some View {
+        let advisory = tackleBalanceAdvisory
+        let rod = coordinator.assembledTackle.userRod
+        let coil = coordinator.assembledTackle.userCoil
+        let line = coordinator.assembledTackle.userLine
+        let hook = coordinator.assembledTackle.userHook
+        let bait = coordinator.assembledTackle.userBait
+
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("СХЕМА ОСНАСТКИ (НАЖМИТЕ НА СЛОТ)")
+                        .font(.system(size: 10, weight: .heavy, design: .rounded))
+                        .foregroundStyle(RemasterHubPalette.brass)
+                    Text(advisory.text)
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .foregroundStyle(advisory.color)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
+                }
+                Spacer(minLength: 6)
+                Button {
+                    coordinator.equipBestOwnedTackle()
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "wand.and.stars")
+                            .font(.system(size: 11, weight: .bold))
+                        Text("Авто-сборка")
+                            .font(.system(size: 11, weight: .bold, design: .rounded))
+                    }
+                    .foregroundStyle(.black)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(RemasterHubPalette.brass, in: Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+
+            HStack(spacing: 6) {
+                blueprintSlotTile(
+                    category: .rods,
+                    icon: "fishing_rods",
+                    title: "Удочка",
+                    spec: rod.map { "\($0.rod.weight) кг" } ?? "Пусто",
+                    subSpec: rod.map { "Прочн. \($0.strength)%" } ?? "Выбрать",
+                    healthFraction: Double(rod?.strength ?? 0) / 100.0
+                )
+                blueprintSlotTile(
+                    category: .coils,
+                    icon: "coil",
+                    title: "Катушка",
+                    spec: coil.map { "\($0.coil.bearingCount) подш." } ?? "Пусто",
+                    subSpec: coil.map { "Ресурс \($0.strength)%" } ?? "Выбрать",
+                    healthFraction: Double(coil?.strength ?? 0) / 100.0
+                )
+                blueprintSlotTile(
+                    category: .lines,
+                    icon: "fishing_line",
+                    title: "Леска",
+                    spec: line.map { "\($0.line.weight) кг" } ?? "Пусто",
+                    subSpec: line.map { "\($0.length) м" } ?? "Выбрать",
+                    healthFraction: line != nil ? 1.0 : 0.0
+                )
+                blueprintSlotTile(
+                    category: .hooks,
+                    icon: "hooks",
+                    title: "Крючок",
+                    spec: hook.map { "\($0.amount) шт." } ?? "Пусто",
+                    subSpec: hook?.hook.name ?? "Выбрать",
+                    healthFraction: hook != nil ? 1.0 : 0.0
+                )
+                blueprintSlotTile(
+                    category: .baits,
+                    icon: bait.map { "bait_\($0.bait.id)" } ?? "baits",
+                    title: "Наживка",
+                    spec: bait.map { "\($0.amount) шт." } ?? "Пусто",
+                    subSpec: bait?.bait.name.capitalized ?? "Выбрать",
+                    healthFraction: bait != nil ? 1.0 : 0.0
+                )
+            }
+        }
+        .padding(12)
+        .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .padding(.horizontal, 12)
+    }
+
+    private func blueprintSlotTile(
+        category: BackpackCategory,
+        icon: String,
+        title: String,
+        spec: String,
+        subSpec: String,
+        healthFraction: Double
+    ) -> some View {
+        let isSelected = (selectedCategory == category)
+        return Button {
+            selectedCategory = category
+        } label: {
+            VStack(spacing: 4) {
+                Text(title)
+                    .font(.system(size: 9, weight: .bold, design: .rounded))
+                    .foregroundStyle(isSelected ? .black : RemasterHubPalette.textSecondary)
+                    .lineLimit(1)
+
+                OriginalSpriteOrFallbackIcon(
+                    drawableName: icon,
+                    fallbackSystemName: "circle.fill",
+                    width: 28,
+                    height: 24
+                )
+
+                Text(spec)
+                    .font(.system(size: 11, weight: .bold, design: .rounded).monospacedDigit())
+                    .foregroundStyle(isSelected ? .black : RemasterHubPalette.textPrimary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+
+                Text(subSpec)
+                    .font(.system(size: 9, weight: .medium, design: .rounded))
+                    .foregroundStyle(isSelected ? .black.opacity(0.75) : RemasterHubPalette.textSecondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+
+                Capsule()
+                    .fill(isSelected ? Color.black.opacity(0.35) : (healthFraction > 0 ? RemasterHubPalette.sage : Color.white.opacity(0.10)))
+                    .frame(height: 3)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 8)
+            .padding(.horizontal, 4)
+            .background(
+                isSelected ? RemasterHubPalette.brass : RemasterHubPalette.cardElevated,
+                in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+            )
+        }
+        .buttonStyle(.plain)
     }
 
     private var backpackItemsScrollView: some View {
@@ -2635,10 +3125,7 @@ private struct BackpackCategoryStripView: View {
                                 isSelected ? RemasterHubPalette.cardElevated : RemasterHubPalette.cardBg.opacity(0.85),
                                 in: Capsule()
                             )
-                            .overlay(
-                                Capsule()
-                                    .stroke(isSelected ? RemasterHubPalette.brass : RemasterHubPalette.stroke, lineWidth: isSelected ? 1.4 : 1.0)
-                            )
+
                         } else {
                             VStack(spacing: 3) {
                                 OriginalSpriteOrFallbackIcon(
@@ -2752,7 +3239,7 @@ private struct BackpackItemRowView: View {
                     )
                 }
                 .padding(10)
-                .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 8))
+                .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             }
         }
         .buttonStyle(.plain)
@@ -2762,7 +3249,16 @@ private struct BackpackItemRowView: View {
 // MARK: - 4. Authentic `FishpondActivity` (`Садок`, `res/layout/fishpond.xml` `res/1o.xml`)
 
 public struct FishnetView: View {
+    public enum CatchSortOrder: String, CaseIterable, Identifiable {
+        case value = "По ценности"
+        case weight = "По весу"
+        case species = "По виду"
+
+        public var id: String { rawValue }
+    }
+
     @ObservedObject public var coordinator: FishingAppCoordinator
+    @State private var sortOrder: CatchSortOrder = .value
 
     public init(coordinator: FishingAppCoordinator) {
         self.coordinator = coordinator
@@ -2784,47 +3280,203 @@ public struct FishnetView: View {
         return total
     }
 
+    private var sortedFishnetEntries: [FishnetEntryRecord] {
+        switch sortOrder {
+        case .value:
+            return coordinator.fishnetEntries.sorted { $0.caughtFish.sellingPriceCoins > $1.caughtFish.sellingPriceCoins }
+        case .weight:
+            return coordinator.fishnetEntries.sorted { $0.caughtFish.weightGrams > $1.caughtFish.weightGrams }
+        case .species:
+            return coordinator.fishnetEntries.sorted { $0.caughtFish.fish.name < $1.caughtFish.fish.name }
+        }
+    }
+
+    private var heaviestEntry: FishnetEntryRecord? {
+        coordinator.fishnetEntries.max(by: { $0.caughtFish.weightGrams < $1.caughtFish.weightGrams })
+    }
+
     public var body: some View {
         ZStack {
             OriginalSecondBackgroundView()
 
             VStack(spacing: 8) {
                 OriginalScreenTopBar(
-                    title: "Садок",
+                    title: coordinator.isRemasterModeEnabled ? "Садок и оценка улова" : "Садок",
                     subtitle: "\(coordinator.fishnetEntries.count) / \(PlayerStateRepository.maxFishnetCapacity)"
                 ) {
                     coordinator.selectedTab = .baseHub
                 }
 
-                FishnetSummaryPlaqueView(
-                    totalWeightGrams: totalWeightGrams,
-                    fishCount: coordinator.fishnetEntries.count,
-                    totalValueCoins: totalValueCoins
-                )
+                if coordinator.isRemasterModeEnabled {
+                    remasterFishnetDashboardBody
+                } else {
+                    FishnetSummaryPlaqueView(
+                        totalWeightGrams: totalWeightGrams,
+                        fishCount: coordinator.fishnetEntries.count,
+                        totalValueCoins: totalValueCoins
+                    )
 
-                if !coordinator.fishnetEntries.isEmpty {
-                    Button {
-                        coordinator.sellAllFishInFishnet()
-                    } label: {
-                        OriginalStyledActionButtonLabel(
-                            title: "Продать весь улов (+\(totalValueCoins) руб)",
-                            minWidth: 240
-                        )
-                    }
-                    .buttonStyle(.plain)
-                }
-
-                ScrollView {
-                    VStack(spacing: 8) {
-                        ForEach(coordinator.fishnetEntries) { entry in
-                            FishnetEntryRowView(entry: entry)
+                    if !coordinator.fishnetEntries.isEmpty {
+                        Button {
+                            coordinator.sellAllFishInFishnet()
+                        } label: {
+                            OriginalStyledActionButtonLabel(
+                                title: "Продать весь улов (+\(totalValueCoins) руб)",
+                                minWidth: 240
+                            )
                         }
+                        .buttonStyle(.plain)
                     }
-                    .padding(10)
+
+                    ScrollView {
+                        VStack(spacing: 8) {
+                            ForEach(coordinator.fishnetEntries) { entry in
+                                FishnetEntryRowView(entry: entry)
+                            }
+                        }
+                        .padding(10)
+                    }
                 }
             }
         }
         .environment(\.isRemasterMode, coordinator.isRemasterModeEnabled)
+    }
+
+    private var remasterFishnetDashboardBody: some View {
+        let capFrac = Double(coordinator.fishnetEntries.count) / Double(max(1, PlayerStateRepository.maxFishnetCapacity))
+
+        return ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 12) {
+                // 1. Capacity Ring & Sell Haul Hero Card
+                HStack(spacing: 14) {
+                    ZStack {
+                        Circle()
+                            .stroke(Color.black.opacity(0.38), lineWidth: 6)
+                            .frame(width: 64, height: 64)
+                        Circle()
+                            .trim(from: 0, to: CGFloat(min(1.0, capFrac)))
+                            .stroke(
+                                capFrac >= 0.9 ? Color.orange : RemasterHubPalette.sage,
+                                style: StrokeStyle(lineWidth: 6, lineCap: .round)
+                            )
+                            .rotationEffect(.degrees(-90))
+                            .frame(width: 64, height: 64)
+                        VStack(spacing: 0) {
+                            Text("\(coordinator.fishnetEntries.count)")
+                                .font(.system(size: 16, weight: .bold, design: .rounded).monospacedDigit())
+                                .foregroundStyle(RemasterHubPalette.textPrimary)
+                            Text("из \(PlayerStateRepository.maxFishnetCapacity)")
+                                .font(.system(size: 9, weight: .semibold, design: .rounded))
+                                .foregroundStyle(RemasterHubPalette.textSecondary)
+                        }
+                    }
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Общий вес: \(PlayerStateRepository.formatGramsAsKgOrGrams(totalWeightGrams))")
+                            .font(.system(size: 14, weight: .bold, design: .rounded).monospacedDigit())
+                            .foregroundStyle(RemasterHubPalette.textPrimary)
+                        Text("Оценка улова: +\(totalValueCoins) ₽")
+                            .font(.system(size: 16, weight: .heavy, design: .rounded).monospacedDigit())
+                            .foregroundStyle(RemasterHubPalette.sage)
+
+                        if !coordinator.fishnetEntries.isEmpty {
+                            Button {
+                                coordinator.sellAllFishInFishnet()
+                            } label: {
+                                HStack(spacing: 5) {
+                                    Image(systemName: "rublesign.circle.fill")
+                                    Text("Продать весь улов (+\(totalValueCoins) ₽)")
+                                }
+                                .font(.system(size: 12, weight: .bold, design: .rounded))
+                                .foregroundStyle(.black)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 7)
+                                .background(RemasterHubPalette.brass, in: Capsule())
+                            }
+                            .buttonStyle(.plain)
+                            .padding(.top, 2)
+                        }
+                    }
+                    Spacer()
+                }
+                .padding(14)
+                .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+
+                // 2. Largest Trophy Spotlight Card
+                if let best = heaviestEntry {
+                    HStack(spacing: 12) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .fill(Color.black.opacity(0.28))
+                                .frame(width: 78, height: 54)
+                            OriginalSpriteOrFallbackIcon(
+                                drawableName: "fish_\(best.caughtFish.fish.id)",
+                                fallbackSystemName: "fish.fill",
+                                width: 68,
+                                height: 44
+                            )
+                        }
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("🏆 ГЛАВНЫЙ ТРОФЕЙ В САДКЕ")
+                                .font(.system(size: 10, weight: .heavy, design: .rounded))
+                                .foregroundStyle(RemasterHubPalette.brass)
+                            Text(best.caughtFish.fish.name)
+                                .font(.system(size: 16, weight: .bold, design: .rounded))
+                                .foregroundStyle(RemasterHubPalette.textPrimary)
+                            Text("Вес: \(PlayerStateRepository.formatGramsAsKgOrGrams(best.caughtFish.weightGrams))  •  +\(best.caughtFish.sellingPriceCoins) ₽")
+                                .font(.system(size: 12, weight: .semibold, design: .rounded).monospacedDigit())
+                                .foregroundStyle(RemasterHubPalette.sage)
+                        }
+                        Spacer()
+                    }
+                    .padding(12)
+                    .background(RemasterHubPalette.cardElevated, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                }
+
+                // 3. Sort Bar + Catch List
+                if !coordinator.fishnetEntries.isEmpty {
+                    HStack(spacing: 8) {
+                        ForEach(CatchSortOrder.allCases) { order in
+                            let isSel = (sortOrder == order)
+                            Button {
+                                sortOrder = order
+                            } label: {
+                                Text(order.rawValue)
+                                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                                    .foregroundStyle(isSel ? .black : RemasterHubPalette.textSecondary)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 7)
+                                    .background(isSel ? RemasterHubPalette.brass : RemasterHubPalette.cardBg, in: Capsule())
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+
+                    VStack(spacing: 8) {
+                        ForEach(sortedFishnetEntries) { entry in
+                            FishnetEntryRowView(entry: entry)
+                        }
+                    }
+                } else {
+                    VStack(spacing: 10) {
+                        Image(systemName: "basket")
+                            .font(.system(size: 32, weight: .semibold))
+                            .foregroundStyle(RemasterHubPalette.textSecondary)
+                        Text("Ваш садок пока пуст")
+                            .font(.system(size: 16, weight: .bold, design: .rounded))
+                            .foregroundStyle(RemasterHubPalette.textPrimary)
+                        Text("Отправляйтесь на водоём и поймайте свою первую рыбу!")
+                            .font(.system(size: 12, weight: .medium, design: .rounded))
+                            .foregroundStyle(RemasterHubPalette.textSecondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(28)
+                    .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.bottom, 16)
+        }
     }
 }
 
@@ -2902,10 +3554,7 @@ private struct FishnetSummaryPlaqueView: View {
         .padding(.horizontal, 10)
         .padding(.vertical, 9)
         .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(RemasterHubPalette.stroke, lineWidth: 1)
-        )
+
     }
 }
 
@@ -2945,10 +3594,7 @@ private struct FishnetEntryRowView: View {
             }
             .padding(11)
             .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(RemasterHubPalette.stroke, lineWidth: 1)
-            )
+
         } else {
             HStack(spacing: 12) {
                 OriginalSpriteOrFallbackIcon(
@@ -2968,7 +3614,7 @@ private struct FishnetEntryRowView: View {
                 Spacer()
             }
             .padding(10)
-            .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 8))
+            .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
     }
 }
@@ -2976,8 +3622,18 @@ private struct FishnetEntryRowView: View {
 // MARK: - 5. Authentic `Records`, `Achievements` (`md_achiv_1..14`), `QuestActivity` (`res/zY.xml` + `Ly0/h`) & `TaskActivity` (`res/e7.xml`)
 
 public struct ProgressAndRecordsView: View {
+    public enum RecordsFilter: String, CaseIterable, Identifiable {
+        case all = "Все (141)"
+        case caught = "Пойманные"
+        case uncaught = "Не открытые"
+
+        public var id: String { rawValue }
+    }
+
     @ObservedObject public var coordinator: FishingAppCoordinator
     @State private var showAllQuestsCatalog: Bool = false
+    @State private var recordsSearchText: String = ""
+    @State private var recordsFilter: RecordsFilter = .all
 
     public init(coordinator: FishingAppCoordinator) {
         self.coordinator = coordinator
@@ -3028,19 +3684,29 @@ public struct ProgressAndRecordsView: View {
     private var sectionTabPicker: some View {
         HStack(spacing: 6) {
             ForEach(ProgressSectionTab.allCases) { tab in
+                let isSel = (coordinator.selectedProgressSection == tab)
                 Button {
                     coordinator.selectedProgressSection = tab
                     if tab == .tasks && coordinator.activeContract == nil {
                         _ = coordinator.generateOrEnsureUserTask()
                     }
                 } label: {
-                    OriginalStyledActionButtonLabel(title: tab.rawValue, minWidth: 78)
-                        .opacity(coordinator.selectedProgressSection == tab ? 1.0 : 0.65)
+                    if coordinator.isRemasterModeEnabled {
+                        Text(tab.rawValue)
+                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                            .foregroundStyle(isSel ? .black : RemasterHubPalette.textSecondary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 8)
+                            .background(isSel ? RemasterHubPalette.brass : RemasterHubPalette.cardBg, in: Capsule())
+                    } else {
+                        OriginalStyledActionButtonLabel(title: tab.rawValue, minWidth: 78)
+                            .opacity(isSel ? 1.0 : 0.65)
+                    }
                 }
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 6)
+        .padding(.horizontal, 12)
     }
 
     private var achievementsList: some View {
@@ -3094,7 +3760,7 @@ public struct ProgressAndRecordsView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(14)
-                .background(Color.black.opacity(0.60), in: RoundedRectangle(cornerRadius: 8))
+                .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             }
 
             Button {
@@ -3157,7 +3823,7 @@ public struct ProgressAndRecordsView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(12)
                         .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: 13, style: .continuous).stroke(RemasterHubPalette.stroke, lineWidth: 1))
+
 
                         VStack(alignment: .leading, spacing: 3) {
                             Text("Суммарный вес")
@@ -3170,7 +3836,7 @@ public struct ProgressAndRecordsView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(12)
                         .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: 13, style: .continuous).stroke(RemasterHubPalette.stroke, lineWidth: 1))
+
                     }
                 } else {
                     ZStack {
@@ -3281,7 +3947,7 @@ public struct ProgressAndRecordsView: View {
                     }
                 }
                 .padding(12)
-                .background(Color.black.opacity(0.58), in: RoundedRectangle(cornerRadius: 8))
+                .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             } else {
                 VStack(spacing: 10) {
                     Text("У вас пока нет активного задания")
@@ -3300,7 +3966,7 @@ public struct ProgressAndRecordsView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(16)
-                .background(Color.black.opacity(0.58), in: RoundedRectangle(cornerRadius: 8))
+                .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             }
         }
         .onAppear {
@@ -3310,9 +3976,90 @@ public struct ProgressAndRecordsView: View {
         }
     }
 
+    private var filteredPersonalRecords: [PersonalSpeciesRecord] {
+        let q = recordsSearchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return coordinator.personalRecords.filter { rec in
+            switch recordsFilter {
+            case .all: break
+            case .caught: if rec.weightGrams <= 0 { return false }
+            case .uncaught: if rec.weightGrams > 0 { return false }
+            }
+            if q.isEmpty { return true }
+            return rec.fishName.lowercased().contains(q) || "\(rec.id)".contains(q)
+        }
+    }
+
+    @ViewBuilder
     private var recordsList: some View {
-        ForEach(coordinator.personalRecords) { rec in
-            PersonalRecordRowView(record: rec)
+        if coordinator.isRemasterModeEnabled {
+            let caughtCount = coordinator.personalRecords.filter { $0.weightGrams > 0 }.count
+            let totalCount = max(1, coordinator.personalRecords.count)
+            let masteryFrac = Double(caughtCount) / Double(totalCount)
+
+            VStack(alignment: .leading, spacing: 10) {
+                // Collection Mastery Card
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("КОЛЛЕКЦИЯ ТРОФЕЕВ ВОДОЁМОВ")
+                            .font(.system(size: 10, weight: .heavy, design: .rounded))
+                            .foregroundStyle(RemasterHubPalette.brass)
+                        Spacer()
+                        Text("\(Int((masteryFrac * 100).rounded()))% открыто")
+                            .font(.system(size: 11, weight: .bold, design: .rounded).monospacedDigit())
+                            .foregroundStyle(RemasterHubPalette.sage)
+                    }
+                    Text("Поймано \(caughtCount) из \(coordinator.personalRecords.count) видов рыб")
+                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                        .foregroundStyle(RemasterHubPalette.textPrimary)
+
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            Capsule().fill(Color.black.opacity(0.38))
+                            Capsule()
+                                .fill(
+                                    LinearGradient(
+                                        colors: [RemasterHubPalette.sage, RemasterHubPalette.brass],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .frame(width: max(6, geo.size.width * masteryFrac))
+                        }
+                    }
+                    .frame(height: 7)
+                }
+                .padding(14)
+                .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+
+                // Search & Filter Bar
+                TextField("Поиск вида рыбы по названию или номеру...", text: $recordsSearchText)
+                    .textFieldStyle(.roundedBorder)
+
+                HStack(spacing: 6) {
+                    ForEach(RecordsFilter.allCases) { filter in
+                        let isSel = (recordsFilter == filter)
+                        Button {
+                            recordsFilter = filter
+                        } label: {
+                            Text(filter.rawValue)
+                                .font(.system(size: 12, weight: .bold, design: .rounded))
+                                .foregroundStyle(isSel ? .black : RemasterHubPalette.textSecondary)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 7)
+                                .background(isSel ? RemasterHubPalette.brass : RemasterHubPalette.cardBg, in: Capsule())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+
+                ForEach(filteredPersonalRecords) { rec in
+                    PersonalRecordRowView(record: rec)
+                }
+            }
+        } else {
+            ForEach(coordinator.personalRecords) { rec in
+                PersonalRecordRowView(record: rec)
+            }
         }
     }
 }
@@ -3401,7 +4148,7 @@ private struct ActiveQuestDetailCardView: View {
                         }
                     }
                     .padding(8)
-                    .background(Color.black.opacity(0.42), in: RoundedRectangle(cornerRadius: 6))
+                    .background(RemasterHubPalette.cardElevated, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
                 }
             }
 
@@ -3418,11 +4165,8 @@ private struct ActiveQuestDetailCardView: View {
             }
         }
         .padding(12)
-        .background(Color.black.opacity(0.62), in: RoundedRectangle(cornerRadius: 8))
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(quest.made == 1 ? Color.green : OriginalGameTheme.goldText.opacity(0.6), lineWidth: 1.5)
-        )
+        .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+
     }
 }
 
@@ -3481,10 +4225,7 @@ private struct AchievementRowView: View {
             }
             .padding(12)
             .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(achievement.level > 0 ? RemasterHubPalette.brass.opacity(0.32) : RemasterHubPalette.stroke, lineWidth: 1)
-            )
+
         } else {
             HStack(spacing: 12) {
                 OriginalSpriteOrFallbackIcon(
@@ -3513,7 +4254,7 @@ private struct AchievementRowView: View {
                 )
             }
             .padding(10)
-            .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 8))
+            .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
     }
 }
@@ -3588,7 +4329,7 @@ private struct QuestRowView: View {
             }
         }
         .padding(10)
-        .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 8))
+        .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 }
 
@@ -3629,10 +4370,7 @@ private struct PersonalRecordRowView: View {
             }
             .padding(10)
             .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 13, style: .continuous)
-                    .stroke(isCaught ? RemasterHubPalette.sage.opacity(0.32) : RemasterHubPalette.stroke, lineWidth: 1)
-            )
+
         } else {
             HStack(spacing: 12) {
                 OriginalSpriteOrFallbackIcon(
@@ -3652,7 +4390,7 @@ private struct PersonalRecordRowView: View {
                 Spacer()
             }
             .padding(8)
-            .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 8))
+            .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
     }
 }
@@ -3746,8 +4484,17 @@ public struct OnlineAndChatView: View {
                         break
                     }
                 } label: {
-                    OriginalStyledActionButtonLabel(title: sec.rawValue, minWidth: 78)
-                        .opacity(selectedSection == sec ? 1.0 : 0.65)
+                    if coordinator.isRemasterModeEnabled {
+                        Text(sec.rawValue)
+                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                            .foregroundStyle(selectedSection == sec ? .black : RemasterHubPalette.textSecondary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 8)
+                            .background(selectedSection == sec ? RemasterHubPalette.brass : RemasterHubPalette.cardBg, in: Capsule())
+                    } else {
+                        OriginalStyledActionButtonLabel(title: sec.rawValue, minWidth: 78)
+                            .opacity(selectedSection == sec ? 1.0 : 0.65)
+                    }
                 }
                 .buttonStyle(.plain)
             }
@@ -3815,7 +4562,7 @@ public struct OnlineAndChatView: View {
             }
         }
         .padding(12)
-        .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 8))
+        .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
     private var onlineChatSectionCard: some View {
@@ -3857,7 +4604,7 @@ public struct OnlineAndChatView: View {
             }
         }
         .padding(12)
-        .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 8))
+        .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
     private var onlineRatingsSectionCard: some View {
@@ -3907,7 +4654,7 @@ public struct OnlineAndChatView: View {
             }
         }
         .padding(12)
-        .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 8))
+        .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
     private var onlineToursSectionCard: some View {
@@ -4063,7 +4810,7 @@ public struct OnlineAndChatView: View {
             }
         }
         .padding(12)
-        .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 8))
+        .background(RemasterHubPalette.cardBg, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
     private func performSampleAuthRestore() {

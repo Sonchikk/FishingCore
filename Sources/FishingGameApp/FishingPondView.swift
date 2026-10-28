@@ -180,7 +180,11 @@ public struct FishingPondView: View {
             Canvas { context, size in
                 let activeRod = resolvedRodSprite(for: size)
                 if coordinator.isRemasterModeEnabled {
-                    drawRemasterWaterDepthAndHorizonSoftener(in: &context, size: size, phaseSec: phaseSec)
+                    if coordinator.selectedPondIndex == 0 {
+                        drawRemasterExperimental25DPondOneScene(in: &context, size: size, phaseSec: phaseSec)
+                    } else {
+                        drawRemasterWaterDepthAndHorizonSoftener(in: &context, size: size, phaseSec: phaseSec)
+                    }
                     drawRemasterSkyStarsAndFireflies(in: &context, size: size, phaseSec: phaseSec)
                     drawRemasterUnderwaterFishSilhouette(in: &context, size: size, phaseSec: phaseSec)
 
@@ -250,6 +254,329 @@ public struct FishingPondView: View {
             )
         }
         return rod
+    }
+
+    /// Experimental 2.5D Multi-Layer Parallax & Perspective Water Scene for Location #1 (`selectedPondIndex == 0`).
+    /// Replaces flat image-only water with 7 depth planes:
+    /// 1) Dynamic 24h Sky Dome + Volumetric God-Rays + Parallax Clouds & Distant Birds;
+    /// 2) Far-Shore Cedar & Birch Forest Silhouette + Drifting Shoreline Mist;
+    /// 3) Mid-Ground Wooded Cape & Bank;
+    /// 4) Vertically Inverted Wave-Rippled Mirror Reflection of Sky & Forest in the Water;
+    /// 5) True 2.5D Perspective Water Surface (18 perspective wave bands, subsurface caustics, deep ambient fish shadows, distant surface rings);
+    /// 6) Hovering Dragonflies (Day) / Glowing Fireflies (Dusk & Night);
+    /// 7) Overhanging Foreground Willow Foliage Framing.
+    private func drawRemasterExperimental25DPondOneScene(
+        in context: inout GraphicsContext,
+        size: CGSize,
+        phaseSec: Double
+    ) {
+        let hourFloat = Double(coordinator.gameClock.hour) + Double(coordinator.gameClock.minute) / 60.0
+        let isNight = (hourFloat >= 21.0 || hourFloat < 5.0)
+        let isDawn = (hourFloat >= 5.0 && hourFloat < 8.5)
+        let isDusk = (hourFloat >= 17.5 && hourFloat < 21.0)
+        let horizonY = size.height * 0.255
+        let waterHeight = max(1.0, size.height - horizonY)
+
+        // Subtle camera parallax shift (simulating a gentle living 2.5D camera)
+        let camParallaxX = CGFloat(sin(phaseSec * 0.35)) * 6.0
+
+        // --- LAYER 1: 2.5D Sky Dome & Volumetric Sun/Moon God-Rays ---
+        let skyTop: Color
+        let skyHorizon: Color
+        let sunColor: Color
+        if isNight {
+            skyTop = Color(red: 0.04, green: 0.07, blue: 0.13)
+            skyHorizon = Color(red: 0.09, green: 0.16, blue: 0.25)
+            sunColor = Color(red: 0.78, green: 0.88, blue: 1.0)
+        } else if isDawn {
+            skyTop = Color(red: 0.18, green: 0.29, blue: 0.44)
+            skyHorizon = Color(red: 0.92, green: 0.62, blue: 0.44)
+            sunColor = Color(red: 1.0, green: 0.78, blue: 0.48)
+        } else if isDusk {
+            skyTop = Color(red: 0.16, green: 0.20, blue: 0.36)
+            skyHorizon = Color(red: 0.90, green: 0.48, blue: 0.34)
+            sunColor = Color(red: 1.0, green: 0.64, blue: 0.36)
+        } else {
+            skyTop = Color(red: 0.22, green: 0.46, blue: 0.68)
+            skyHorizon = Color(red: 0.62, green: 0.80, blue: 0.90)
+            sunColor = Color(red: 1.0, green: 0.95, blue: 0.78)
+        }
+
+        let skyRect = CGRect(x: 0, y: 0, width: size.width, height: horizonY + 12.0)
+        context.fill(
+            Path(skyRect),
+            with: .linearGradient(
+                Gradient(colors: [skyTop, skyHorizon]),
+                startPoint: CGPoint(x: size.width * 0.5, y: 0),
+                endPoint: CGPoint(x: size.width * 0.5, y: horizonY)
+            )
+        )
+
+        // Celestial orb (Sun / Moon) + Volumetric God-Rays
+        let sunX = size.width * 0.64 + camParallaxX * 0.15
+        let sunY = horizonY * (isDawn || isDusk ? 0.58 : 0.34)
+        let sunGlowRect = CGRect(x: sunX - 58, y: sunY - 58, width: 116, height: 116)
+        context.fill(
+            Path(ellipseIn: sunGlowRect),
+            with: .radialGradient(
+                Gradient(colors: [sunColor.opacity(0.52), sunColor.opacity(0.12), Color.clear]),
+                center: CGPoint(x: sunX, y: sunY),
+                startRadius: 4,
+                endRadius: 58
+            )
+        )
+        let sunCoreRect = CGRect(x: sunX - 13, y: sunY - 13, width: 26, height: 26)
+        context.fill(Path(ellipseIn: sunCoreRect), with: .color(sunColor.opacity(0.92)))
+
+        // Volumetric God-Rays fanning down toward the lake surface
+        for r in 0..<4 {
+            let spread = CGFloat(r - 1) * 42.0 + CGFloat(sin(phaseSec * 0.4 + Double(r))) * 8.0
+            var ray = Path()
+            ray.move(to: CGPoint(x: sunX - 6, y: sunY))
+            ray.addLine(to: CGPoint(x: sunX + 6, y: sunY))
+            ray.addLine(to: CGPoint(x: sunX + spread + 34, y: horizonY + 35))
+            ray.addLine(to: CGPoint(x: sunX + spread - 34, y: horizonY + 35))
+            ray.closeSubpath()
+            context.fill(
+                ray,
+                with: .linearGradient(
+                    Gradient(colors: [sunColor.opacity(isNight ? 0.05 : 0.11), Color.clear]),
+                    startPoint: CGPoint(x: sunX, y: sunY),
+                    endPoint: CGPoint(x: sunX + spread, y: horizonY + 35)
+                )
+            )
+        }
+
+        // Drifting 2-layer parallax clouds
+        for c in 0..<5 {
+            let speed: Double = (c % 2 == 0) ? 3.2 : 5.4
+            let rawX = (Double(c) * Double(size.width) * 0.28 + phaseSec * speed).truncatingRemainder(dividingBy: Double(size.width + 160.0))
+            let cx = CGFloat(rawX) - 80.0 + camParallaxX * 0.25
+            let cy = horizonY * (0.20 + CGFloat(c % 3) * 0.16)
+            let cw: CGFloat = 86.0 + CGFloat(c * 14)
+            let ch: CGFloat = 16.0 + CGFloat(c % 2) * 6.0
+            context.fill(
+                Path(ellipseIn: CGRect(x: cx, y: cy, width: cw, height: ch)),
+                with: .color(Color.white.opacity(isNight ? 0.08 : 0.24))
+            )
+        }
+
+        // --- LAYER 2: Far-Shore Cedar & Birch Forest Silhouette (0.35x Parallax) ---
+        var farForest = Path()
+        farForest.move(to: CGPoint(x: -20, y: horizonY + 4))
+        let treeCount = 28
+        for i in 0...treeCount {
+            let frac = CGFloat(i) / CGFloat(treeCount)
+            let tx = -20.0 + frac * (size.width + 40.0) + camParallaxX * 0.35
+            // Natural varying cedar tree heights along the island & shore
+            let islandEnvelope = sin(frac * .pi) * 26.0 + cos(frac * .pi * 3.0) * 8.0
+            let spire = (i % 2 == 0) ? (14.0 + CGFloat((i * 7) % 11)) : 4.0
+            let ty = horizonY - max(6.0, islandEnvelope + spire)
+            farForest.addLine(to: CGPoint(x: tx, y: ty))
+        }
+        farForest.addLine(to: CGPoint(x: size.width + 20, y: horizonY + 4))
+        farForest.closeSubpath()
+
+        let farForestColor = isNight
+            ? Color(red: 0.05, green: 0.10, blue: 0.13)
+            : Color(red: 0.13, green: 0.24, blue: 0.22)
+        context.fill(farForest, with: .color(farForestColor))
+
+        // Mid-ground wooded cape on the left and right banks (0.65x Parallax)
+        var midCapeLeft = Path()
+        midCapeLeft.move(to: CGPoint(x: -10, y: horizonY + 8))
+        midCapeLeft.addQuadCurve(
+            to: CGPoint(x: size.width * 0.34 + camParallaxX * 0.65, y: horizonY + 6),
+            control: CGPoint(x: size.width * 0.14 + camParallaxX * 0.65, y: horizonY - 24)
+        )
+        midCapeLeft.closeSubpath()
+        let midForestColor = isNight
+            ? Color(red: 0.07, green: 0.13, blue: 0.15)
+            : Color(red: 0.17, green: 0.31, blue: 0.25)
+        context.fill(midCapeLeft, with: .color(midForestColor))
+
+        // --- LAYER 3: True 2.5D Perspective Water Plane & Mirror Reflection ---
+        let waterTopColor = isNight
+            ? Color(red: 0.06, green: 0.13, blue: 0.20)
+            : (isDawn || isDusk ? Color(red: 0.24, green: 0.36, blue: 0.42) : Color(red: 0.16, green: 0.38, blue: 0.46))
+        let waterMidColor = isNight
+            ? Color(red: 0.04, green: 0.10, blue: 0.16)
+            : Color(red: 0.09, green: 0.26, blue: 0.33)
+        let waterDeepColor = Color(red: 0.03, green: 0.11, blue: 0.16)
+
+        let waterRect = CGRect(x: 0, y: horizonY, width: size.width, height: waterHeight)
+        context.fill(
+            Path(waterRect),
+            with: .linearGradient(
+                Gradient(stops: [
+                    .init(color: waterTopColor.opacity(0.82), location: 0.0),
+                    .init(color: waterMidColor.opacity(0.88), location: 0.42),
+                    .init(color: waterDeepColor.opacity(0.95), location: 1.0)
+                ]),
+                startPoint: CGPoint(x: size.width * 0.5, y: horizonY),
+                endPoint: CGPoint(x: size.width * 0.5, y: size.height)
+            )
+        )
+
+        // Vertically inverted mirror reflection of the far cedar forest along the top 18% of the water
+        let reflectionEnd = horizonY + waterHeight * 0.18
+        var forestReflection = Path()
+        forestReflection.move(to: CGPoint(x: 0, y: horizonY))
+        for i in 0...treeCount {
+            let frac = CGFloat(i) / CGFloat(treeCount)
+            let rippleShift = CGFloat(sin(phaseSec * 2.2 + Double(i) * 0.7)) * 3.0
+            let tx = frac * size.width + rippleShift
+            let depth = 10.0 + sin(frac * .pi) * 24.0 + CGFloat((i * 5) % 9)
+            forestReflection.addLine(to: CGPoint(x: tx, y: min(reflectionEnd, horizonY + depth)))
+        }
+        forestReflection.addLine(to: CGPoint(x: size.width, y: horizonY))
+        forestReflection.closeSubpath()
+        context.fill(
+            forestReflection,
+            with: .linearGradient(
+                Gradient(colors: [farForestColor.opacity(0.55), Color.clear]),
+                startPoint: CGPoint(x: size.width * 0.5, y: horizonY),
+                endPoint: CGPoint(x: size.width * 0.5, y: reflectionEnd)
+            )
+        )
+
+        // Drifting shoreline mist ribbon softening the far bank
+        let mistShift = CGFloat(sin(phaseSec * 0.45)) * 18.0
+        let mistRect = CGRect(x: -20 + mistShift, y: horizonY - 8, width: size.width + 40, height: 22)
+        context.fill(
+            Path(ellipseIn: mistRect),
+            with: .linearGradient(
+                Gradient(colors: [Color.clear, Color.white.opacity(isNight ? 0.07 : 0.18), Color.clear]),
+                startPoint: CGPoint(x: size.width * 0.5, y: horizonY - 8),
+                endPoint: CGPoint(x: size.width * 0.5, y: horizonY + 14)
+            )
+        )
+
+        // Perspective Sun/Moon Shimmer Road on the 2.5D Water
+        for s in 0..<14 {
+            let norm = CGFloat(s) / 13.0
+            let z = pow(norm, 1.55)
+            let sy = horizonY + 8.0 + z * (waterHeight * 0.78)
+            let shimmerWave = CGFloat(sin(phaseSec * 2.6 + Double(s) * 0.9)) * (4.0 + z * 14.0)
+            let sw = (16.0 + z * 82.0) * (0.75 + 0.25 * CGFloat(cos(phaseSec * 1.9 + Double(s))))
+            let sh = max(1.4, 1.5 + z * 3.2)
+            let sRect = CGRect(x: sunX - sw * 0.5 + shimmerWave, y: sy, width: sw, height: sh)
+            context.fill(
+                Path(ellipseIn: sRect),
+                with: .color(sunColor.opacity(Double(0.26 * (1.0 - z * 0.65))))
+            )
+        }
+
+        // 16 Perspective-Scaled 2.5D Wave Bands & Subsurface Caustics (tight at horizon, broad in foreground)
+        for band in 0..<16 {
+            let norm = CGFloat(band) / 15.0
+            let z = pow(norm, 1.65)
+            let wy = horizonY + 6.0 + z * (waterHeight * 0.92)
+            let amp = 1.0 + z * 5.5
+            let freq = 2.4 - Double(z) * 0.9
+            let speed = (band % 2 == 0 ? 1.15 : -0.95)
+
+            var wavePath = Path()
+            let steps = 18
+            for step in 0...steps {
+                let u = CGFloat(step) / CGFloat(steps)
+                let wx = u * size.width
+                let dy = CGFloat(sin(Double(u) * .pi * freq * 2.0 + phaseSec * speed + Double(band))) * amp
+                if step == 0 {
+                    wavePath.move(to: CGPoint(x: wx, y: wy + dy))
+                } else {
+                    wavePath.addLine(to: CGPoint(x: wx, y: wy + dy))
+                }
+            }
+            context.stroke(
+                wavePath,
+                with: .color(Color(red: 0.72, green: 0.92, blue: 0.96).opacity(Double(0.05 + z * 0.09))),
+                lineWidth: 0.7 + z * 1.6
+            )
+        }
+
+        // Ambient Deep-Water Fish Shadows lazily swimming in the 2.5D lake (independent background life)
+        for af in 0..<2 {
+            let dir: CGFloat = (af == 0) ? 1.0 : -1.0
+            let cycle = (phaseSec * (af == 0 ? 11.0 : 8.5) + Double(af) * 140.0).truncatingRemainder(dividingBy: Double(size.width + 120.0))
+            let fx = (af == 0) ? (CGFloat(cycle) - 60.0) : (size.width + 60.0 - CGFloat(cycle))
+            let fy = horizonY + waterHeight * (af == 0 ? 0.46 : 0.68) + CGFloat(sin(phaseSec * 1.2 + Double(af))) * 8.0
+            let bodyW: CGFloat = (af == 0) ? 26.0 : 32.0
+            let bodyH: CGFloat = (af == 0) ? 8.0 : 10.0
+
+            context.drawLayer { layer in
+                layer.translateBy(x: fx, y: fy)
+                if dir < 0 { layer.scaleBy(x: -1, y: 1) }
+                let bodyRect = CGRect(x: -bodyW * 0.5, y: -bodyH * 0.5, width: bodyW, height: bodyH)
+                layer.fill(Path(ellipseIn: bodyRect), with: .color(Color.black.opacity(0.18)))
+                var tail = Path()
+                let tailSwing = CGFloat(sin(phaseSec * 6.5 + Double(af))) * 2.5
+                tail.move(to: CGPoint(x: -bodyW * 0.45, y: 0))
+                tail.addLine(to: CGPoint(x: -bodyW * 0.78, y: -bodyH * 0.55 + tailSwing))
+                tail.addLine(to: CGPoint(x: -bodyW * 0.78, y: bodyH * 0.55 + tailSwing))
+                tail.closeSubpath()
+                layer.fill(tail, with: .color(Color.black.opacity(0.16)))
+            }
+        }
+
+        // Occasional distant surface rings from rising fish
+        let ringCycle = (phaseSec * 0.45).truncatingRemainder(dividingBy: 1.0)
+        let ringCenter = CGPoint(x: size.width * 0.32, y: horizonY + waterHeight * 0.24)
+        let rw = CGFloat(6.0 + ringCycle * 36.0)
+        let rh = rw * 0.36
+        context.stroke(
+            Path(ellipseIn: CGRect(x: ringCenter.x - rw * 0.5, y: ringCenter.y - rh * 0.5, width: rw, height: rh)),
+            with: .color(Color.white.opacity((1.0 - ringCycle) * 0.28)),
+            lineWidth: 1.0
+        )
+
+        // Hovering Dragonfly by day (`!isNight`) at foreground-mid water
+        if !isNight {
+            let dfX = size.width * 0.26 + CGFloat(sin(phaseSec * 1.3)) * 38.0 + CGFloat(cos(phaseSec * 2.9)) * 12.0
+            let dfY = size.height * 0.76 + CGFloat(cos(phaseSec * 1.7)) * 16.0
+            let wingFlap = CGFloat(sin(phaseSec * 38.0)) * 4.0
+            context.drawLayer { layer in
+                layer.translateBy(x: dfX, y: dfY)
+                // Wings
+                let w1 = CGRect(x: -9, y: -2.5 - wingFlap * 0.3, width: 18, height: 3.0)
+                let w2 = CGRect(x: -7, y: 0.5 + wingFlap * 0.3, width: 14, height: 2.5)
+                layer.fill(Path(ellipseIn: w1), with: .color(Color.white.opacity(0.45)))
+                layer.fill(Path(ellipseIn: w2), with: .color(Color.cyan.opacity(0.35)))
+                // Body
+                var body = Path()
+                body.move(to: CGPoint(x: -4, y: -4))
+                body.addLine(to: CGPoint(x: 6, y: 5))
+                layer.stroke(body, with: .color(Color(red: 0.20, green: 0.78, blue: 0.68)), lineWidth: 2.0)
+            }
+        }
+
+        // Top-Left Overhanging Willow Foliage Framing (`Передний план 2.5D`)
+        let branchSway = CGFloat(sin(phaseSec * 1.1)) * 5.0
+        for b in 0..<5 {
+            let bx = 14.0 + CGFloat(b) * 22.0
+            let len = 52.0 + CGFloat((b * 13) % 28)
+            var branch = Path()
+            branch.move(to: CGPoint(x: bx, y: -4))
+            branch.addQuadCurve(
+                to: CGPoint(x: bx + branchSway + CGFloat(b) * 3.0, y: len),
+                control: CGPoint(x: bx + branchSway * 0.5, y: len * 0.55)
+            )
+            context.stroke(
+                branch,
+                with: .color(Color(red: 0.14, green: 0.28, blue: 0.20).opacity(0.65)),
+                lineWidth: 1.6
+            )
+            for leafIdx in 1...3 {
+                let lt = CGFloat(leafIdx) / 3.5
+                let lx = bx + (branchSway + CGFloat(b) * 3.0) * lt
+                let ly = len * lt
+                let leafRect = CGRect(x: lx - 3.0, y: ly - 6.0, width: 6.0, height: 12.0)
+                context.fill(
+                    Path(ellipseIn: leafRect),
+                    with: .color(Color(red: 0.22, green: 0.44, blue: 0.28).opacity(0.58))
+                )
+            }
+        }
     }
 
     /// Enhances the water surface with shoreline mist, sun/moon shimmer column, multi-octave wave ribbons, and deep-water vignetting.
@@ -425,30 +752,38 @@ public struct FishingPondView: View {
         let tensionNorm = CGFloat(min(225, max(0, tension))) / 225.0
         let isPulled = coordinator.stateMachine.isPulled
 
-        // 1. Idle & waiting breathing sway (so the rod feels held in living hands, never frozen)
-        let breathX = CGFloat(sin(phaseSec * 1.45)) * 4.5 + CGFloat(cos(phaseSec * 0.8)) * 2.0
-        let breathY = CGFloat(cos(phaseSec * 1.45)) * 3.2
+        // 1. Calm steady rod in idle/waiting (no unnatural constant swaying when nothing is happening!)
+        let breathX: CGFloat = 0.0
+        let breathY: CGFloat = 0.0
 
         // 2. Whipping forward-cast impulse during cast animation (`castProgress` 0..1)
         var castWhipX: CGFloat = 0.0
         var castWhipY: CGFloat = 0.0
         if let lineGeo = coordinator.stateMachine.lineGeometry, lineGeo.isCastAnimating {
             let p = CGFloat(lineGeo.castProgress)
-            // Back-swing on p < 0.25, sharp forward whip at p ≈ 0.45, elastic damping oscillation on p > 0.5
             let whipWave = sin(p * .pi * 2.2) * exp(-p * 2.4)
             castWhipX = -whipWave * 42.0
             castWhipY = abs(whipWave) * 28.0
         }
 
-        // 3. High-frequency fight vibration at the rod tip when fish pulls or surges
+        // 3. Quiver-tip bite nods (`поклёвка на кончике удилища`) & fight vibrations when fish is on the hook
         var fightJitterX: CGFloat = 0.0
         var fightJitterY: CGFloat = 0.0
-        if state == .fishFight {
-            let vibAmp: CGFloat = isPulled ? (2.2 + tensionNorm * 5.5) : (1.0 + tensionNorm * 2.5)
-            fightJitterX = CGFloat(sin(phaseSec * 29.0)) * vibAmp
-            fightJitterY = CGFloat(cos(phaseSec * 34.0)) * (vibAmp * 0.75)
-        } else if state == .waitingForBite && coordinator.stateMachine.isPreHookBobbing {
-            fightJitterY = CGFloat(sin(phaseSec * 18.0)) * 2.5
+        let isBitingNow = coordinator.stateMachine.isPreHookBobbing
+            || (state == .fishFight && !isPulled)
+            || (coordinator.stateMachine.bobber?.isBiteTexture == true && !isPulled)
+
+        if state == .fishFight && isPulled {
+            let vibAmp: CGFloat = 1.6 + tensionNorm * 4.2
+            fightJitterX = CGFloat(sin(phaseSec * 26.0)) * vibAmp
+            fightJitterY = CGFloat(cos(phaseSec * 31.0)) * (vibAmp * 0.7)
+        } else if isBitingNow {
+            // Sharp rhythmic 2-beat quiver-tip tugs toward the water when a fish bites!
+            let primaryTug = CGFloat(pow(max(0.0, sin(phaseSec * 5.4)), 3.0))
+            let secondaryTwitch = CGFloat(pow(max(0.0, sin(phaseSec * 10.8 + 0.6)), 4.0))
+            let nodStrength: CGFloat = (state == .fishFight) ? 14.0 : 8.5
+            fightJitterX = -(primaryTug * nodStrength * 0.75 + secondaryTwitch * 4.0)
+            fightJitterY = (primaryTug * nodStrength + secondaryTwitch * 5.0)
         }
 
         // Base anchor at bottom-right (`x ≈ 78%` of width, `y = size.height + 10`)
@@ -724,19 +1059,25 @@ public struct FishingPondView: View {
         let tension = coordinator.stateMachine.tension
         let tensionNorm = CGFloat(min(225, max(0, tension))) / 225.0
 
-        // When waiting for bite, line Gently sags onto the water surface; during fight, it pulls taut!
+        // When waiting for bite, line rests calmly on the water; during a bite it twitches taut; during a fight it pulls straight!
         let ctrlPoint: CGPoint
+        let isBiting = coordinator.stateMachine.isPreHookBobbing || (state == .fishFight && !coordinator.stateMachine.isPulled)
         if state == .fishFight && coordinator.stateMachine.isPulled {
-            let jitter = CGFloat(sin(phaseSec * 32.0)) * (1.5 + tensionNorm * 3.0)
+            let jitter = CGFloat(sin(phaseSec * 28.0)) * (1.0 + tensionNorm * 2.2)
             ctrlPoint = CGPoint(
                 x: (rodTip.x + targetPt.x) * 0.5 + jitter,
-                y: (rodTip.y + targetPt.y) * 0.5 + (1.0 - tensionNorm) * 16.0
+                y: (rodTip.y + targetPt.y) * 0.5 + (1.0 - tensionNorm) * 14.0
+            )
+        } else if isBiting {
+            let tug = CGFloat(pow(max(0.0, sin(phaseSec * 5.4)), 3.0))
+            ctrlPoint = CGPoint(
+                x: (rodTip.x + targetPt.x) * 0.5,
+                y: max(rodTip.y, targetPt.y) + 24.0 - tug * 14.0
             )
         } else {
-            let breeze = CGFloat(sin(phaseSec * 1.8)) * 5.0
             ctrlPoint = CGPoint(
-                x: (rodTip.x + targetPt.x) * 0.5 + breeze,
-                y: max(rodTip.y, targetPt.y) + 28.0
+                x: (rodTip.x + targetPt.x) * 0.5,
+                y: max(rodTip.y, targetPt.y) + 24.0
             )
         }
 
@@ -832,25 +1173,112 @@ public struct FishingPondView: View {
             }
         }
 
-        // 3. Procedural Waggler Float with Wave Buoyancy & Tilt
+        // 3. Procedural Waggler Float: Calm in waiting state, Expressive Multi-Phase Bite Animation when biting!
         let isFighting = (coordinator.stateMachine.state == .fishFight)
         let isPreHook = coordinator.stateMachine.isPreHookBobbing
         let isPulled = coordinator.stateMachine.isPulled
+        let isAnyBite = isPreHook || isFighting || bobber.isBiteTexture
 
         let waveBobY: CGFloat
+        let waveShiftX: CGFloat
         let tiltRadians: Double
+
         if isFighting && !isPreHook {
-            waveBobY = isPulled ? 4.0 : 6.0
-            tiltRadians = (isPulled ? -0.34 : 0.30) + sin(phaseSec * 7.5) * 0.08
+            // Active Strike / Fight: deep plunge or angled drag across the water
+            let surge = CGFloat(pow(max(0.0, sin(phaseSec * 6.2)), 2.0))
+            waveBobY = (isPulled ? 4.5 : 8.5) + surge * 4.5
+            waveShiftX = isPulled ? 0.0 : CGFloat(sin(phaseSec * 4.2)) * 5.0
+            tiltRadians = (isPulled ? -0.36 : 0.42) + Double(surge) * 0.14
         } else if isPreHook {
-            waveBobY = CGFloat(sin(phaseSec * 11.0)) * 3.5 + 2.0
-            tiltRadians = sin(phaseSec * 9.0) * 0.16
+            // Pre-hook nibble (`проба наживки`): sharp rhythmic 2-beat dips + sideways lay/tilt, with brief calm pauses
+            let primaryDip = CGFloat(pow(max(0.0, sin(phaseSec * 5.4)), 3.0))
+            let quickTwitch = CGFloat(pow(max(0.0, sin(phaseSec * 10.8 + 0.6)), 4.0))
+            waveBobY = primaryDip * 8.0 + quickTwitch * 3.5 + landingDipY
+            waveShiftX = CGFloat(sin(phaseSec * 2.7)) * (primaryDip * 4.5)
+            tiltRadians = Double(primaryDip) * 0.34 * (sin(phaseSec * 1.35) >= 0 ? 1.0 : -1.0)
         } else {
-            waveBobY = CGFloat(sin(phaseSec * 2.6)) * 2.2 + landingDipY
-            tiltRadians = sin(phaseSec * 1.9) * 0.065
+            // Calm waiting state: completely still and natural (only post-cast landing dip during first 600ms)
+            waveBobY = landingDipY
+            waveShiftX = 0.0
+            tiltRadians = 0.0
         }
 
-        let waterlineCenter = CGPoint(x: baseCenter.x, y: baseCenter.y + waveBobY)
+        let waterlineCenter = CGPoint(x: baseCenter.x + waveShiftX, y: baseCenter.y + waveBobY)
+
+        // 3A. Expressive Bite Effects on Water (Rising Bottom Bubbles, Strike Pulse Rings, Hydrodynamic V-Wake & Callout)
+        if isAnyBite {
+            // (1) Concentric pulsing bite rings around the float stem
+            for rIdx in 0..<2 {
+                let ringPhase = (phaseSec * 1.85 + Double(rIdx) * 0.5).truncatingRemainder(dividingBy: 1.0)
+                let rw = CGFloat(12.0 + ringPhase * 52.0)
+                let rh = rw * 0.42
+                let ringRect = CGRect(
+                    x: waterlineCenter.x - rw * 0.5,
+                    y: waterlineCenter.y - rh * 0.5,
+                    width: rw,
+                    height: rh
+                )
+                let ringColor = (isFighting && !isPreHook)
+                    ? Color(red: 1.0, green: 0.42, blue: 0.24)
+                    : Self.goldTextColor
+                context.stroke(
+                    Path(ellipseIn: ringRect),
+                    with: .color(ringColor.opacity((1.0 - ringPhase) * 0.65)),
+                    lineWidth: CGFloat(2.2 * (1.0 - ringPhase * 0.5))
+                )
+            }
+
+            // (2) Stream of 6 underwater air bubbles rising from the fish disturbing the bottom
+            for bIdx in 0..<6 {
+                let bProg = (phaseSec * 1.4 + Double(bIdx) * 0.17).truncatingRemainder(dividingBy: 1.0)
+                let angle = Double(bIdx) * 1.05 + phaseSec * 0.8
+                let spread = CGFloat(4.0 + bProg * 14.0)
+                let bx = waterlineCenter.x + CGFloat(cos(angle)) * spread
+                let by = waterlineCenter.y + CGFloat(10.0 - bProg * 14.0)
+                let br = CGFloat(1.6 + (1.0 - bProg) * 2.2)
+                let bRect = CGRect(x: bx - br, y: by - br, width: br * 2.0, height: br * 1.6)
+                context.fill(
+                    Path(ellipseIn: bRect),
+                    with: .color(Color(red: 0.78, green: 0.96, blue: 1.0).opacity((1.0 - bProg) * 0.72))
+                )
+            }
+
+            // (3) V-Wake hydrodynamic trail when the fish pulls the float during a strike/fight
+            if isFighting && !isPreHook {
+                var wakePath = Path()
+                wakePath.move(to: CGPoint(x: waterlineCenter.x - 16, y: waterlineCenter.y + 5))
+                wakePath.addQuadCurve(
+                    to: CGPoint(x: waterlineCenter.x + 16, y: waterlineCenter.y + 5),
+                    control: CGPoint(x: waterlineCenter.x, y: waterlineCenter.y - 4)
+                )
+                context.stroke(
+                    wakePath,
+                    with: .color(Color.white.opacity(0.55)),
+                    style: StrokeStyle(lineWidth: 2.0, lineCap: .round)
+                )
+            }
+
+            // (4) Floating Strike Callout Indicator above the antenna when a bite is active and player has not pulled yet
+            if !isPulled {
+                let badgePulse = 0.85 + 0.15 * CGFloat(sin(phaseSec * 10.0))
+                let badgeY = max(24.0, waterlineCenter.y - 54.0)
+                let pillRect = CGRect(x: waterlineCenter.x - 42.0, y: badgeY - 10.0, width: 84.0, height: 20.0)
+                let badgeColor = (isFighting && !isPreHook)
+                    ? Color(red: 0.96, green: 0.32, blue: 0.22)
+                    : Self.goldTextColor
+                context.fill(
+                    Path(roundedRect: pillRect, cornerRadius: 10),
+                    with: .color(Color(red: 0.09, green: 0.13, blue: 0.16).opacity(0.92))
+                )
+                let labelText = (isFighting && !isPreHook) ? "⚡ ПОДСЕКАЙ!" : "🐟 КЛЮЁТ..."
+                context.draw(
+                    Text(labelText)
+                        .font(.system(size: 10, weight: .heavy, design: .rounded))
+                        .foregroundStyle(badgeColor.opacity(Double(badgePulse))),
+                    at: CGPoint(x: waterlineCenter.x, y: badgeY)
+                )
+            }
+        }
 
         // Subtle waterline meniscus ring around the float stem
         let meniscusRect = CGRect(x: waterlineCenter.x - 7.0, y: waterlineCenter.y - 2.2, width: 14.0, height: 4.4)
@@ -1526,14 +1954,13 @@ private struct PondTopOverlayBarView: View {
                     Image(systemName: coordinator.stateMachine.state == .idle ? "chevron.left" : "arrow.uturn.backward")
                         .font(.system(size: 12, weight: .bold))
                     Text(coordinator.stateMachine.state == .idle ? "База" : "Сброс")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
                         .lineLimit(1)
                 }
                 .foregroundStyle(.white.opacity(0.95))
-                .frame(height: 34)
-                .padding(.horizontal, 12)
-                .background(FishingPondView.matteSlateSurface.opacity(0.84), in: Capsule())
-                .overlay(Capsule().stroke(Color.white.opacity(0.14), lineWidth: 1))
+                .frame(height: 36)
+                .padding(.horizontal, 13)
+                .background(FishingPondView.matteSlateSurface.opacity(0.88), in: Capsule())
                 .opacity(coordinator.stateMachine.state == .fishFight ? 0.45 : 1.0)
             }
             .buttonStyle(.plain)
@@ -1544,10 +1971,18 @@ private struct PondTopOverlayBarView: View {
                     onOpenQuickTackle()
                 }
             } label: {
-                HStack(spacing: 5) {
+                HStack(spacing: 6) {
+                    if coordinator.selectedPondIndex == 0 {
+                        Text("2.5D")
+                            .font(.system(size: 9, weight: .heavy, design: .rounded))
+                            .foregroundStyle(.black)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
+                            .background(FishingPondView.sageAccentColor, in: Capsule())
+                    }
                     Text(localizedCurrentPondTitle)
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(.white.opacity(0.95))
+                        .font(.system(size: 13, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.96))
                         .lineLimit(1)
                         .minimumScaleFactor(0.75)
                     Image(systemName: "chevron.down")
@@ -1555,10 +1990,9 @@ private struct PondTopOverlayBarView: View {
                         .foregroundStyle(FishingPondView.goldTextColor)
                 }
                 .frame(maxWidth: .infinity)
-                .frame(height: 34)
-                .padding(.horizontal, 10)
-                .background(FishingPondView.matteSlateSurface.opacity(0.84), in: Capsule())
-                .overlay(Capsule().stroke(Color.white.opacity(0.14), lineWidth: 1))
+                .frame(height: 36)
+                .padding(.horizontal, 12)
+                .background(FishingPondView.matteSlateSurface.opacity(0.88), in: Capsule())
             }
             .buttonStyle(.plain)
             .simultaneousGesture(
@@ -1574,9 +2008,8 @@ private struct PondTopOverlayBarView: View {
                     Image(systemName: coordinator.currentResolvedWeather.symbolName)
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(FishingPondView.goldTextColor)
-                        .frame(width: 34, height: 34)
-                        .background(FishingPondView.matteSlateSurface.opacity(0.84), in: Circle())
-                        .overlay(Circle().stroke(Color.white.opacity(0.14), lineWidth: 1))
+                        .frame(width: 36, height: 36)
+                        .background(FishingPondView.matteSlateSurface.opacity(0.88), in: Circle())
                 }
                 .buttonStyle(.plain)
 
@@ -1587,16 +2020,13 @@ private struct PondTopOverlayBarView: View {
                 } label: {
                     Image(systemName: "dot.radiowaves.left.and.right")
                         .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(coordinator.isSonarRadarVisible ? FishingPondView.sageAccentColor : .white.opacity(0.75))
-                        .frame(width: 34, height: 34)
-                        .background(FishingPondView.matteSlateSurface.opacity(0.84), in: Circle())
-                        .overlay(
-                            Circle().stroke(
-                                coordinator.isSonarRadarVisible
-                                    ? FishingPondView.sageAccentColor.opacity(0.65)
-                                    : Color.white.opacity(0.14),
-                                lineWidth: 1
-                            )
+                        .foregroundStyle(coordinator.isSonarRadarVisible ? .white : .white.opacity(0.75))
+                        .frame(width: 36, height: 36)
+                        .background(
+                            coordinator.isSonarRadarVisible
+                                ? FishingPondView.sageAccentColor
+                                : FishingPondView.matteSlateSurface.opacity(0.88),
+                            in: Circle()
                         )
                 }
                 .buttonStyle(.plain)
@@ -1607,20 +2037,15 @@ private struct PondTopOverlayBarView: View {
                 } label: {
                     Image(systemName: "list.clipboard")
                         .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(.white.opacity(0.9))
-                        .frame(width: 34, height: 34)
-                        .background(FishingPondView.matteSlateSurface.opacity(0.84), in: Circle())
-                        .overlay(Circle().stroke(Color.white.opacity(0.14), lineWidth: 1))
+                        .foregroundStyle(.white.opacity(0.92))
+                        .frame(width: 36, height: 36)
+                        .background(FishingPondView.matteSlateSurface.opacity(0.88), in: Circle())
                         .opacity(coordinator.stateMachine.state == .idle ? 1.0 : 0.45)
                 }
                 .buttonStyle(.plain)
             }
             .fixedSize(horizontal: true, vertical: true)
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 5)
-        .background(FishingPondView.matteSlateSurface.opacity(0.55), in: Capsule())
-        .overlay(Capsule().stroke(Color.white.opacity(0.10), lineWidth: 1))
         .padding(.horizontal, 10)
         .padding(.top, 6)
     }
@@ -1774,12 +2199,8 @@ private struct RemasterLiveFightTelemetryBanner: View {
                 .background(Color.white.opacity(0.10), in: Capsule())
         }
         .padding(.horizontal, 12)
-        .padding(.vertical, 7)
-        .background(FishingPondView.matteSlateSurface.opacity(0.88), in: RoundedRectangle(cornerRadius: 10))
-        .overlay(
-            RoundedRectangle(cornerRadius: 10)
-                .stroke(Color.white.opacity(0.14), lineWidth: 1)
-        )
+        .padding(.vertical, 8)
+        .background(FishingPondView.matteSlateSurface.opacity(0.90), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }
 
@@ -1793,13 +2214,9 @@ private struct RemasterCompactSonarWidgetView: View {
 
         VStack(alignment: .leading, spacing: 6) {
             ZStack(alignment: .bottomTrailing) {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.black.opacity(0.45))
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .fill(Color.black.opacity(0.38))
                     .frame(width: 148, height: 48)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.white.opacity(0.10), lineWidth: 1)
-                    )
 
                 HStack(spacing: 12) {
                     ForEach(0..<min(4, max(1, forecast.count)), id: \.self) { idx in
@@ -1858,12 +2275,8 @@ private struct RemasterCompactSonarWidgetView: View {
                 .frame(width: 148)
             }
         }
-        .padding(9)
-        .background(FishingPondView.matteSlateSurface.opacity(0.84), in: RoundedRectangle(cornerRadius: 12))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.white.opacity(0.14), lineWidth: 1)
-        )
+        .padding(10)
+        .background(FishingPondView.matteSlateSurface.opacity(0.88), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 }
 
@@ -1964,101 +2377,116 @@ private struct RemasterPondBottomDeckView: View {
         coordinator.assembledTackle.userRod?.strength ?? 0
     }
 
+    private var rodWeightKg: Int {
+        coordinator.assembledTackle.userRod?.rod.weight ?? 0
+    }
+
     private var coilStrength: Int {
         coordinator.assembledTackle.userCoil?.strength ?? 0
     }
 
+    private var coilBearings: Int {
+        coordinator.assembledTackle.userCoil?.coil.bearingCount ?? 0
+    }
+
+    private var lineWeightKg: Int {
+        coordinator.assembledTackle.userLine?.line.weight ?? 0
+    }
+
+    private var lineLengthMeters: Int {
+        coordinator.assembledTackle.userLine?.length ?? 0
+    }
+
+    /// Computes separate visual load percentages for Rod (`Удилище`) and Reel/Line (`Катушка • Леска`)
+    /// so the player sees how each component is loaded in real time.
+    private var rodLoadFraction: Double {
+        guard rodWeightKg > 0 else { return 0.0 }
+        if lineWeightKg > 0 && rodWeightKg > lineWeightKg {
+            return min(1.0, tensionFraction * (Double(lineWeightKg) / Double(max(1, rodWeightKg))) * 1.15)
+        }
+        return tensionFraction
+    }
+
+    private var reelLineLoadFraction: Double {
+        guard lineWeightKg > 0 else { return 0.0 }
+        if rodWeightKg > 0 && lineWeightKg > rodWeightKg {
+            return min(1.0, tensionFraction * (Double(rodWeightKg) / Double(max(1, lineWeightKg))) * 1.15)
+        }
+        return tensionFraction
+    }
+
     var body: some View {
         HStack(alignment: .center, spacing: 10) {
-            VStack(alignment: .leading, spacing: 8) {
-                // 1. Tension header & calm smooth progress bar
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        Text("НАГРУЗКА СНАСТИ \(coordinator.stateMachine.tension) / 225")
-                            .font(.system(size: 11, weight: .semibold).monospacedDigit())
-                            .foregroundStyle(.white.opacity(0.88))
-                        Spacer()
-                        HStack(spacing: 4) {
-                            Image(systemName: coordinator.dayNightLighting.isDayLight ? "sun.max.fill" : "moon.stars.fill")
-                                .font(.system(size: 11))
-                                .foregroundStyle(FishingPondView.goldTextColor)
-                            Text(String(format: "%02d:%02d", coordinator.gameClock.hour, coordinator.gameClock.minute))
-                                .font(.system(size: 12, weight: .bold).monospacedDigit())
-                                .foregroundStyle(FishingPondView.goldTextColor)
-                        }
-                    }
+            VStack(alignment: .leading, spacing: 7) {
+                // 1. Dual Visual Telemetry Gauges for ROD (`Удилище`) and REEL/LINE (`Катушка • Леска`)
+                VStack(spacing: 5) {
+                    // Gauge A: Rod Blank Load & Condition (`Шкала Удилища`)
+                    tackleInstrumentScaleRow(
+                        icon: "wand.and.rays",
+                        title: rodWeightKg > 0 ? "УДОЧКА • до \(rodWeightKg) кг" : "УДОЧКА • не надета",
+                        rightStatus: coordinator.stateMachine.state == .fishFight
+                            ? "Изгиб \(Int((rodLoadFraction * 100).rounded()))% • \(rodStrength)%"
+                            : "Запас \(rodStrength)%",
+                        loadFraction: rodLoadFraction,
+                        healthFraction: Double(min(100, max(0, rodStrength))) / 100.0,
+                        accentColor: FishingPondView.sageAccentColor
+                    )
 
-                    GeometryReader { geo in
-                        ZStack(alignment: .leading) {
-                            Capsule()
-                                .fill(Color.black.opacity(0.45))
-                            Capsule()
-                                .fill(
-                                    LinearGradient(
-                                        colors: [
-                                            FishingPondView.sageAccentColor,
-                                            FishingPondView.goldTextColor,
-                                            Color(red: 0.90, green: 0.38, blue: 0.32)
-                                        ],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
-                                .frame(width: max(6, geo.size.width * tensionFraction))
-                                .animation(.linear(duration: 0.05), value: coordinator.stateMachine.tension)
-                        }
-                    }
-                    .frame(height: 8)
+                    // Gauge B: Reel Drag & Line Strain (`Шкала Катушки и Лески`)
+                    tackleInstrumentScaleRow(
+                        icon: "circle.hexagongrid",
+                        title: lineWeightKg > 0 ? "КАТУШКА • ЛЕСКА \(lineWeightKg) кг (\(lineLengthMeters) м)" : "КАТУШКА • ЛЕСКА",
+                        rightStatus: coordinator.stateMachine.state == .fishFight
+                            ? "Тяга \(Int((reelLineLoadFraction * 100).rounded()))% • \(coilStrength)%"
+                            : "\(String(format: "%02d:%02d", coordinator.gameClock.hour, coordinator.gameClock.minute)) • К \(coilStrength)%",
+                        loadFraction: reelLineLoadFraction,
+                        healthFraction: Double(min(100, max(0, coilStrength))) / 100.0,
+                        accentColor: FishingPondView.goldTextColor
+                    )
                 }
+                .padding(.horizontal, 9)
+                .padding(.vertical, 7)
+                .background(FishingPondView.matteCardSurface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
 
-                // 2. Four distinct Matte-Slate Tiles: Наживка, Снасть, Садок (clean, no X!), and dedicated Вымотать / Сброс
+                // 2. Four distinct Matte-Slate Tiles (No double borders, pure tonal surface elevation!)
                 HStack(spacing: 6) {
                     // Tile 1: Bait
                     Button(action: onPresentBaitChooser) {
-                        VStack(spacing: 3) {
+                        VStack(spacing: 2) {
                             let baitDrawable = equippedBaitId > 0 ? "bait_\(equippedBaitId)" : "bait_empty"
                             OriginalSpriteOrFallbackIcon(
                                 drawableName: baitDrawable,
                                 fallbackSystemName: "circle.hexagongrid.fill",
-                                width: 26,
-                                height: 26
+                                width: 24,
+                                height: 24
                             )
                             Text("\(equippedBaitAmount) шт.")
-                                .font(.system(size: 10, weight: .bold).monospacedDigit())
+                                .font(.system(size: 10, weight: .bold, design: .rounded).monospacedDigit())
                                 .foregroundStyle(.white)
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.75)
                         }
                         .frame(maxWidth: .infinity)
-                        .frame(height: 60)
-                        .background(FishingPondView.matteCardSurface, in: RoundedRectangle(cornerRadius: 12))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                        )
+                        .frame(height: 54)
+                        .background(FishingPondView.matteCardSurface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                         .opacity(coordinator.stateMachine.state == .idle ? 1.0 : 0.55)
                     }
                     .buttonStyle(.plain)
 
-                    // Tile 2: Tackle & Durability
+                    // Tile 2: Tackle & Quick Loadout
                     Button(action: onPresentQuickTackle) {
-                        VStack(spacing: 4) {
+                        VStack(spacing: 3) {
                             Image(systemName: "figure.fishing")
-                                .font(.system(size: 17, weight: .semibold))
+                                .font(.system(size: 16, weight: .semibold))
                                 .foregroundStyle(FishingPondView.goldTextColor)
-                            Text("У\(rodStrength)%•К\(coilStrength)%")
-                                .font(.system(size: 10, weight: .semibold).monospacedDigit())
+                            Text("Снасть")
+                                .font(.system(size: 10, weight: .bold, design: .rounded))
                                 .foregroundStyle(.white.opacity(0.92))
                                 .lineLimit(1)
-                                .minimumScaleFactor(0.7)
                         }
                         .frame(maxWidth: .infinity)
-                        .frame(height: 60)
-                        .background(FishingPondView.matteCardSurface, in: RoundedRectangle(cornerRadius: 12))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                        )
+                        .frame(height: 54)
+                        .background(FishingPondView.matteCardSurface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                         .opacity(coordinator.stateMachine.state == .idle ? 1.0 : 0.55)
                     }
                     .buttonStyle(.plain)
@@ -2073,43 +2501,35 @@ private struct RemasterPondBottomDeckView: View {
                                 .font(.system(size: 15, weight: .semibold))
                                 .foregroundStyle(FishingPondView.sageAccentColor)
                             Text("\(coordinator.fishnetEntries.count)/\(PlayerStateRepository.maxFishnetCapacity)")
-                                .font(.system(size: 11, weight: .bold).monospacedDigit())
+                                .font(.system(size: 11, weight: .bold, design: .rounded).monospacedDigit())
                                 .foregroundStyle(FishingPondView.goldTextColor)
                                 .lineLimit(1)
                         }
                         .frame(maxWidth: .infinity)
-                        .frame(height: 60)
-                        .background(FishingPondView.matteCardSurface, in: RoundedRectangle(cornerRadius: 12))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                        )
+                        .frame(height: 54)
+                        .background(FishingPondView.matteCardSurface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                         .opacity(coordinator.stateMachine.state == .idle ? 1.0 : 0.55)
                     }
                     .buttonStyle(.plain)
 
-                    // Tile 4: Dedicated "Вымотать" (Reel-In / Cancel Cast) when cast, or "Продать" when idle
+                    // Tile 4: Dedicated "Вымотать" when cast, or "Продать"/"Оснастка" when idle
                     if coordinator.stateMachine.state != .idle {
                         Button {
                             coordinator.resetCastToIdle()
                         } label: {
                             VStack(spacing: 3) {
                                 Image(systemName: "arrow.uturn.down.circle.fill")
-                                    .font(.system(size: 17, weight: .semibold))
-                                    .foregroundStyle(Color(red: 0.94, green: 0.45, blue: 0.38))
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundStyle(Color(red: 0.95, green: 0.46, blue: 0.38))
                                 Text("Вымотать")
-                                    .font(.system(size: 10, weight: .bold))
+                                    .font(.system(size: 10, weight: .bold, design: .rounded))
                                     .foregroundStyle(.white.opacity(0.95))
                                     .lineLimit(1)
                                     .minimumScaleFactor(0.7)
                             }
                             .frame(maxWidth: .infinity)
-                            .frame(height: 60)
-                            .background(FishingPondView.matteCardSurface, in: RoundedRectangle(cornerRadius: 12))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color(red: 0.94, green: 0.45, blue: 0.38).opacity(0.45), lineWidth: 1)
-                            )
+                            .frame(height: 54)
+                            .background(Color(red: 0.28, green: 0.16, blue: 0.17), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                         }
                         .buttonStyle(.plain)
                     } else {
@@ -2122,21 +2542,17 @@ private struct RemasterPondBottomDeckView: View {
                         } label: {
                             VStack(spacing: 3) {
                                 Image(systemName: coordinator.fishnetEntries.isEmpty ? "slider.horizontal.3" : "rublesign.circle.fill")
-                                    .font(.system(size: 16, weight: .semibold))
+                                    .font(.system(size: 15, weight: .semibold))
                                     .foregroundStyle(coordinator.fishnetEntries.isEmpty ? FishingPondView.goldTextColor : FishingPondView.sageAccentColor)
                                 Text(coordinator.fishnetEntries.isEmpty ? "Оснастка" : "Продать")
-                                    .font(.system(size: 10, weight: .bold))
+                                    .font(.system(size: 10, weight: .bold, design: .rounded))
                                     .foregroundStyle(.white.opacity(0.92))
                                     .lineLimit(1)
                                     .minimumScaleFactor(0.7)
                             }
                             .frame(maxWidth: .infinity)
-                            .frame(height: 60)
-                            .background(FishingPondView.matteCardSurface, in: RoundedRectangle(cornerRadius: 12))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                            )
+                            .frame(height: 54)
+                            .background(FishingPondView.matteCardSurface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                         }
                         .buttonStyle(.plain)
                     }
@@ -2176,11 +2592,71 @@ private struct RemasterPondBottomDeckView: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
-        .background(FishingPondView.matteSlateSurface.opacity(0.94))
-        .overlay(alignment: .top) {
-            Rectangle()
-                .fill(Color.white.opacity(0.10))
-                .frame(height: 1)
+        .background(FishingPondView.matteSlateSurface.opacity(0.96))
+    }
+
+    private func tackleInstrumentScaleRow(
+        icon: String,
+        title: String,
+        rightStatus: String,
+        loadFraction: Double,
+        healthFraction: Double,
+        accentColor: Color
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            HStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundStyle(accentColor)
+                Text(title)
+                    .font(.system(size: 9, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.90))
+                    .lineLimit(1)
+                Spacer(minLength: 4)
+                Text(rightStatus)
+                    .font(.system(size: 9, weight: .bold, design: .rounded).monospacedDigit())
+                    .foregroundStyle(loadFraction >= 0.82 ? Color(red: 0.96, green: 0.42, blue: 0.36) : accentColor)
+                    .lineLimit(1)
+            }
+
+            GeometryReader { geo in
+                let w = geo.size.width
+                ZStack(alignment: .leading) {
+                    // Base recessed track
+                    Capsule()
+                        .fill(Color.black.opacity(0.45))
+
+                    // Subtle durability capacity baseline when idle/waiting
+                    Capsule()
+                        .fill(accentColor.opacity(0.22))
+                        .frame(width: max(4, w * healthFraction))
+
+                    // Live dynamic load fill during fight/pull
+                    if loadFraction > 0.005 {
+                        Capsule()
+                            .fill(
+                                LinearGradient(
+                                    colors: [
+                                        FishingPondView.sageAccentColor,
+                                        FishingPondView.goldTextColor,
+                                        Color(red: 0.94, green: 0.36, blue: 0.30)
+                                    ],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .frame(width: max(6, w * min(1.0, loadFraction)))
+                            .animation(.linear(duration: 0.05), value: loadFraction)
+                    }
+
+                    // Danger threshold tick mark at 85%
+                    Rectangle()
+                        .fill(Color(red: 0.96, green: 0.42, blue: 0.36).opacity(0.75))
+                        .frame(width: 1.5, height: 6)
+                        .offset(x: w * 0.85)
+                }
+            }
+            .frame(height: 6)
         }
     }
 }
@@ -2237,13 +2713,7 @@ private struct RemasterMetallicReelWheelView: View {
                         )
                     )
                     .frame(width: 76, height: 76)
-                    .overlay(
-                        Circle()
-                            .stroke(
-                                isPulled ? FishingPondView.goldTextColor.opacity(0.75) : Color.white.opacity(0.20),
-                                lineWidth: 1.5
-                            )
-                    )
+
 
                 Circle()
                     .fill(
@@ -2264,9 +2734,7 @@ private struct RemasterMetallicReelWheelView: View {
                 Circle()
                     .fill(FishingPondView.matteSlateSurface)
                     .frame(width: 24, height: 24)
-                    .overlay(
-                        Circle().stroke(FishingPondView.goldTextColor.opacity(0.6), lineWidth: 1)
-                    )
+
 
                 if isIdle {
                     Text("ЗАБРОС")
@@ -2760,10 +3228,7 @@ private struct RemasterQuickTackleAndPondSheet: View {
                 FishingPondView.matteCardSurface,
                 in: RoundedRectangle(cornerRadius: 10)
             )
-            .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .stroke(isEquipped ? FishingPondView.sageAccentColor.opacity(0.65) : Color.white.opacity(0.10), lineWidth: 1)
-            )
+
         }
         .buttonStyle(.plain)
     }
@@ -2866,10 +3331,7 @@ private struct BaitQuickChooserRowView: View {
             }
             .padding(10)
             .background(FishingPondView.matteCardSurface, in: RoundedRectangle(cornerRadius: 10))
-            .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .stroke(isEquipped ? FishingPondView.sageAccentColor.opacity(0.6) : Color.white.opacity(0.10), lineWidth: 1)
-            )
+
         }
         .buttonStyle(.plain)
     }
