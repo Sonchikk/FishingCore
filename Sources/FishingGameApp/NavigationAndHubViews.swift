@@ -295,7 +295,6 @@ public struct FishingRootView: View {
             }
         }
         .environment(\.isRemasterMode, coordinator.isRemasterModeEnabled)
-        .animation(.spring(response: 0.32, dampingFraction: 0.82), value: subScreen)
         .animation(.spring(response: 0.32, dampingFraction: 0.82), value: coordinator.selectedTab)
         .animation(.spring(response: 0.32, dampingFraction: 0.78), value: coordinator.activeToast?.id)
         .animation(.easeInOut(duration: 0.2), value: isShowingSplash)
@@ -779,6 +778,7 @@ public struct BaseHubView: View {
             }
         }
         .environment(\.isRemasterMode, coordinator.isRemasterModeEnabled)
+        .animation(.spring(response: 0.32, dampingFraction: 0.82), value: subScreen)
     }
 }
 
@@ -5182,7 +5182,7 @@ public struct OnlineAndChatView: View {
         }
     }
 
-    private func podiumCard(entry: OnlinePlayerRatingEntry, medal: String, height: CGFloat) -> some View {
+    private func podiumCard(entry: TopPlayerRatingEntry, medal: String, height: CGFloat) -> some View {
         VStack(spacing: 4) {
             Text(medal)
                 .font(.system(size: 22))

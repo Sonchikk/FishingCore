@@ -777,6 +777,19 @@ public struct FishingAudioAndHapticsController: Sendable, Equatable {
         )
     }
 
+    /// Light tactile selection click for Remaster UI buttons, tabs, and subtle pre-hook bite nibbles.
+    public func playTouchClickHaptic() {
+        guard vibrationEnabled && vibrationDurationMs > 0 else { return }
+        guard !LiveAudioPlaybackEngine.isRunningUnderXCTest else { return }
+        #if canImport(UIKit) && !os(watchOS)
+        Task { @MainActor in
+            let gen = UISelectionFeedbackGenerator()
+            gen.prepare()
+            gen.selectionChanged()
+        }
+        #endif
+    }
+
     /// Celebratory multi-stage haptic crescendo on landing a fish in Remaster mode.
     public mutating func triggerRemasterCatchCelebrationHaptic(
         weightGrams: Int,
